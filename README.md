@@ -9,8 +9,8 @@ To open one of these in makerchip, copy the following into your browser, and app
 `http://www.makerchip.com/sandbox?code_url=https:%2F%2Fraw.githubusercontent.com%2Fstevehoover%2Fwarp-v%2Fmaster%2F`
 
 Here are some quick-links, (that could likely be broken):
-  - <a href="http://www.makerchip.com/sandbox?code_url=https:%2F%2Fraw.githubusercontent.com%2Fstevehoover%2Fwarp-v%2Fmaster%2Flife_viz.tlv" target="_blank" atom_fix="_">life_viz.tlv</a>
-  - <a href="http://www.makerchip.com/sandbox?code_url=https:%2F%2Fraw.githubusercontent.com%2Fstevehoover%2Fwarp-v%2Fmaster%2Fsort_viz.tlv" target="_blank" atom_fix="_">life_viz.tlv</a>
+  - <a href="http://www.makerchip.com/sandbox?code_url=https:%2F%2Fraw.githubusercontent.com%2Fstevehoover%2Fmakerchip_examples%2Fmaster%2Flife_viz.tlv" target="_blank" atom_fix="_">life_viz.tlv</a>
+  - <a href="http://www.makerchip.com/sandbox?code_url=https:%2F%2Fraw.githubusercontent.com%2Fstevehoover%2Fmakerchip_examples%2Fmaster%2Fsort_viz.tlv" target="_blank" atom_fix="_">sort_viz.tlv</a>
 
 From other repos:
   - <a href="http://www.makerchip.com/sandbox?code_url=https:%2F%2Fraw.githubusercontent.com%2Fstevehoover%2Fwarp-v%2Fmaster%2Fwarp-v.tlv" target="_blank" atom_fix="_">WARP-V</a>
