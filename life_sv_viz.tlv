@@ -164,48 +164,44 @@ generate
 endgenerate
 
 \TLV
-   |pipe
-      /yy[19:0]
-         /xx[19:0]
-            @1
-               \viz_alpha
-                  initEach: function () {
-                     let rect = new fabric.Rect({
-                        width: 10,
-                        height: 10,
-                        fill: "green",
-                        left: this.scopes.xx.index * 10,
-                        top: this.scopes.yy.index * 10
-                     });
-                     this.getCanvas().add(rect);
-                     let shadow = null;
-                     shadow = new fabric.Rect({
-                        width: 10,
-                        height: 10,
-                        fill: "green",
-                        left: this.scopes.xx.index * 10,
-                        top: this.scopes.yy.index * 10
-                     })
-                     this.getCanvas().add(shadow);
-                     return {rect: rect, shadow: shadow};
-                  },
-                  renderEach: function () {
-                     let alive_sig_name =
-                         `L1_DEFAULT_Yy[${this.scopes.yy.index}]` +
-                         `.L1_Xx_alive_a2(${this.scopes.xx.index})`;
-                     let background =
-                          (this.svSigRef(alive_sig_name, 0).asInt() == 1)
-                               ? "blue" : "red";
-                     let background2 =
-                          (this.svSigRef(alive_sig_name, -1).asInt() == 1)
-                               ? "black" : null;
-                     let opacity2 =
-                          (this.svSigRef(alive_sig_name, -1).asInt() == 1)
-                               ? 0.2 : 0;
-                     this.fromInit().rect.set("fill", background);
-                     this.fromInit().shadow.set("fill", background2);
-                     this.fromInit().shadow.set("opacity", opacity2);
-                  }
+   /yy[19:0]
+      /xx[19:0]
+         \viz_alpha
+            initEach() {
+               let rect = new fabric.Rect({
+                  width: 10,
+                  height: 10,
+                  fill: "green",
+                  left: this.scopes.xx.index * 10,
+                  top: this.scopes.yy.index * 10
+               });
+               let shadow = null;
+               shadow = new fabric.Rect({
+                  width: 10,
+                  height: 10,
+                  fill: "green",
+                  left: this.scopes.xx.index * 10,
+                  top: this.scopes.yy.index * 10
+               })
+               return {objects: {rect: rect, shadow: shadow}};
+            },
+            renderEach() {
+               let alive_sig_name =
+                   `L1_DEFAULT_Yy[${this.scopes.yy.index}]` +
+                   `.L1_Xx_alive_a2(${this.scopes.xx.index})`;
+               let background =
+                    (this.svSigRef(alive_sig_name, 0).asInt() == 1)
+                         ? "blue" : "red";
+               let background2 =
+                    (this.svSigRef(alive_sig_name, -1).asInt() == 1)
+                         ? "black" : null;
+               let opacity2 =
+                    (this.svSigRef(alive_sig_name, -1).asInt() == 1)
+                         ? 0.2 : 0;
+               this.fromInit().objects.rect.set("fill", background);
+               this.fromInit().objects.shadow.set("fill", background2);
+               this.fromInit().objects.shadow.set("opacity", opacity2);
+            }
 
    *passed = *cyc_cnt > 32'd20;
 

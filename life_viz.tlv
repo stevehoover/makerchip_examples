@@ -88,24 +88,15 @@ m4_define_hier(['M4_YY'], 10, 0)
                         fill: "green",
                         left: scopes.xx.index * 20,
                         top: scopes.yy.index * 20
-                     });
-                     global.canvas.add(rect);
-                     let circle = null;
-                     //circle = new fabric.Circle({
-                     //   radius: 5,
-                     //   left: scopes.xx.index * 20 + 10,
-                     //   top: scopes.yy.index * 20 + 10
-                     //});
-                     circle = new fabric.Rect({
+                     })
+                     let shadow = new fabric.Rect({
                         width: 20,
                         height: 20,
                         fill: "green",
-                        //borderColor: "black",
                         left: scopes.xx.index * 20,
                         top: scopes.yy.index * 20
                      })
-                     global.canvas.add(circle);
-                     return {objects: {rect: rect, circle: circle}};
+                     return {objects: {rect: rect, shadow: shadow}};
                   },
                   layout: "horizontal",
                   renderEach: function () {
@@ -114,14 +105,8 @@ m4_define_hier(['M4_YY'], 10, 0)
                      let background2 = ('>>1$alive'.asBool()) ? "black" : null;
                      let opacity2 = ('>>1$alive'.asBool()) ? 0.2 : 0;
                      this.getInitObjects().rect.set("fill", background);
-                     this.getInitObjects().circle.set("fill", background2);
-                     this.getInitObjects().circle.set("opacity", opacity2);
-                     //return {circle: circle};
-                  },
-                  unrenderEach: function () {
-                     //if (%+1$alive == 1) {
-                     //  context.renderEach.circle.remove();
-                     //}
+                     this.getInitObjects().shadow.set("fill", background2);
+                     this.getInitObjects().shadow.set("opacity", opacity2);
                   }
             
       
