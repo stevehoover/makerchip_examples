@@ -90,7 +90,7 @@ m4_include_url(['https://raw.githubusercontent.com/stevehoover/tlv_flow_lib/7a2b
    
    // Option 1) A default direct hookup from |in to |out.
    m4+tlv_wrapper(|in, @0, |out, @0, /trans)
-   m4+noop_kernel_example(/top, |in, @0, |out, @0, /trans)
+   m4+rename_flow(/top, |in, @0, |out, @0, /trans)
    
    // Option 2) A 5-cycle backpressured pipeline from |in to |out (5 backpressured recirculation muxes).
    //m4+tlv_wrapper(|kernel0, @1, |kernel5, @1, /trans)
