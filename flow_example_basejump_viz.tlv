@@ -90,8 +90,6 @@ m4_define_hier(M4_RING_STOP, 4, 0)
       //----------------
    
    
-   //m4+trans()
-   
    
    // Testbench
    m4+router_testbench(/top, /ring_stop, |stall0, @1, |fifo2_out, @1, /trans, /top<>0$reset)
