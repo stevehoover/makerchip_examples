@@ -6,6 +6,8 @@
    |pipe
       @1
          $reset = *reset;
+         m4_define(['M4_MAZE_NAME'], ['dev'])  // original, dev
+         m4_ifelse_block(M4_MAZE_NAME, ['original'], ['
          m4_define_hier(M4_YY, 24, 0)
          m4_define_hier(M4_XX, 38, 0)
          m4_define(M4_FROG_START_XX, M4_XX_MAX-2)
@@ -38,6 +40,27 @@
                  38'b10000000110000010010000000001010100011,
                  38'b11111111111111111111111111111111111111
                };
+         '], ['
+         // Default small maze for development.
+         m4_define_hier(M4_YY, 10, 0)
+         m4_define_hier(M4_XX, 10, 0)
+         m4_define(M4_FROG_START_XX, M4_XX_MAX-2)
+         m4_define(M4_FROG_START_YY, 1)
+         \SV_plus
+            logic [M4_YY_RANGE][M4_XX_RANGE] maze;
+            assign maze = '{
+                 10'b1111111111,
+                 10'b1001001000,
+                 10'b1000100000,
+                 10'b1000000001,
+                 10'b1000000001,
+                 10'b1100100001,
+                 10'b1000010001,
+                 10'b1000001001,
+                 10'b1000000001,
+                 10'b1111111111
+               };
+         '])
          
          m4_define(M4_UP, 2'b00)
          m4_define(M4_DOWN, 2'b10)
@@ -122,7 +145,7 @@
    |pipe
       @1
          /frog
-            *passed = *cyc_cnt > 40 && ($Xx == 0 || $Yy == 0 || $Xx >= M4_XX_MAX-1 || $Yy >= M4_YY_MAX-1);
+            *passed = *cyc_cnt > 10 && ($Xx == 0 || $Yy == 0 || $Xx >= M4_XX_MAX-1 || $Yy >= M4_YY_MAX-1);
             *failed = 1'b0;
    
    // Visualization
@@ -178,6 +201,7 @@
             \viz_alpha
                initEach() {
                   debugger
+                  /**/
                   return {objects: {frog: new fabric.Rect(
                      {
                       width: 20,
@@ -185,12 +209,32 @@
                       fill: `#00a000`
                      }
                   )}}
+                  /*/
+                  // Image is not supposed to be added to canvas until it is drawn, but we need an Object to
+                  // work with immediately, so let's wrap the image in a group.
+                  let image_container = new fabric.Group([],
+                     {originX: "center",
+                      originY: "center",
+                      angle: 0,
+                      width: 20,
+                      height: 20,
+                     })
+                  let sprite_sheet_url = "https://www.pngfind.com/pngs/m/351-3516508_forget-the-gifs-heres-a-behind-the-scenes.png"
+                  let frog_img = new fabric.Image.fromURL(sprite_sheet_url,
+                     {left: 0,
+                      top: 0,
+                     })
+                  return {objects: {image_container: image_container}}
+                  /**/
+               },
+               renderEachNew() {
+                  
                },
                renderEach() {
                   debugger
                   this.getInitObjects().frog.animate({left: '$Xx'.asInt() * 10, top: '$Yy'.asInt() * 10},
                                                      {onChange: this.global.canvas.renderAll.bind(this.global.canvas),
-                                                      duration: '$hop2_ok'.asBool() ? 400 : '$hop1_ok'.asBool() ? 200 : 0
+                                                      duration: '>>1$hop2_ok'.asBool() ? 400 : '>>1$hop1_ok'.asBool() ? 200 : 0
                                                      }
                                                     )
                }
