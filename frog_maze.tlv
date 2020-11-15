@@ -147,7 +147,8 @@
    |pipe
       @1
          /frog
-            *passed = *cyc_cnt > 10 && ($Xx == 0 || $Yy == 0 || $Xx >= M4_XX_MAX-1 || $Yy >= M4_YY_MAX-1);
+            $done = ($Xx == 0 || $Yy == 0 || $Xx >= M4_XX_MAX-1 || $Yy >= M4_YY_MAX-1);
+            *passed = *cyc_cnt > 10 && >>1$done;
             *failed = 1'b0;
    
    // Visualization
@@ -156,6 +157,22 @@
          \viz_alpha
             // Board background
             initEach() {
+              let objects = {}
+              let TILE_SIZE = 2
+              for (let x = 0; x < M4_XX_HIGH; x = x + TILE_SIZE) {
+                 for (let y = 0; y < M4_YY_HIGH; y = y + TILE_SIZE) {
+                    objects[`b${x}${y}`] = new fabric.Rect(
+                      {left: x * 10,
+                       top: y * 10,
+                       width:  (x + TILE_SIZE > M4_XX_HIGH ? M4_XX_HIGH - x : TILE_SIZE) * 10,
+                       height: (y + TILE_SIZE > M4_YY_HIGH ? M4_YY_HIGH - y : TILE_SIZE) * 10,
+                       fill: (((x + y) % (TILE_SIZE * 2)) == 0) ? "#102020" : "#203030",
+                      }
+                    )
+                 }
+              }
+              return {objects: objects}
+              /*
               return {objects: {
                  backgound: new fabric.Rect(
                    {left: 0,
@@ -166,6 +183,7 @@
                    }
                  )
               }}
+              */
             }
          /M4_YY_HIER
             /M4_XX_HIER
@@ -178,7 +196,7 @@
                            top: this.getIndex("yy") * 10,
                            width: 10,
                            height: 10,
-                           fill: (((parseInt(this.getIndex("xx")) + parseInt(this.getIndex("yy"))) % 2) == 0) ? "#B03090" : "#A030A0"
+                           fill: "#A030A0"
                           }
                         ),
                         arrowhead: new fabric.Triangle(
@@ -196,7 +214,8 @@
                   renderEach() {
                      //debugger
                      this.getInitObjects().cell.set({visible: '$wall'.asBool()})
-                     this.getInitObjects().arrowhead.set({visible: '$Solved'.asBool(),
+                     this.getInitObjects().arrowhead.set({visible: '$Solved'.asBool() && ! '|pipe$solved'.asBool(),
+                                                          //visible: '$Solved'.asBool(),
                                                           angle: '$Dir'.asInt() * 90})
                   }
          /frog
@@ -207,24 +226,42 @@
                      {originX: "center",
                       originY: "center",
                       width: 20,
-                      height: 18,
-                      fill: `#00a000`
+                      height: 20,
+                      fill: "#ffffff10" //`#00a000`
                      }
                   )
-                  let sprite_sheet_url = "https://www.pngfind.com/pngs/m/351-3516508_forget-the-gifs-heres-a-behind-the-scenes.png"
-                  let frog_img = new fabric.Image.fromURL(sprite_sheet_url,
-                     {left: 0,
-                      top: 0,
-                     })
+                  let frog_circle = new fabric.Circle(
+                     {originX: "center",
+                      originY: "center",
+                      radius: 10,
+                      fill: "#ffffff10" //`#00a000`
+                     }
+                  )
+                  
                   // Image is not supposed to be added to canvas until it is drawn, but we need an Object to
                   // work with immediately, so let's wrap the image in a group.
-                  let frog = new fabric.Group([frog_square],
+                  let frog = new fabric.Group([frog_circle],
                      {originX: "center",
                       originY: "center",
                       angle: 0,
                       width: 20,
                       height: 20,
                      })
+                  //let sprite_sheet_url = "https://www.pngfind.com/pngs/m/351-3516508_forget-the-gifs-heres-a-behind-the-scenes.png"
+                  let frog_img_url = "https://raw.githubusercontent.com/stevehoover/makerchip_examples/master/viz_imgs/frog.png"
+                  let frog_img = new fabric.Image.fromURL(
+                     frog_img_url,
+                     function (img) {
+                        frog.add(img)
+                     },
+                     {originX: "center",
+                      originY: "center",
+                      left: 0,
+                      top: 0,
+                      scaleX: 0.03,
+                      scaleY: 0.03,
+                     }
+                  )
                   return {objects: {frog: frog}}
                   /**/
                },
@@ -233,11 +270,27 @@
                },
                renderEach() {
                   debugger
-                  this.getInitObjects().frog.animate({left: ('$Xx'.asInt() + 1) * 10, top: ('$Yy'.asInt() + 1) * 10},
-                                                     {onChange: this.global.canvas.renderAll.bind(this.global.canvas),
-                                                      duration: '>>1$hop2_ok'.asBool() ? 400 : '>>1$hop1_ok'.asBool() ? 200 : 0
-                                                     }
-                                                    )
+                  // Keep count of the number of renders so we can terminate an animation after another is started.
+                  this.render_cnt = this.render_cnt ? this.render_cnt++ : 1
+                  render_cnt = this.render_cnt
+                  this.getInitObjects().frog.animate(
+                    {angle: '>>1$dir'.asInt() * 90},
+                    {onChange: this.global.canvas.renderAll.bind(this.global.canvas),
+                     onComplete: () => {
+                        if (render_cnt == this.render_cnt) {
+                           // Keep animating. Jump.
+                           this.getInitObjects().frog.animate(
+                             {left: ('$Xx'.asInt() + 1) * 10, top: ('$Yy'.asInt() + 1) * 10},
+                             {onChange: this.global.canvas.renderAll.bind(this.global.canvas),
+                              duration: '>>1$hop2_ok'.asBool() ? 400 : '>>1$hop1_ok'.asBool() ? 200 : 0
+                             }
+                           )
+                        } else {
+                           console.log("render canceled")
+                        }
+                     }
+                    }
+                  )
                }
 \SV
    endmodule
