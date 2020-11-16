@@ -260,6 +260,7 @@
                       top: 0,
                       scaleX: 0.03,
                       scaleY: 0.03,
+                      angle: -7,
                      }
                   )
                   return {objects: {frog: frog}}
@@ -273,8 +274,18 @@
                   // Keep count of the number of renders so we can terminate an animation after another is started.
                   this.render_cnt = this.render_cnt ? this.render_cnt++ : 1
                   render_cnt = this.render_cnt
+                  // Determine old and new angles and adjust to make sure frog rotates no more than 180.
+                  let old_angle = this.getInitObjects().frog.angle
+                  let new_angle = '>>1$dir'.asInt() * 90
+                  if (old_angle == 0 && new_angle == 270) {
+                     old_angle = 360
+                  } else if (old_angle == 270 && new_angle == 0) {
+                     old_angle = -90
+                  }
+                  this.getInitObjects().frog.set({angle: old_angle})
+                  // Animate
                   this.getInitObjects().frog.animate(
-                    {angle: '>>1$dir'.asInt() * 90},
+                    {angle: new_angle},
                     {onChange: this.global.canvas.renderAll.bind(this.global.canvas),
                      onComplete: () => {
                         if (render_cnt == this.render_cnt) {
