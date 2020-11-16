@@ -161,12 +161,12 @@
               let TILE_SIZE = 2
               for (let x = 0; x < M4_XX_HIGH; x = x + TILE_SIZE) {
                  for (let y = 0; y < M4_YY_HIGH; y = y + TILE_SIZE) {
-                    objects[`b${x}${y}`] = new fabric.Rect(
+                    objects[`b_${x}_${y}`] = new fabric.Rect(
                       {left: x * 10,
                        top: y * 10,
                        width:  (x + TILE_SIZE > M4_XX_HIGH ? M4_XX_HIGH - x : TILE_SIZE) * 10,
                        height: (y + TILE_SIZE > M4_YY_HIGH ? M4_YY_HIGH - y : TILE_SIZE) * 10,
-                       fill: (((x + y) % (TILE_SIZE * 2)) == 0) ? "#102020" : "#203030",
+                       fill: (((x + y) % (TILE_SIZE * 2)) == 0) ? "#102020" : "#1C2C2C",
                       }
                     )
                  }
@@ -196,7 +196,8 @@
                            top: this.getIndex("yy") * 10,
                            width: 10,
                            height: 10,
-                           fill: "#A030A0"
+                           fill: "#A030A0",
+                           visible: false,
                           }
                         ),
                         arrowhead: new fabric.Triangle(
@@ -206,7 +207,8 @@
                            height: 6,
                            originX: "center",
                            originY: "center",
-                           fill: "gray"
+                           fill: "gray",
+                           visible: false,
                           }
                         )
                      }}
