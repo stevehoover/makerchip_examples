@@ -172,18 +172,6 @@
                  }
               }
               return {objects: objects}
-              /*
-              return {objects: {
-                 backgound: new fabric.Rect(
-                   {left: 0,
-                    top: 0,
-                    width: 10 * M4_XX_HIGH,
-                    height: 10 * M4_YY_HIGH,
-                    fill: "#102020"
-                   }
-                 )
-              }}
-              */
             }
          /M4_YY_HIER
             /M4_XX_HIER
@@ -268,9 +256,6 @@
                   )
                   return {objects: {frog: frog}}
                   /**/
-               },
-               renderEachNew() {
-                  
                },
                renderEach() {
                   debugger
