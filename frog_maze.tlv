@@ -50,7 +50,7 @@
             logic [M4_YY_RANGE][M4_XX_RANGE] maze;
             assign maze = '{
                  10'b1111111111,
-                 10'b1000000111,
+                 10'b1000000101,
                  10'b1000000001,
                  10'b1000000000,
                  10'b1100110000,
@@ -255,6 +255,7 @@
                      frog_img_url,
                      function (img) {
                         frog.add(img)
+                        global.canvas.renderAll()
                      },
                      {originX: "center",
                       originY: "center",
