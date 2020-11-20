@@ -44,6 +44,7 @@ m4_sv_include_url(['https://raw.githubusercontent.com/bespoke-silicon-group/base
 m4_sv_include_url(['https://raw.githubusercontent.com/bespoke-silicon-group/basejump_stl/master/bsg_dataflow/bsg_fifo_tracker.v'])
 m4_sv_include_url(['https://raw.githubusercontent.com/bespoke-silicon-group/basejump_stl/master/bsg_misc/bsg_circular_ptr.v'])
 m4_sv_include_url(['https://raw.githubusercontent.com/bespoke-silicon-group/basejump_stl/master/bsg_dataflow/bsg_fifo_1r1w_small.v'])
+m4_sv_include_url(['https://raw.githubusercontent.com/bespoke-silicon-group/basejump_stl/master/bsg_dataflow/bsg_fifo_1r1w_small_unhardened.v'])
 m4_sv_include_url(['https://raw.githubusercontent.com/bespoke-silicon-group/basejump_stl/master/bsg_mem/bsg_mem_1r1w.v'])
 m4_sv_include_url(['https://raw.githubusercontent.com/bespoke-silicon-group/basejump_stl/master/bsg_mem/bsg_mem_1r1w_synth.v'])
 /* verilator lint_on WIDTH */
