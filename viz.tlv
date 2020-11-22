@@ -1,5 +1,7 @@
 \m4_TLV_version 1d: tlx.org
 
+// A WIP library of \viz blocks for other logic.
+
 // TODO: Work this content into proper files.
 
 // Viz code that can be attached to TLV macros -- to be merged into macros.
