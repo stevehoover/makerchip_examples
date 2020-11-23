@@ -82,6 +82,7 @@ m4_define_hier(['M4_YY'], 10, 0)
                
                \viz_alpha
                   initEach() {
+                     debugger
                      let rect = new fabric.Rect({
                         width: 20,
                         height: 20,
@@ -90,11 +91,11 @@ m4_define_hier(['M4_YY'], 10, 0)
                         top: scopes.yy.index * 20
                      })
                      let shadow = new fabric.Rect({
-                        width: 20,
-                        height: 20,
+                        width: 4,
+                        height: 4,
                         fill: "lightgray",
-                        left: scopes.xx.index * 20,
-                        top: scopes.yy.index * 20
+                        left: scopes.xx.index * 20 + 8,
+                        top: scopes.yy.index * 20 + 8
                      })
                      return {objects: {rect, shadow}};
                   },
@@ -102,11 +103,9 @@ m4_define_hier(['M4_YY'], 10, 0)
                   renderEach() {
                      debugger
                      let background = ('$alive'.asBool()) ? "#10D080" : "#204030";
-                     let background2 = ('>>1$alive'.asBool()) ? "white" : null;
-                     let opacity2 = ('>>1$alive'.asBool()) ? 0.15 : 0;
+                     let prev_prop = ('>>1$alive'.asBool()) ? {fill: "#008000", opacity: 0.3} : {fill: null, opacity: 0};
                      this.getInitObjects().rect.set("fill", background);
-                     this.getInitObjects().shadow.set("fill", background2);
-                     this.getInitObjects().shadow.set("opacity", opacity2);
+                     this.getInitObjects().shadow.set(prev_prop);
                   }
             
       
