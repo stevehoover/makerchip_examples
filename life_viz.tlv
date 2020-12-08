@@ -14,11 +14,6 @@
 //
 // Output shows the grid in each step of simulation.
 //
-// This example shows:
-//   - Use of SystemVerilog constants.
-//   - Use of TL-Verilog "behavioral hierarchy".  (Eg, >xx[M4_XX_CNT-1:0])
-//   - That TL-Verilog is not just for pipelines!
-//
 // --------------------------------------------------------------------
 
 
@@ -121,19 +116,11 @@ m4_define_hier(['M4_YY'], 10, 0)
       // Accumulate right-to-left, then bottom-to-top through >yy[0].
       /tb
          @2
-            /yy[M4_YY_CNT-1:0]
-               /xx[M4_XX_CNT-1:0]
-                  \SV_plus
-                     if (xx < M4_XX_CNT - 1)
-                        assign $$right_alive_accum[10:0] = /xx[xx + 1]$horiz_alive_accum;
-                     else
-                        assign $right_alive_accum[10:0] = 11'b0;
+            /M4_YY_HIER
+               /M4_XX_HIER
+                  $right_alive_accum[10:0] = (xx < M4_XX_MAX) ? /xx[xx + 1]$horiz_alive_accum : 11'b0;
                   $horiz_alive_accum[10:0] = $right_alive_accum + {10'b0, |default/yy/xx$alive};
-               \SV_plus
-                  if (yy < M4_YY_CNT -1)
-                     assign $$below_alive_accum[21:0] = /yy[yy + 1]$vert_alive_accum;
-                  else
-                     assign $below_alive_accum[21:0] = 22'b0;
+               $below_alive_accum[21:0] = (yy < M4_YY_MAX) ? /yy[yy + 1]$vert_alive_accum : 22'b0;
                $vert_alive_accum[21:0] = $below_alive_accum + {11'b0, /xx[0]$horiz_alive_accum};
             $alive_cnt[21:0] = /yy[0]$vert_alive_accum;
             $above_min_start = $alive_cnt > (M4_XX_CNT * M4_YY_CNT) >> 2;  // 1/4
