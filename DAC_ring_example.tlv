@@ -44,7 +44,7 @@
                   $uid[31:0] = {$src, *cyc_cnt[29:0]};
                $enter = ! *reset && ($valid && ! /upstream$continue);
       \viz_alpha
-         initEach: function () {
+         initEach() {
             context.global.canvas.add(new fabric.Rect({
                top: 5,
                left: 10,
@@ -60,7 +60,7 @@
                transObj: {} // A map of transaction fabric objects, indexed by $uid.
             };
          },
-         renderEach: function () {
+         renderEach() {
             // Make every transaction invisible (and other render methods will make them visible again.
             for (const uid in this.fromInit().transObj) {
                const trans = this.fromInit().transObj[uid];
@@ -72,7 +72,7 @@
          |ring
             @1
                \viz_alpha
-                  initEach: function() {
+                  initEach() {
                      let colorByte = Math.floor((this.getIndex("port") / 4) * 256);
                      let colorByteString = colorByte.toString(16).padStart(2, "0");
                      let colorByteString2 = (255 - colorByte).toString(16).padStart(2, "0");
@@ -85,7 +85,7 @@
                      }));
                      return {color: color};
                   },
-                  renderEach: function () {
+                  renderEach() {
                      // Scan entire simulation for transactions originating in this port.
                      if (typeof this.getContext().preppedTrace === "undefined") {
                         let $enter = '$enter'.goTo(-1);

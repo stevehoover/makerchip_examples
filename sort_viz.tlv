@@ -60,8 +60,8 @@
          @1
             /pos[m4_eval(m4_n-1):0]
                \viz_alpha
-                  initEach: function() {
-                     //debugger;
+                  initEach() {
+                     //debugger
                      let level = parseInt(scopes.level.index);
                      let pos = parseInt(scopes.pos.index);
                      let x = level * M4_COL_WIDTH;
@@ -107,7 +107,7 @@
                      
                      return {valText, swapLine, noSwapLine};
                   },
-                  renderEach: function() {
+                  renderEach() {
                      debugger;
                      let level = parseInt(this.scopes.level.index);  // ISSUE: Fix index references.
                      let validSig = '/level|pipe$valid'.step(level);  // BUG: "/level" required. "'|" doesn't parse.

@@ -367,17 +367,17 @@
       @4
          /M4_PE_HIER
             \viz_alpha
-               initEach: function () {
+               initEach() {
                   let text = new fabric.Text("",
                      {  top: -M4_VIZ_LINE_SIZE * (M4_MAX_DEPTH + 1) * 4,
                         left: 600 * this.getScope("pe").index,
                         fontSize: M4_VIZ_FONT_SIZE,
                         fontFamily: "monospace"
                      });
-                  return {objects: {text: text}};
+                  return {objects: {text}};
                },
                
-               renderEach: function () {
+               renderEach() {
                   debugger;
                   // @param: sig {SignalValue}
                   // @param: decimalPlaces {int, undefined} The number of decimal places with which to represent the number, of undefined for no rounding.
@@ -457,7 +457,7 @@
                   this.getInitObjects().text.setText(str);
                }
          \viz_alpha
-            initEach: function () {
+            initEach() {
                //this.getCanvas().add(text);
                let circle = new fabric.Circle({
                   originX: "center",
@@ -472,10 +472,10 @@
                //this.getCanvas().add(circle);
                
                // 2D Map
-               return {objects: {circle: circle}, start_frame_cyc: -1, done_frame_cyc: -1};
+               return {objects: {circle}, start_frame_cyc: -1, done_frame_cyc: -1};
             },
             
-            renderEach: function () {
+            renderEach() {
                // Call this inside loops to avoid infinite recursion hangs.
                loopCheck = function() {
                   cnt = 0;

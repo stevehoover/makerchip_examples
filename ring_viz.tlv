@@ -67,9 +67,9 @@ parameter NUM_PACKETS_WIDTH = M4_NUM_PACKETS_WIDTH;
    // *******
    
    \viz_alpha
-      initEach: function () {
+      initEach() {
          
-         //debugger;
+         //debugger
          this.transObj = {}; // A map of transaction fabric objects, indexed by $uid.
          let animationRect = new fabric.Rect({
                      width: 5,
@@ -123,7 +123,7 @@ parameter NUM_PACKETS_WIDTH = M4_NUM_PACKETS_WIDTH;
       |inpipe
          @1
             \viz_alpha
-               initEach: function() {
+               initEach() {
                   context.global.getRingStopColor = function (stop) {
                      return "#00" + (255 - Math.floor((stop / M4_RING_STOP_CNT) * 256)).toString(16) + "00";
                   };
@@ -141,7 +141,7 @@ parameter NUM_PACKETS_WIDTH = M4_NUM_PACKETS_WIDTH;
                   
                   return {objects: {fifoBox: fifoBox}};
                },
-               renderEach: function () {
+               renderEach() {
                   // Look over the entire simulation and register an object for every transaction.
                   // BUG: waveform is not available to initEach(). Do we need a new method after waveform loads?
                   // Hack it here. Assume whole trace loads before any rendering.
@@ -156,7 +156,7 @@ parameter NUM_PACKETS_WIDTH = M4_NUM_PACKETS_WIDTH;
                      let $data     = '/trans$data';
                      let $cnt      = '/trans$cnt';
                      while ($accepted.forwardToValue(1)) {
-                        //debugger;
+                        //debugger
                         let response = $response.goTo($accepted.getCycle()).asInt();
                         if (!response) {
                            let uid      = $uid     .goTo($accepted.getCycle()).asInt();
@@ -212,7 +212,7 @@ parameter NUM_PACKETS_WIDTH = M4_NUM_PACKETS_WIDTH;
                }
             /entry[M4_FIFO_ENTRY_RANGE]
                \viz_alpha
-                  renderEach: function () {
+                  renderEach() {
                      if ('$valid'.asBool()) {
                         let uid = '/trans$uid'.asInt();
                         let trans = this.getScope("top").initResults.getTrans(uid);
@@ -236,7 +236,7 @@ parameter NUM_PACKETS_WIDTH = M4_NUM_PACKETS_WIDTH;
       |fifo_out
          @0
             \viz_alpha
-               renderEach: function () {
+               renderEach() {
                   if ('$accepted'.asBool()) {
                      let uid = '/trans$uid'.asInt();
                      let trans = this.getScope("top").initResults.getTrans(uid);
@@ -258,7 +258,7 @@ parameter NUM_PACKETS_WIDTH = M4_NUM_PACKETS_WIDTH;
       |rg
          @1
             \viz_alpha
-               renderEach: function () {
+               renderEach() {
                   if ('$valid'.asBool()) {
                      let uid = '/trans$uid'.asInt();
                      let trans = this.getScope("top").initResults.getTrans(uid);
@@ -278,7 +278,7 @@ parameter NUM_PACKETS_WIDTH = M4_NUM_PACKETS_WIDTH;
       |outpipe
          @2
             \viz_alpha
-               renderEach: function () {
+               renderEach() {
                   if ('$accepted'.asBool()) {
                      let uid = '/trans$uid'.asInt();
                      let trans = this.getScope("top").initResults.getTrans(uid);

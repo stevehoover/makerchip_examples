@@ -192,7 +192,7 @@
             
          
          \viz_alpha
-            initEach: function () {
+            initEach() {
                let text = new fabric.Text("Hello",
                   {  top: -M4_VIZ_LINE_SIZE * (M4_MAX_DEPTH + 1) * 4,
                      left: 0,
@@ -214,7 +214,7 @@
                return {circle: circle, text: text, createdScreen: false};
             },
                   
-            renderEach: function () {
+            renderEach() {
                
                // @param: sig {SignalValue}
                // @param: decimalPlaces {int, undefined} The number of decimal places with which to represent the number, of undefined for no rounding.
@@ -345,7 +345,7 @@
                      $RETAIN;
                *-/
                \viz_alpha
-                  initEach: function () {
+                  initEach() {
                      let rect = new fabric.Rect({
                         width: M4_VIZ_CELL_SIZE,
                         height: M4_VIZ_CELL_SIZE,
@@ -356,7 +356,7 @@
                      global.canvas.add(rect);
                      return {rect: rect};
                   },
-                  renderEach: function () {
+                  renderEach() {
                      let background = "#" + (Math.floor('$color_index'.asInt() / 4) % 10) + "0" + ('$color_index'.asInt() % 4) * 3  + "000";
                      context.initEach.rect.set("fill", background);
                   }

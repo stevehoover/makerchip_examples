@@ -191,7 +191,7 @@
                
                // 2D Map
                //debugger
-               return {objects: {circle: circle, text: text}, createdScreen: false}
+               return {objects: {circle, text}, createdScreen: false}
             },
             
             renderEach() {
@@ -410,7 +410,7 @@
                      $RETAIN;
                *-/
                \viz_alpha
-                  initEach: function () {
+                  initEach() {
                      let rect = new fabric.Rect({
                         width: M4_VIZ_CELL_SIZE,
                         height: M4_VIZ_CELL_SIZE,
@@ -421,7 +421,7 @@
                      this.getCanvas().add(rect);
                      return {rect: rect};
                   },
-                  renderEach: function () {
+                  renderEach() {
                      let background = "#" + (Math.floor('$color_index'.asInt() / 4) % 10) + "0" + ('$color_index'.asInt() % 4) * 3  + "000";
                      this.fromInit().rect.set("fill", background);
                   }

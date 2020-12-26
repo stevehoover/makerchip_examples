@@ -9,7 +9,7 @@
 
 \TLV trans()
    \viz_alpha
-      initEach: function () {
+      initEach() {
          
          debugger;
          this.transObj = {}; // A map of transaction fabric objects, indexed by $uid.
@@ -22,7 +22,7 @@
                }
                this.transObj[uid] = obj;
                console.log(`Added trans #${uid.toString(16)}`);
-               //debugger;
+               //debugger
             },
             getTrans: (uid) => {
                let ret = this.transObj[uid];
@@ -34,7 +34,7 @@
             }
          };
       },
-      renderEach: function () {
+      renderEach() {
          // Make every object invisible (and other render methods will make them visible again.
          debugger;
          for (const uid in this.fromInit().transObj) {
@@ -48,7 +48,7 @@
    |_in_pipe
       @1
          \viz_alpha
-            initEach: function() {
+            initEach() {
                debugger;
                context.global.getRingStopColor = function (stop) {
                   return "#00" + (255 - Math.floor((stop / this.getScope("/_top".substring(1)).getNumElements() * 256)).toString(16) + "00";
@@ -66,7 +66,7 @@
                   top: -5 + 50 * stop
                });
                
-               return {objects: {fifoBox: fifoBox}};
+               return {objects: {fifoBox}};
             },
             renderEach: function () {
                // Look over the entire simulation and register an object for every transaction.
@@ -189,7 +189,7 @@
    |outpipe
       @2
          \viz_alpha
-            renderEach: function () {
+            renderEach() {
                if ('$accepted'.asBool()) {
                   let uid = '/trans$uid'.asInt();
                   let trans = this.getScope("top").initResults.getTrans(uid);
