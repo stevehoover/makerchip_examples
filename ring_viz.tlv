@@ -70,7 +70,7 @@ parameter NUM_PACKETS_WIDTH = M4_NUM_PACKETS_WIDTH;
       initEach() {
          
          //debugger
-         this.transObj = {}; // A map of transaction fabric objects, indexed by $uid.
+         this.transObj = {} // A map of transaction fabric objects, indexed by $uid.
          let animationRect = new fabric.Rect({
                      width: 5,
                      height: 5,
@@ -78,18 +78,18 @@ parameter NUM_PACKETS_WIDTH = M4_NUM_PACKETS_WIDTH;
                      stroke: "black",
                      left: -20,
                      top: -20,
-                     angle: 0});
+                     angle: 0})
          
          return {
             transObj: this.transObj,
             setTrans: (uid, obj) => {
                if (typeof(this.transObj[uid]) !== "undefined") {
-                  console.log(`Adding duplicate trans #${uid.toString(16)}`);
-                  debugger;
+                  console.log(`Adding duplicate trans #${uid.toString(16)}`)
+                  debugger
                }
-               this.transObj[uid] = obj;
-               console.log(`Added trans #${uid.toString(16)}`);
-               //debugger;
+               this.transObj[uid] = obj
+               console.log(`Added trans #${uid.toString(16)}`)
+               //debugger
             },
             getTrans: (uid) => {
                let ret = this.transObj[uid];
@@ -102,8 +102,8 @@ parameter NUM_PACKETS_WIDTH = M4_NUM_PACKETS_WIDTH;
             objects: {animationRect: animationRect}
          };
       },
-      renderEach: function () {
-         //debugger;
+      renderEach() {
+         //debugger
          // Make every transaction invisible (and other render methods will make them visible again.
          for (const uid in this.fromInit().transObj) {
             const trans = this.fromInit().transObj[uid];
@@ -125,8 +125,8 @@ parameter NUM_PACKETS_WIDTH = M4_NUM_PACKETS_WIDTH;
             \viz_alpha
                initEach() {
                   context.global.getRingStopColor = function (stop) {
-                     return "#00" + (255 - Math.floor((stop / M4_RING_STOP_CNT) * 256)).toString(16) + "00";
-                  };
+                     return "#00" + (255 - Math.floor((stop / M4_RING_STOP_CNT) * 256)).toString(16) + "00"
+                  }
                   
                   // FIFO outer box.
                   let stop = this.getScope("ring_stop").index;
@@ -238,19 +238,19 @@ parameter NUM_PACKETS_WIDTH = M4_NUM_PACKETS_WIDTH;
             \viz_alpha
                renderEach() {
                   if ('$accepted'.asBool()) {
-                     let uid = '/trans$uid'.asInt();
-                     let trans = this.getScope("top").initResults.getTrans(uid);
+                     let uid = '/trans$uid'.asInt()
+                     let trans = this.getScope("top").initResults.getTrans(uid)
                      if (typeof(trans) !== "undefined") {
                         // Set position.
                         if (!trans.wasVisible) {
-                           trans.set("top", this.getIndex("ring_stop") * 50 + 10);
-                           trans.set("left", 8 * 15 - 10);
-                           trans.set("opacity", 0);
-                           trans.animate("opacity", 1);
+                           trans.set("top", this.getIndex("ring_stop") * 50 + 10)
+                           trans.set("left", 8 * 15 - 10)
+                           trans.set("opacity", 0)
+                           trans.animate("opacity", 1)
                         }
-                        trans.animate("top", this.getIndex("ring_stop") * 50);
-                        trans.animate("left", 8 * 15);
-                        trans.visible = true;
+                        trans.animate("top", this.getIndex("ring_stop") * 50)
+                        trans.animate("left", 8 * 15)
+                        trans.visible = true
                      }
                   }
                }
@@ -260,17 +260,17 @@ parameter NUM_PACKETS_WIDTH = M4_NUM_PACKETS_WIDTH;
             \viz_alpha
                renderEach() {
                   if ('$valid'.asBool()) {
-                     let uid = '/trans$uid'.asInt();
-                     let trans = this.getScope("top").initResults.getTrans(uid);
+                     let uid = '/trans$uid'.asInt()
+                     let trans = this.getScope("top").initResults.getTrans(uid)
                      if (typeof(trans) !== "undefined") {
                         // To position.
                         // If wrapping, adjust initial position.
                         if ((this.getIndex("ring_stop") == 0) && '$passed_on'.asBool()) {
-                          trans.set("left", 11 * 15);
+                          trans.set("left", 11 * 15)
                         }
-                        trans.animate("top", this.getIndex("ring_stop") * 50);
-                        trans.animate("left", 10 * 15);
-                        trans.visible = true;
+                        trans.animate("top", this.getIndex("ring_stop") * 50)
+                        trans.animate("left", 10 * 15)
+                        trans.visible = true
                      }
                   }
                }
@@ -280,14 +280,14 @@ parameter NUM_PACKETS_WIDTH = M4_NUM_PACKETS_WIDTH;
             \viz_alpha
                renderEach() {
                   if ('$accepted'.asBool()) {
-                     let uid = '/trans$uid'.asInt();
-                     let trans = this.getScope("top").initResults.getTrans(uid);
+                     let uid = '/trans$uid'.asInt()
+                     let trans = this.getScope("top").initResults.getTrans(uid)
                      if (typeof(trans) !== "undefined") {
                         // Set position and fade.
-                        trans.animate("top", this.getIndex("ring_stop") * 50 - 15);
-                        trans.animate("left", 8 * 15);
-                        trans.animate("opacity", 0);
-                        trans.visible = true;
+                        trans.animate("top", this.getIndex("ring_stop") * 50 - 15)
+                        trans.animate("left", 8 * 15)
+                        trans.animate("opacity", 0)
+                        trans.visible = true
                      }
                   }
                }
