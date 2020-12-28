@@ -52,20 +52,20 @@
                width: 20,
                stroke: "black",
                fill: "#FFFFFF00"
-            }));
+            }))
             return {
                objects: {
                   //ring: this.canvas
                },
                transObj: {} // A map of transaction fabric objects, indexed by $uid.
-            };
+            }
          },
          renderEach() {
             // Make every transaction invisible (and other render methods will make them visible again.
             for (const uid in this.fromInit().transObj) {
-               const trans = this.fromInit().transObj[uid];
-               //trans.wasVisible = trans.visible;
-               trans.visible = false;
+               const trans = this.fromInit().transObj[uid]
+               //trans.wasVisible = trans.visible
+               trans.visible = false
             }
          }
       /node[3:0]
@@ -73,17 +73,17 @@
             @1
                \viz_alpha
                   initEach() {
-                     let colorByte = Math.floor((this.getIndex("node") / 4) * 256);
-                     let colorByteString = colorByte.toString(16).padStart(2, "0");
-                     let colorByteString2 = (255 - colorByte).toString(16).padStart(2, "0");
-                     let color = "#00" + colorByteString + colorByteString2;
+                     let colorByte = Math.floor((this.getIndex("node") / 4) * 256)
+                     let colorByteString = colorByte.toString(16).padStart(2, "0")
+                     let colorByteString2 = (255 - colorByte).toString(16).padStart(2, "0")
+                     let color = "#00" + colorByteString + colorByteString2
                      context.global.canvas.add(new fabric.Circle({
                         top: (3 - this.getIndex("node")) * 20 + 5 - 2,
                         left: 10 - 2,
                         radius: 2,
                         fill: color
-                     }));
-                     return {color: color};
+                     }))
+                     return {color: color}
                   },
                   renderEach()) {
                      // Scan entire simulation for transactions originating in this node.
