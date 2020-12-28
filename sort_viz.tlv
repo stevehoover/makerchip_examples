@@ -55,6 +55,18 @@
    m4_define(M4_ROW_HEIGHT, 20)
    m4_define(M4_COL_WIDTH, 40)
    m4_define(M4_FONT_SIZE, 10)
+   |pipe
+      @1
+         \viz_alpha
+            initEach() {
+               return {objects: {title: new fabric.Text("Sorting Network",
+                  {  top: -40,
+                     left: 0,
+                     fontSize: 20,
+                     fontWeight: 800
+                     //fontFamily: "monospace"
+                  })}}
+            }
    /level[m4_eval(m4_n-1):0]
       |pipe
          @1
