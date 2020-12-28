@@ -367,7 +367,7 @@
          \always_comb
             if ($wr) begin
                /screen_v[|pipe$PixV]/screen_h[|pipe$PixH]$$color_index[\$clog2(M4_MAX_DEPTH+1)-1:0] =
-                  |pipe>>1$color_index
+                  |pipe>>1$color_index;
             end
       */
    /**/
