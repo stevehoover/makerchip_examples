@@ -198,7 +198,7 @@
                      left: 0,
                      fontSize: M4_VIZ_FONT_SIZE,
                      fontFamily: "monospace"
-                  });
+                  })
                global.canvas.add(text);
                let circle = new fabric.Circle({
                   originX: "center",
@@ -210,8 +210,8 @@
                   strokeWidth: M4_VIZ_CELL_SIZE / 10,
                   fill: "rgba(128,128,128,0)"
                });
-               global.canvas.add(circle);
-               return {circle: circle, text: text, createdScreen: false};
+               global.canvas.add(circle)
+               return {circle: circle, text: text, createdScreen: false}
             },
                   
             renderEach() {
@@ -220,15 +220,15 @@
                // @param: decimalPlaces {int, undefined} The number of decimal places with which to represent the number, of undefined for no rounding.
                let asFixed = function(sig, decimalPlaces) {
                   if (sig.inTrace()) {
-                     let str = sig.asBinaryStr();
-                     let sign = str.substr(0, 1) == "0" ? 1 : -1;
+                     let str = sig.asBinaryStr()
+                     let sign = str.substr(0, 1) == "0" ? 1 : -1
                      // TODO: This won't extend to high-precision calc.
-                     let unsigned = parseInt(str.substr(1), 2) / Math.pow(2, M4_FIXED_FRAC_WIDTH);
-                     let val = sign * unsigned;
+                     let unsigned = parseInt(str.substr(1), 2) / Math.pow(2, M4_FIXED_FRAC_WIDTH)
+                     let val = sign * unsigned
                      if (decimalPlaces) {
-                        val = val.toFixed(decimalPlaces);
+                        val = val.toFixed(decimalPlaces)
                      }
-                     return val;
+                     return val
                   } else {
                      return NaN;
                   }
@@ -352,13 +352,13 @@
                         fill: "green",
                         left: scopes.screen_h.index * M4_VIZ_CELL_SIZE,
                         top: 2 + scopes.screen_v.index * M4_VIZ_CELL_SIZE
-                     });
-                     global.canvas.add(rect);
-                     return {rect: rect};
+                     })
+                     global.canvas.add(rect)
+                     return {rect: rect}
                   },
                   renderEach() {
-                     let background = "#" + (Math.floor('$color_index'.asInt() / 4) % 10) + "0" + ('$color_index'.asInt() % 4) * 3  + "000";
-                     context.initEach.rect.set("fill", background);
+                     let background = "#" + (Math.floor('$color_index'.asInt() / 4) % 10) + "0" + ('$color_index'.asInt() % 4) * 3  + "000"
+                     context.initEach.rect.set("fill", background)
                   }
       /*
       @0
@@ -367,7 +367,7 @@
          \always_comb
             if ($wr) begin
                /screen_v[|pipe$PixV]/screen_h[|pipe$PixH]$$color_index[\$clog2(M4_MAX_DEPTH+1)-1:0] =
-                  |pipe>>1$color_index;
+                  |pipe>>1$color_index
             end
       */
    /**/

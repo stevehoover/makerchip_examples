@@ -62,17 +62,17 @@
                \viz_alpha
                   initEach() {
                      //debugger
-                     let level = parseInt(scopes.level.index);
-                     let pos = parseInt(scopes.pos.index);
-                     let x = level * M4_COL_WIDTH;
-                     let y = pos * M4_ROW_HEIGHT;
+                     let level = parseInt(scopes.level.index)
+                     let pos = parseInt(scopes.pos.index)
+                     let x = level * M4_COL_WIDTH
+                     let y = pos * M4_ROW_HEIGHT
                      if (level == 0 && pos == 0) {
                         global.canvas.add(new fabric.Rect({
                            width: M4_COL_WIDTH,
                            height: M4_ROW_HEIGHT * m4_n,
                            left: -10,
                            top: 0,
-                           fill: "rgb(0, 255, 150)"}));
+                           fill: "rgb(0, 255, 150)"}))
                      }
                      let valText = new fabric.Text("",
                      {  top: y + 5,
