@@ -367,33 +367,33 @@
       @4
          /M4_PE_HIER
             \viz_alpha
-               initEach: function () {
+               initEach() {
                   let text = new fabric.Text("",
                      {  top: -M4_VIZ_LINE_SIZE * (M4_MAX_DEPTH + 1) * 4,
                         left: 600 * this.getScope("pe").index,
                         fontSize: M4_VIZ_FONT_SIZE,
                         fontFamily: "monospace"
-                     });
-                  return {objects: {text: text}};
+                     })
+                  return {objects: {text}}
                },
                
-               renderEach: function () {
-                  debugger;
+               renderEach() {
+                  debugger
                   // @param: sig {SignalValue}
                   // @param: decimalPlaces {int, undefined} The number of decimal places with which to represent the number, of undefined for no rounding.
                   let asFixed = function(sig, decimalPlaces) {
                      if (sig.inTrace()) {
-                        let str = sig.asBinaryStr();
-                        let sign = str.substr(0, 1) == "0" ? 1 : -1;
+                        let str = sig.asBinaryStr()
+                        let sign = str.substr(0, 1) == "0" ? 1 : -1
                         // TODO: This won't extend to high-precision calc.
-                        let unsigned = parseInt(str.substr(1), 2) / Math.pow(2, M4_FIXED_FRAC_WIDTH);
-                        let val = sign * unsigned;
+                        let unsigned = parseInt(str.substr(1), 2) / Math.pow(2, M4_FIXED_FRAC_WIDTH)
+                        let val = sign * unsigned
                         if (decimalPlaces) {
-                           val = val.toFixed(decimalPlaces);
+                           val = val.toFixed(decimalPlaces)
                         }
-                        return val;
+                        return val
                      } else {
-                        return NaN;
+                        return NaN
                      }
                   }
                   
@@ -457,7 +457,7 @@
                   this.getInitObjects().text.setText(str);
                }
          \viz_alpha
-            initEach: function () {
+            initEach() {
                //this.getCanvas().add(text);
                let circle = new fabric.Circle({
                   originX: "center",
@@ -469,22 +469,22 @@
                   strokeWidth: M4_VIZ_CELL_SIZE / 10,
                   fill: "rgba(128,128,128,0)"
                });
-               //this.getCanvas().add(circle);
+               //this.getCanvas().add(circle)
                
                // 2D Map
-               return {objects: {circle: circle}, start_frame_cyc: -1, done_frame_cyc: -1};
+               return {objects: {circle}, start_frame_cyc: -1, done_frame_cyc: -1}
             },
             
-            renderEach: function () {
+            renderEach() {
                // Call this inside loops to avoid infinite recursion hangs.
                loopCheck = function() {
                   cnt = 0;
                   return function() {
                      if (cnt++ > 1000000) {
-                        debugger;
+                        debugger
                      }
                   }
-               }();
+               }()
                
                
                // Calculate the screen.

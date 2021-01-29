@@ -44,7 +44,7 @@
                   $uid[31:0] = {$src, *cyc_cnt[29:0]};
                $enter = ! *reset && ($valid && ! /upstream$continue);
       \viz_alpha
-         initEach: function () {
+         initEach() {
             context.global.canvas.add(new fabric.Rect({
                top: 5,
                left: 10,
@@ -52,40 +52,40 @@
                width: 20,
                stroke: "black",
                fill: "#FFFFFF00"
-            }));
+            }))
             return {
                objects: {
                   //ring: this.canvas
                },
                transObj: {} // A map of transaction fabric objects, indexed by $uid.
-            };
+            }
          },
-         renderEach: function () {
+         renderEach() {
             // Make every transaction invisible (and other render methods will make them visible again.
             for (const uid in this.fromInit().transObj) {
-               const trans = this.fromInit().transObj[uid];
-               //trans.wasVisible = trans.visible;
-               trans.visible = false;
+               const trans = this.fromInit().transObj[uid]
+               //trans.wasVisible = trans.visible
+               trans.visible = false
             }
          }
       /port[3:0]
          |ring
             @1
                \viz_alpha
-                  initEach: function() {
-                     let colorByte = Math.floor((this.getIndex("port") / 4) * 256);
-                     let colorByteString = colorByte.toString(16).padStart(2, "0");
-                     let colorByteString2 = (255 - colorByte).toString(16).padStart(2, "0");
-                     let color = "#00" + colorByteString + colorByteString2;
+                  initEach() {
+                     let colorByte = Math.floor((this.getIndex("port") / 4) * 256)
+                     let colorByteString = colorByte.toString(16).padStart(2, "0")
+                     let colorByteString2 = (255 - colorByte).toString(16).padStart(2, "0")
+                     let color = "#00" + colorByteString + colorByteString2
                      context.global.canvas.add(new fabric.Circle({
                         top: (3 - this.getIndex("port")) * 20 + 5 - 2,
                         left: 10 - 2,
                         radius: 2,
                         fill: color
-                     }));
-                     return {color: color};
+                     }))
+                     return {color: color}
                   },
-                  renderEach: function () {
+                  renderEach() {
                      // Scan entire simulation for transactions originating in this port.
                      if (typeof this.getContext().preppedTrace === "undefined") {
                         let $enter = '$enter'.goTo(-1);

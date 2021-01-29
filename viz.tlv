@@ -1,5 +1,7 @@
 \m4_TLV_version 1d: tlx.org
 
+// A WIP library of \viz blocks for other logic.
+
 // TODO: Work this content into proper files.
 
 // Viz code that can be attached to TLV macros -- to be merged into macros.
@@ -7,34 +9,34 @@
 
 \TLV trans()
    \viz_alpha
-      initEach: function () {
+      initEach() {
          
-         debugger;
-         this.transObj = {}; // A map of transaction fabric objects, indexed by $uid.
+         debugger
+         this.transObj = {} // A map of transaction fabric objects, indexed by $uid.
          return {
             transObj: this.transObj,
             setTrans: (uid, obj) => {
                if (typeof(this.transObj[uid]) !== "undefined") {
-                  console.log(`Adding duplicate trans #${uid.toString(16)}`);
-                  debugger;
+                  console.log(`Adding duplicate trans #${uid.toString(16)}`)
+                  debugger
                }
-               this.transObj[uid] = obj;
-               console.log(`Added trans #${uid.toString(16)}`);
-               //debugger;
+               this.transObj[uid] = obj
+               console.log(`Added trans #${uid.toString(16)}`)
+               //debugger
             },
             getTrans: (uid) => {
-               let ret = this.transObj[uid];
+               let ret = this.transObj[uid]
                if (typeof(ret) === "undefined") {
-                  console.log(`Failed to find trans #${uid.toString(16)}`);
-                  debugger;
+                  console.log(`Failed to find trans #${uid.toString(16)}`)
+                  debugger
                }
-               return this.transObj[uid];
+               return this.transObj[uid]
             }
-         };
+         }
       },
-      renderEach: function () {
+      renderEach() {
          // Make every object invisible (and other render methods will make them visible again.
-         debugger;
+         debugger
          for (const uid in this.fromInit().transObj) {
             const obj = this.fromInit().transObj[uid];
             obj.visible = false;
@@ -46,15 +48,15 @@
    |_in_pipe
       @1
          \viz_alpha
-            initEach: function() {
-               debugger;
+            initEach() {
+               debugger
                context.global.getRingStopColor = function (stop) {
-                  return "#00" + (255 - Math.floor((stop / this.getScope("/_top".substring(1)).getNumElements() * 256)).toString(16) + "00";
-               };
+                  return "#00" + (255 - Math.floor((stop / this.getScope("/_top".substring(1)).getNumElements() * 256)).toString(16) + "00"
+               }
 \TLV disabled()
                
                // FIFO outer box.
-               let stop = this.getScope("ring_stop").index;
+               let stop = this.getScope("ring_stop").index
                let fifoBox = new fabric.Rect({
                   width: M4_FIFO_ENTRY_CNT * 15 + 10,
                   height: 20,
@@ -62,9 +64,9 @@
                   stroke: context.global.getRingStopColor(stop),
                   left: -5,
                   top: -5 + 50 * stop
-               });
+               })
                
-               return {objects: {fifoBox: fifoBox}};
+               return {objects: {fifoBox}}
             },
             renderEach: function () {
                // Look over the entire simulation and register an object for every transaction.
@@ -138,32 +140,32 @@
 \TLV disabled()
          /entry[M4_FIFO_ENTRY_RANGE]
             \viz_alpha
-               renderEach: function () {
+               renderEach() {
                   if ('$valid'.asBool()) {
-                     let uid = '/trans$uid'.asInt();
-                     let trans = this.getScope("top").initResults.getTrans(uid);
+                     let uid = '/trans$uid'.asInt()
+                     let trans = this.getScope("top").initResults.getTrans(uid)
                      if (typeof(trans) !== "undefined") {
                         // Set position.
-                        debugger;
-                        let pos = M4_FIFO_ENTRY_MAX - ((this.getIndex() + M4_FIFO_ENTRY_CNT - this.getScope("|_in_pipe".substring(1)).renderResults.head_ptr) % M4_FIFO_ENTRY_CNT);
-                        trans.top = this.getIndex("ring_stop") * 50;
-                        trans.left = pos * 15;
-                        trans.visible = true;
+                        debugger
+                        let pos = M4_FIFO_ENTRY_MAX - ((this.getIndex() + M4_FIFO_ENTRY_CNT - this.getScope("|_in_pipe".substring(1)).renderResults.head_ptr) % M4_FIFO_ENTRY_CNT)
+                        trans.top = this.getIndex("ring_stop") * 50
+                        trans.left = pos * 15
+                        trans.visible = true
                      }
                   }
                }
    |fifo_out
       @0
          \viz_alpha
-            renderEach: function () {
+            renderEach() {
                if ('$accepted'.asBool()) {
                   let uid = '/trans$uid'.asInt();
-                  let trans = this.getScope("top").initResults.getTrans(uid);
+                  let trans = this.getScope("top").initResults.getTrans(uid)
                   if (typeof(trans) !== "undefined") {
                      // Set position.
-                     trans.top = this.getIndex("ring_stop") * 50;
-                     trans.left = 8 * 15;
-                     trans.visible = true;
+                     trans.top = this.getIndex("ring_stop") * 50
+                     trans.left = 8 * 15
+                     trans.visible = true
                   }
                }
             }
@@ -171,15 +173,15 @@
    |rg
       @1
          \viz_alpha
-            renderEach: function () {
+            renderEach() {
                if ('$valid'.asBool()) {
-                  let uid = '/trans$uid'.asInt();
-                  let trans = this.getScope("top").initResults.getTrans(uid);
+                  let uid = '/trans$uid'.asInt()
+                  let trans = this.getScope("top").initResults.getTrans(uid)
                   if (typeof(trans) !== "undefined") {
                      // Set position.
-                     trans.top = this.getIndex("ring_stop") * 50;
-                     trans.left = 10 * 15;
-                     trans.visible = true;
+                     trans.top = this.getIndex("ring_stop") * 50
+                     trans.left = 10 * 15
+                     trans.visible = true
                   }
                }
             }
@@ -187,15 +189,15 @@
    |outpipe
       @2
          \viz_alpha
-            renderEach: function () {
+            renderEach() {
                if ('$accepted'.asBool()) {
-                  let uid = '/trans$uid'.asInt();
-                  let trans = this.getScope("top").initResults.getTrans(uid);
+                  let uid = '/trans$uid'.asInt()
+                  let trans = this.getScope("top").initResults.getTrans(uid)
                   if (typeof(trans) !== "undefined") {
                      // Set position.
-                     trans.top = this.getIndex("ring_stop") * 50 - 15;
-                     trans.left = 8 * 15;
-                     trans.visible = true;
+                     trans.top = this.getIndex("ring_stop") * 50 - 15
+                     trans.left = 8 * 15
+                     trans.visible = true
                   }
                }
             }

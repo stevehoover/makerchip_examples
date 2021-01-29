@@ -55,24 +55,36 @@
    m4_define(M4_ROW_HEIGHT, 20)
    m4_define(M4_COL_WIDTH, 40)
    m4_define(M4_FONT_SIZE, 10)
+   |pipe
+      @1
+         \viz_alpha
+            initEach() {
+               return {objects: {title: new fabric.Text("Sorting Network",
+                  {  top: -40,
+                     left: 0,
+                     fontSize: 20,
+                     fontWeight: 800
+                     //fontFamily: "monospace"
+                  })}}
+            }
    /level[m4_eval(m4_n-1):0]
       |pipe
          @1
             /pos[m4_eval(m4_n-1):0]
                \viz_alpha
-                  initEach: function() {
-                     //debugger;
-                     let level = parseInt(scopes.level.index);
-                     let pos = parseInt(scopes.pos.index);
-                     let x = level * M4_COL_WIDTH;
-                     let y = pos * M4_ROW_HEIGHT;
+                  initEach() {
+                     //debugger
+                     let level = parseInt(scopes.level.index)
+                     let pos = parseInt(scopes.pos.index)
+                     let x = level * M4_COL_WIDTH
+                     let y = pos * M4_ROW_HEIGHT
                      if (level == 0 && pos == 0) {
                         global.canvas.add(new fabric.Rect({
                            width: M4_COL_WIDTH,
                            height: M4_ROW_HEIGHT * m4_n,
                            left: -10,
                            top: 0,
-                           fill: "rgb(0, 255, 150)"}));
+                           fill: "rgb(0, 255, 150)"}))
                      }
                      let valText = new fabric.Text("",
                      {  top: y + 5,
@@ -107,7 +119,7 @@
                      
                      return {valText, swapLine, noSwapLine};
                   },
-                  renderEach: function() {
+                  renderEach() {
                      debugger;
                      let level = parseInt(this.scopes.level.index);  // ISSUE: Fix index references.
                      let validSig = '/level|pipe$valid'.step(level);  // BUG: "/level" required. "'|" doesn't parse.
