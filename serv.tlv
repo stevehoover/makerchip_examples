@@ -94,7 +94,7 @@
 
 \TLV
    // Assert these to end simulation (before Makerchip cycle limit).
-   *passed = *cyc_cnt > 1000 || finished;
+   *passed = *cyc_cnt > 500 || finished;
    *failed = 1'b0;
 
    /dummy
