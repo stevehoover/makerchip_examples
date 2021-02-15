@@ -139,7 +139,7 @@
             let $cnt0 = this.svSigRef(`${alu}.i_cnt0`)
             let bool_op = this.svSigRef(`${alu}.i_bool_op`).asInt()
             let $result_bool = this.svSigRef(`${alu}.result_bool`)
-            let $op_b = this.svSigRef(`${alu}.op_b`)
+            let $op_b = this.svSigRef(`${alu}.i_op_b`)
             let cycCnt = this.svSigRef(`servant_sim.dut.genblk1.timer.mtime`).asInt()
             let led = this.svSigRef(`servant_sim.dut.gpio.i_wb_we`, 0).asBool()
             let cycCntStr = cycCnt.toString()
