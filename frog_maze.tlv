@@ -171,7 +171,7 @@
                     )
                  }
               }
-              return {objects: objects}
+              return {objects}
             }
          /M4_YY_HIER
             /M4_XX_HIER
@@ -254,7 +254,7 @@
                       angle: -7,
                      }
                   )
-                  return {objects: {frog: frog}}
+                  return {objects: {frog}}
                   /**/
                },
                renderEach() {

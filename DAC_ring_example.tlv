@@ -83,34 +83,34 @@
                         radius: 2,
                         fill: color
                      }))
-                     return {color: color}
+                     return {color}
                   },
                   renderEach() {
                      // Scan entire simulation for transactions originating in this port.
                      if (typeof this.getContext().preppedTrace === "undefined") {
-                        let $enter = '$enter'.goTo(-1);
-                        let $uid = '$uid';
-                        let $dest = '$dest';
-                        let $data = '$data';
+                        let $enter = '$enter'.goTo(-1)
+                        let $uid = '$uid'
+                        let $dest = '$dest'
+                        let $data = '$data'
                         while ($enter.forwardToValue(1)) {
-                           let uid  = $uid .goTo($enter.getCycle()).asInt();
-                           let dest = $dest.goTo($enter.getCycle()).asInt();
-                           let data = $data.goTo($enter.getCycle()).asInt();
-                           let ring_scope = this.getScope("my_ring");
-                           debugger;
+                           let uid  = $uid .goTo($enter.getCycle()).asInt()
+                           let dest = $dest.goTo($enter.getCycle()).asInt()
+                           let data = $data.goTo($enter.getCycle()).asInt()
+                           let ring_scope = this.getScope("my_ring")
+                           debugger
                            let transRect = new fabric.Rect({
                               width: 20,
                               height: 10,
                               fill: this.getScope("m4_strip_prefix(/_name)").children.port.instances[dest].children.ring.instances[""].initResults.color,
                               left: 0,
                               top: 0
-                           });
+                           })
                            let transText = new fabric.Text(`${data.toString(16)}`, {
                               left: 1,
                               top: 3,
                               fontSize: 4,
                               fill: "white"
-                           });
+                           })
                            let transObj = new fabric.Group(
                               [transRect,
                                transText
@@ -118,48 +118,48 @@
                               {width: 20,
                                height: 10,
                                visible: false}
-                           );
-                           context.global.canvas.add(transObj);
-                           this.getScope("m4_strip_prefix(/_name)").initResults.transObj[uid] = transObj;
+                           )
+                           context.global.canvas.add(transObj)
+                           this.getScope("m4_strip_prefix(/_name)").initResults.transObj[uid] = transObj
                         }
                         
-                        this.getContext().preppedTrace = true;
+                        this.getContext().preppedTrace = true
                      }
                      
                      // Position trans.
                      if ('$valid'.asBool()) {
-                        let uid = '$uid'.asInt();
-                        let trans = this.getScope("m4_strip_prefix(/_name)").initResults.transObj[uid];
+                        let uid = '$uid'.asInt()
+                        let trans = this.getScope("m4_strip_prefix(/_name)").initResults.transObj[uid]
                         if (trans) {
-                           trans.set("visible", true);
+                           trans.set("visible", true)
                            if ('$enter'.asBool()) {
-                              trans.set("opacity", 0);
-                              trans.set("top", (3 - this.getIndex("port")) * 20 - 6);
-                              trans.set("left", -20);
-                              trans.animate("left", 0, { onChange: this.global.canvas.renderAll.bind(this.global.canvas) });
-                              trans.animate("top", (3 - this.getIndex("port")) * 20, { onChange: this.global.canvas.renderAll.bind(this.global.canvas) });
-                              trans.animate("opacity", 1, { onChange: this.global.canvas.renderAll.bind(this.global.canvas) });
+                              trans.set("opacity", 0)
+                              trans.set("top", (3 - this.getIndex("port")) * 20 - 6)
+                              trans.set("left", -20)
+                              trans.animate("left", 0, { onChange: this.global.canvas.renderAll.bind(this.global.canvas) })
+                              trans.animate("top", (3 - this.getIndex("port")) * 20, { onChange: this.global.canvas.renderAll.bind(this.global.canvas) })
+                              trans.animate("opacity", 1, { onChange: this.global.canvas.renderAll.bind(this.global.canvas) })
                            } else {
                               if (this.getIndex("port") == 3) {
-                                 trans.set("left", 10);
+                                 trans.set("left", 10)
                               }
-                              trans.animate("top", (3 - this.getIndex("port")) * 20, { onChange: this.global.canvas.renderAll.bind(this.global.canvas) });
-                              trans.animate("left", 0, { onChange: this.global.canvas.renderAll.bind(this.global.canvas) });
+                              trans.animate("top", (3 - this.getIndex("port")) * 20, { onChange: this.global.canvas.renderAll.bind(this.global.canvas) })
+                              trans.animate("left", 0, { onChange: this.global.canvas.renderAll.bind(this.global.canvas) })
                            }
                         } else {
-                           console.log(`Transaction ${uid} not found.`);
+                           console.log(`Transaction ${uid} not found.`)
                         }
                      }
                      // Exiting trans.
                      if ('>>1$exit'.asBool()) {
-                        let uid = '>>1$uid'.asInt();
-                        let trans = this.getScope("m4_strip_prefix(/_name)").initResults.transObj[uid];
+                        let uid = '>>1$uid'.asInt()
+                        let trans = this.getScope("m4_strip_prefix(/_name)").initResults.transObj[uid]
                         if (trans) {
-                           trans.set("visible", true);
-                           trans.set("top", (3 - this.getIndex("port")) * 20);
-                           trans.animate("top", (3 - this.getIndex("port")) * 20 + 6);
-                           trans.animate("left", -20, { onChange: this.global.canvas.renderAll.bind(this.global.canvas) });
-                           trans.animate("opacity", 0, { onChange: this.global.canvas.renderAll.bind(this.global.canvas) });
+                           trans.set("visible", true)
+                           trans.set("top", (3 - this.getIndex("port")) * 20)
+                           trans.animate("top", (3 - this.getIndex("port")) * 20 + 6)
+                           trans.animate("left", -20, { onChange: this.global.canvas.renderAll.bind(this.global.canvas) })
+                           trans.animate("opacity", 0, { onChange: this.global.canvas.renderAll.bind(this.global.canvas) })
                         }
                      }
                   }

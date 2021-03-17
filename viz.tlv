@@ -38,8 +38,8 @@
          // Make every object invisible (and other render methods will make them visible again.
          debugger
          for (const uid in this.fromInit().transObj) {
-            const obj = this.fromInit().transObj[uid];
-            obj.visible = false;
+            const obj = this.fromInit().transObj[uid]
+            obj.visible = false
          }
       }
 
@@ -75,26 +75,26 @@
                if (typeof this.getContext().preppedTrace === "undefined") {
                   
                   // Process the trace.
-                  let $accepted = '$accepted'.goTo(-1);
-                  let $uid      = '/trans$uid';
-                  let $response = '/trans$response';
-                  let $sender   = '/trans$sender';
-                  let $dest     = '/trans$dest';
-                  let $data     = '/trans$data';
-                  let $cnt      = '/trans$cnt';
+                  let $accepted = '$accepted'.goTo(-1)
+                  let $uid      = '/trans$uid'
+                  let $response = '/trans$response'
+                  let $sender   = '/trans$sender'
+                  let $dest     = '/trans$dest'
+                  let $data     = '/trans$data'
+                  let $cnt      = '/trans$cnt'
                   while ($accepted.forwardToValue(1)) {
-                     //debugger;
+                     //debugger
                      let response = $response.goTo($accepted.getCycle()).asInt();
                      if (!response) {
-                        let uid      = $uid     .goTo($accepted.getCycle()).asInt();
-                        let sender   = $sender  .goTo($accepted.getCycle()).asInt();
-                        let dest     = $dest    .goTo($accepted.getCycle()).asInt();
-                        let data     = $data    .goTo($accepted.getCycle()).asInt();
-                        let cnt      = $cnt     .goTo($accepted.getCycle()).asInt();
+                        let uid      = $uid     .goTo($accepted.getCycle()).asInt()
+                        let sender   = $sender  .goTo($accepted.getCycle()).asInt()
+                        let dest     = $dest    .goTo($accepted.getCycle()).asInt()
+                        let data     = $data    .goTo($accepted.getCycle()).asInt()
+                        let cnt      = $cnt     .goTo($accepted.getCycle()).asInt()
                         // TODO: Use global function.
-                        let senderColor = (255 - Math.floor((sender / M4_RING_STOP_CNT) * 256)).toString(16);
-                        let destColor   = (255 - Math.floor((dest   / M4_RING_STOP_CNT) * 256)).toString(16);
-                        //debugger;
+                        let senderColor = (255 - Math.floor((sender / M4_RING_STOP_CNT) * 256)).toString(16)
+                        let destColor   = (255 - Math.floor((dest   / M4_RING_STOP_CNT) * 256)).toString(16)
+                        //debugger
                         let transRect = new fabric.Rect({
                            width: 10,
                            height: 10,
@@ -102,14 +102,14 @@
                            fill: "#00" + destColor + "00",
                            left: 0,
                            top: 0
-                        });
+                        })
                         let transText = new fabric.Text(`cnt: ${cnt.toString(16)}\ndata: ${data.toString(16)}`, {
                            left: 1,
                            top: 1,
                            fontSize: 2,
                            fill: "white",
                            textBackgroundColor: `#${(cnt & 1) ? "ff" : "00"}10${(cnt & 2) ? "ff" : "00"}`
-                        });
+                        })
                         let transObj = new fabric.Group(
                            [transRect,
                             transText
@@ -117,25 +117,25 @@
                            {width: 10,
                             height: 10,
                             visible: false}
-                        );
-                        context.global.canvas.add(transObj);
-                        this.getScope("top").initResults.setTrans(uid, transObj);
+                        )
+                        context.global.canvas.add(transObj)
+                        this.getScope("top").initResults.setTrans(uid, transObj)
                       }
                   }
                   
-                  this.getContext().preppedTrace = true;
+                  this.getContext().preppedTrace = true
                }
                
-               //context.global.canvas.add(fifoBox);
+               //context.global.canvas.add(fifoBox)
                // Find head entry.
-               let head_ptr = -1;
+               let head_ptr = -1
                for (var i = 0; i < M4_FIFO_ENTRY_CNT; i++) {
                   if ('/entry[i]>>1$is_head'.step(1).asBool()) {  // '/entry[i]$is_head', but can't access @1 (will be fixed).
-                     head_ptr = i;
+                     head_ptr = i
                   }
                }
                
-               return {head_ptr: head_ptr};
+               return {head_ptr}
             }
 \TLV disabled()
          /entry[M4_FIFO_ENTRY_RANGE]
