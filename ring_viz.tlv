@@ -99,7 +99,7 @@ parameter NUM_PACKETS_WIDTH = M4_NUM_PACKETS_WIDTH;
                }
                return this.transObj[uid]
             },
-            objects: {animationRect: animationRect}
+            objects: {animationRect}
          };
       },
       renderEach() {
