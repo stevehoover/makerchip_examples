@@ -83,7 +83,7 @@
                         radius: 2,
                         fill: color
                      }))
-                     return {color: color}
+                     return {color}
                   },
                   renderEach() {
                      // Scan entire simulation for transactions originating in this port.
