@@ -419,7 +419,7 @@
                         top: 2 + scopes.screen_v.index * M4_VIZ_CELL_SIZE
                      });
                      this.getCanvas().add(rect);
-                     return {rect: rect};
+                     return {rect};
                   },
                   renderEach() {
                      let background = "#" + (Math.floor('$color_index'.asInt() / 4) % 10) + "0" + ('$color_index'.asInt() % 4) * 3  + "000";
