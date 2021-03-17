@@ -398,63 +398,63 @@
                   }
                   
                   // Build pixel calculation.
-                  let x = asFixed('$xx', 3);
-                  let y = asFixed('$yy', 3);
-                  let depthSig = '$depth';
-                  let depthSigCyc = depthSig.getCycle();
+                  let x = asFixed('$xx', 3)
+                  let y = asFixed('$yy', 3)
+                  let depthSig = '$depth'
+                  let depthSigCyc = depthSig.getCycle()
                   
-                  if (depthSig.asInt() != 0) {depthSig.backToValue(0);}
-                  depthSig.step();
-                  let delta = depthSig.getCycle() - depthSigCyc;
-                  console.log(`delta: ${delta}`);
+                  if (depthSig.asInt() != 0) {depthSig.backToValue(0)}
+                  depthSig.step()
+                  let delta = depthSig.getCycle() - depthSigCyc
+                  console.log(`delta: ${delta}`)
                   
                   /**/
                   // Iterate through calculation for this pixel, adding each step to calcStr.
                   // Back signals up to depth 0.
-                  let aSig = '$aa'.step(delta);
-                  let bSig = '$bb'.step(delta);
-                  let aSq = '$aa_sq'.step(delta);
-                  let bSq = '$bb_sq'.step(delta);
-                  let aSqMinusBSq = '$aa_sq_minus_bb_sq'.step(delta);
-                  let aSqPlusBSq = '$aa_sq_plus_bb_sq'.step(delta);
-                  let aTimesB = '$aa_times_bb'.step(delta);
-                  let aTimesBTimes2 = '$aa_times_bb_times_2'.step(delta);
-                  let doneSig = '$done_pix'.step(delta);
+                  let aSig = '$aa'.step(delta)
+                  let bSig = '$bb'.step(delta)
+                  let aSq = '$aa_sq'.step(delta)
+                  let bSq = '$bb_sq'.step(delta)
+                  let aSqMinusBSq = '$aa_sq_minus_bb_sq'.step(delta)
+                  let aSqPlusBSq = '$aa_sq_plus_bb_sq'.step(delta)
+                  let aTimesB = '$aa_times_bb'.step(delta)
+                  let aTimesBTimes2 = '$aa_times_bb_times_2'.step(delta)
+                  let doneSig = '$done_pix'.step(delta)
                   // Display first iteration
-                  let d = 0; // Depth being displayed
-                  let str = `${doneSig.getCycle()}\n-------- 0 --------\n`;
+                  let d = 0 // Depth being displayed
+                  let str = `${doneSig.getCycle()}\n-------- 0 --------\n`
                   
-                  let depthStr = (depthSigCyc == depthSig.getCycle() - 1) ? "| " : "  ";
-                  str += `${depthStr} $xx[${x}] => $aa[${asFixed(aSig, 3)}]\n`;
-                  str += `${depthStr} $yy[${y}] => $bb[${asFixed(bSig, 3)}]\n`;
-                  let done = false;
+                  let depthStr = (depthSigCyc == depthSig.getCycle() - 1) ? "| " : "  "
+                  str += `${depthStr} $xx[${x}] => $aa[${asFixed(aSig, 3)}]\n`
+                  str += `${depthStr} $yy[${y}] => $bb[${asFixed(bSig, 3)}]\n`
+                  let done = false
                   do {
-                     done = doneSig.asBool(true);
+                     done = doneSig.asBool(true)
                      // Display calculation at this depth.
-                     str += `${doneSig.getCycle()}\n-------- ${++d} --------\n`;
-                     console.log(`dc: ${depthSigCyc}, ${depthSig.getCycle()}`);
-                     depthStr = `${(depthSigCyc == depthSig.getCycle()) ? "| " : "  "}`;
-                     let str1 = `${depthStr}(($aa[${asFixed(aSig, 3)}] ^ 2)[${asFixed(aSq, 3)}] - ($bb[${asFixed(bSig, 3)}] ^ 2)[${asFixed(bSq,3)}]])[${asFixed(aSqMinusBSq, 3)}] + $xx[${x}]`;
-                     let str2 = `${depthStr}(2.0 * ($aa[${asFixed(aSig, 3)}] * $bb[${asFixed(bSig, 3)}])[${asFixed(aTimesB)}])[${asFixed(aTimesBTimes2)}] + $yy[${y}]`;
-                     let str3 = `${depthStr}(($aa[${asFixed(aSig, 3)}] ^ 2)[${asFixed(aSq,3)}] + ($bb[${asFixed(bSig, 3)}] ^ 2)[${asFixed(bSq,3)}])[${asFixed(aSqPlusBSq,3)}] >= (2.0 * 2.0) = $done_pix[${done}]\n`;
-                     aSig.step();
-                     bSig.step();
-                     aSq.step();
-                     bSq.step();
-                     aSqMinusBSq.step();
-                     aSqPlusBSq.step();
-                     aTimesB.step();
-                     aTimesBTimes2.step();
-                     doneSig.step();
-                     console.log(`AAA: ${depthSig.getCycle()}`);
-                     depthSig.step();
-                     console.log(`BBB: ${depthSig.getCycle()}`);
-                     str1 += ` => $aa[${asFixed(aSig, 3)}]\n`;
-                     str2 += ` => $bb[${asFixed(bSig, 3)}]\n`;
-                     str += str1 + str2 + str3;
-                  } while(!done && d <= M4_MAX_DEPTH);
+                     str += `${doneSig.getCycle()}\n-------- ${++d} --------\n`
+                     console.log(`dc: ${depthSigCyc}, ${depthSig.getCycle()}`)
+                     depthStr = `${(depthSigCyc == depthSig.getCycle()) ? "| " : "  "}`
+                     let str1 = `${depthStr}(($aa[${asFixed(aSig, 3)}] ^ 2)[${asFixed(aSq, 3)}] - ($bb[${asFixed(bSig, 3)}] ^ 2)[${asFixed(bSq,3)}]])[${asFixed(aSqMinusBSq, 3)}] + $xx[${x}]`
+                     let str2 = `${depthStr}(2.0 * ($aa[${asFixed(aSig, 3)}] * $bb[${asFixed(bSig, 3)}])[${asFixed(aTimesB)}])[${asFixed(aTimesBTimes2)}] + $yy[${y}]`
+                     let str3 = `${depthStr}(($aa[${asFixed(aSig, 3)}] ^ 2)[${asFixed(aSq,3)}] + ($bb[${asFixed(bSig, 3)}] ^ 2)[${asFixed(bSq,3)}])[${asFixed(aSqPlusBSq,3)}] >= (2.0 * 2.0) = $done_pix[${done}]\n`
+                     aSig.step()
+                     bSig.step()
+                     aSq.step()
+                     bSq.step()
+                     aSqMinusBSq.step()
+                     aSqPlusBSq.step()
+                     aTimesB.step()
+                     aTimesBTimes2.step()
+                     doneSig.step()
+                     console.log(`AAA: ${depthSig.getCycle()}`)
+                     depthSig.step()
+                     console.log(`BBB: ${depthSig.getCycle()}`)
+                     str1 += ` => $aa[${asFixed(aSig, 3)}]\n`
+                     str2 += ` => $bb[${asFixed(bSig, 3)}]\n`
+                     str += str1 + str2 + str3
+                  } while(!done && d <= M4_MAX_DEPTH)
                   
-                  this.getInitObjects().text.setText(str);
+                  this.getInitObjects().text.setText(str)
                }
          \viz_alpha
             initEach() {
@@ -468,7 +468,7 @@
                   stroke: "red",
                   strokeWidth: M4_VIZ_CELL_SIZE / 10,
                   fill: "rgba(128,128,128,0)"
-               });
+               })
                //this.getCanvas().add(circle)
                
                // 2D Map
@@ -478,7 +478,7 @@
             renderEach() {
                // Call this inside loops to avoid infinite recursion hangs.
                loopCheck = function() {
-                  cnt = 0;
+                  cnt = 0
                   return function() {
                      if (cnt++ > 1000000) {
                         debugger
@@ -496,93 +496,93 @@
                   let screen = new VizPane.Grid(this.getCanvas(), M4_IMG_SIZE_H, M4_IMG_SIZE_V,
                        {top: 0, left: 0,
                         width: M4_VIZ_CELL_SIZE * (M4_IMG_SIZE_H),
-                        height: M4_VIZ_CELL_SIZE * (M4_IMG_SIZE_V)});
+                        height: M4_VIZ_CELL_SIZE * (M4_IMG_SIZE_V)})
                   
                   // Step back to start of frame.
-                  let $start_frame = '$start_frame';
-                  let start_frame_natural_cyc = $start_frame.getCycle();
-                  let delta_cyc = 0;
-                  let $reset = '$reset';
+                  let $start_frame = '$start_frame'
+                  let start_frame_natural_cyc = $start_frame.getCycle()
+                  let delta_cyc = 0
+                  let $reset = '$reset'
                   while (! $reset.asBool(true) && ! $start_frame.asBool()) {
-                     loopCheck();
-                     $start_frame.step(-1);
-                     $reset.step(-1);
-                     delta_cyc--;
+                     loopCheck()
+                     $start_frame.step(-1)
+                     $reset.step(-1)
+                     delta_cyc--
                   }
                   
                   // Remember start (to avoid recreating image).
-                  this.fromInit().start_frame_cyc = $start_frame.getCycle();
+                  this.fromInit().start_frame_cyc = $start_frame.getCycle()
                   
                   if ($reset.asBool(true)) {
                      // Be sure to recreate next time.
-                     this.fromInit().done_frame_cyc = $start_frame.getCycle() - 1;
+                     this.fromInit().done_frame_cyc = $start_frame.getCycle() - 1
                   } else {
                      // Step forward to end of frame/trace.
-                     //-let cyc = $start_frame.getCycle();
-                     let $done_frame = '$done_frame'.step(delta_cyc);
-                     let $all_pix_done = '$all_pix_done'.step(delta_cyc);
-                     let done_frame = true;
+                     //-let cyc = $start_frame.getCycle()
+                     let $done_frame = '$done_frame'.step(delta_cyc)
+                     let $all_pix_done = '$all_pix_done'.step(delta_cyc)
+                     let done_frame = true
                      do {   // until done frame
-                        loopCheck();
+                        loopCheck()
                         // Find all_pix_done cyc.
                         while (! $all_pix_done.asBool(true)) {
-                           loopCheck();
-                           $done_frame.step(1);
-                           $all_pix_done.step(1);
-                           delta_cyc++;
+                           loopCheck()
+                           $done_frame.step(1)
+                           $all_pix_done.step(1)
+                           delta_cyc++
                         }
-                        done_frame = $done_frame.asBool(true);
+                        done_frame = $done_frame.asBool(true)
                         
                         if ($all_pix_done.asBool(false)) {
                            // Done all pixels; draw pixels.
                            for (let p = M4_PE_LOW; p < M4_PE_HIGH; p++) {
-                              let depth = '/pe[p]$depth_out'.step(delta_cyc).asInt();
-                              let pix_h = '/pe[p]$pix_h'.step(delta_cyc).asInt();
-                              let pix_v = '/pe[p]$pix_v'.step(delta_cyc).asInt();
+                              let depth = '/pe[p]$depth_out'.step(delta_cyc).asInt()
+                              let pix_h = '/pe[p]$pix_h'.step(delta_cyc).asInt()
+                              let pix_v = '/pe[p]$pix_v'.step(delta_cyc).asInt()
                               
                               // Determine color.
-                              let color = "#";
+                              let color = "#"
                               if (depth <= 0) {
-                                 color = "#000000";
+                                 color = "#000000"
                               } else {
                                  let componentString = function(frac) {
-                                    return (Math.floor(frac * 256) % 256).toString(16).padStart(2, "0");
+                                    return (Math.floor(frac * 256) % 256).toString(16).padStart(2, "0")
                                  };
-                                 let r = "00";
-                                 let g = "00";
-                                 let b = componentString(depth / 8);
-                                 color = `#${r}${g}${b}`;
+                                 let r = "00"
+                                 let g = "00"
+                                 let b = componentString(depth / 8)
+                                 color = `#${r}${g}${b}`
                               }
                               
                               // Check color
                               if (! /^#[0-9a-f]{6}$/i.test(color)) {
-                                debugger;
+                                debugger
                               }
                               
-                              screen.setCellColor(pix_h, pix_v, color);
-                              console.log(`setCellColor(${pix_h}, ${pix_v}, ${color}`);
+                              screen.setCellColor(pix_h, pix_v, color)
+                              console.log(`setCellColor(${pix_h}, ${pix_v}, ${color}`)
                            }
                         }
                         
-                        $done_frame.step(1);
-                        $all_pix_done.step(1);
-                        delta_cyc++; // step past all pix done
-                     } while (! done_frame);
+                        $done_frame.step(1)
+                        $all_pix_done.step(1)
+                        delta_cyc++ // step past all pix done
+                     } while (! done_frame)
                      
                      // Avoid recreating
-                     this.fromInit().done_frame_cyc = start_frame_natural_cyc + delta_cyc;
+                     this.fromInit().done_frame_cyc = start_frame_natural_cyc + delta_cyc
                   }
                   
                   // Add screen to canvas.
-                  let screenImg = screen.getFabricObject();
-                  this.getCanvas().add(screenImg);
+                  let screenImg = screen.getFabricObject()
+                  this.getCanvas().add(screenImg)
                }
                
                // Position circle
-               let circle = this.getInitObjects().circle;
-               this.getCanvas().bringToFront(circle);
-               circle.set("left", ('/pe[0]$pix_h'.asInt() + 0.5) * M4_VIZ_CELL_SIZE);
-               circle.set("top",  ('/pe[0]$pix_v'.asInt() + 0.5) * M4_VIZ_CELL_SIZE);
+               let circle = this.getInitObjects().circle
+               this.getCanvas().bringToFront(circle)
+               circle.set("left", ('/pe[0]$pix_h'.asInt() + 0.5) * M4_VIZ_CELL_SIZE)
+               circle.set("top",  ('/pe[0]$pix_v'.asInt() + 0.5) * M4_VIZ_CELL_SIZE)
             }
 
 

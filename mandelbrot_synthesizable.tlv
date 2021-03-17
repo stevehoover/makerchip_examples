@@ -199,7 +199,7 @@
                      fontSize: M4_VIZ_FONT_SIZE,
                      fontFamily: "monospace"
                   })
-               global.canvas.add(text);
+               global.canvas.add(text)
                let circle = new fabric.Circle({
                   originX: "center",
                   left: 0,
@@ -209,9 +209,9 @@
                   stroke: "red",
                   strokeWidth: M4_VIZ_CELL_SIZE / 10,
                   fill: "rgba(128,128,128,0)"
-               });
+               })
                global.canvas.add(circle)
-               return {circle: circle, text: text, createdScreen: false}
+               return {circle, text, createdScreen: false}
             },
                   
             renderEach() {
@@ -230,61 +230,61 @@
                      }
                      return val
                   } else {
-                     return NaN;
+                     return NaN
                   }
                }
                
                /**/
-               debugger;
+               debugger
                // Build pixel calculation.
-               let x = asFixed('$xx', 3);
-               let y = asFixed('$yy', 3);
-               let depthSig = '$Depth';
-               let depth = depthSig.asInt();
+               let x = asFixed('$xx', 3)
+               let y = asFixed('$yy', 3)
+               let depthSig = '$Depth'
+               let depth = depthSig.asInt()
                
                /**/
                // Iterate through calculation for this pixel, adding each step to calcStr.
                // Back signals up to depth 0.
-               depthSig.step(-depth + 1);
-               let aSig = '$Aa'.step(-depth + 1);
-               let bSig = '$Bb'.step(-depth + 1);
-               let aSq = '$aa_sq'.step(-depth + 1);
-               let bSq = '$bb_sq'.step(-depth + 1);
-               let aSqMinusBSq = '$aa_sq_minus_bb_sq'.step(-depth + 1);
-               let aSqPlusBSq = '$aa_sq_plus_bb_sq'.step(-depth + 1);
-               let aTimesB = '$aa_times_bb'.step(-depth + 1);
-               let aTimesBTimes2 = '$aa_times_bb_times_2'.step(-depth + 1);
-               let doneSig = '$done_pix'.step(-depth + 1);
+               depthSig.step(-depth + 1)
+               let aSig = '$Aa'.step(-depth + 1)
+               let bSig = '$Bb'.step(-depth + 1)
+               let aSq = '$aa_sq'.step(-depth + 1)
+               let bSq = '$bb_sq'.step(-depth + 1)
+               let aSqMinusBSq = '$aa_sq_minus_bb_sq'.step(-depth + 1)
+               let aSqPlusBSq = '$aa_sq_plus_bb_sq'.step(-depth + 1)
+               let aTimesB = '$aa_times_bb'.step(-depth + 1)
+               let aTimesBTimes2 = '$aa_times_bb_times_2'.step(-depth + 1)
+               let doneSig = '$done_pix'.step(-depth + 1)
                // Display first iteration
-               d = 0; // Depth being displayed
-               let str = `-------- 0 --------\n`;
+               d = 0 // Depth being displayed
+               let str = `-------- 0 --------\n`
                
-               let depthStr = depth == d ? "| " : "  ";
-               str += `${depthStr} $Xx[${x}] => $Aa[${asFixed(aSig, 3)}]\n`;
-               str += `${depthStr} $Yy[${y}] => $Bb[${asFixed(bSig, 3)}]\n`;
-               let done = false;
+               let depthStr = depth == d ? "| " : "  "
+               str += `${depthStr} $Xx[${x}] => $Aa[${asFixed(aSig, 3)}]\n`
+               str += `${depthStr} $Yy[${y}] => $Bb[${asFixed(bSig, 3)}]\n`
+               let done = false
                do {
-                  done = doneSig.asBool(true);
+                  done = doneSig.asBool(true)
                   // Display calculation at this depth.
-                  str += `-------- ${++d} --------\n`;
-                  depthStr = `${depth == d ? "| " : "  "}`;
-                  let str1 = `${depthStr}(($Aa[${asFixed(aSig, 3)}] ^ 2)[${asFixed(aSq, 3)}] - ($Bb[${asFixed(bSig, 3)}] ^ 2)[${asFixed(bSq,3)}]])[${asFixed(aSqMinusBSq, 3)}] + $xx[${x}]`;
-                  let str2 = `${depthStr}(2.0 * ($Aa[${asFixed(aSig, 3)}] * $Bb[${asFixed(bSig, 3)}])[${asFixed(aTimesB)}])[${asFixed(aTimesBTimes2)}] + $yy[${y}]`;
-                  let str3 = `${depthStr}(($Aa[${asFixed(aSig, 3)}] ^ 2)[${asFixed(aSq,3)}] + ($Bb[${asFixed(bSig, 3)}] ^ 2)[${asFixed(bSq,3)}])[${asFixed(aSqMinusBSq,3)}] >= (2.0 * 2.0) = $done_pix[${done}]\n`;
-                  aSig.step();
-                  bSig.step();
-                  aSq.step();
-                  bSq.step();
-                  aSqMinusBSq.step();
-                  aSqPlusBSq.step();
-                  aTimesB.step();
-                  aTimesBTimes2.step();
-                  doneSig.step();
-                  str1 += ` => $Aa[${asFixed(aSig, 3)}]\n`;
-                  str2 += ` => $Bb[${asFixed(bSig, 3)}]\n`;
-                  str += str1 + str2 + str3;
-               } while(!done && d <= M4_MAX_DEPTH);
-               this.fromInit().text.setText(str);
+                  str += `-------- ${++d} --------\n`
+                  depthStr = `${depth == d ? "| " : "  "}`
+                  let str1 = `${depthStr}(($Aa[${asFixed(aSig, 3)}] ^ 2)[${asFixed(aSq, 3)}] - ($Bb[${asFixed(bSig, 3)}] ^ 2)[${asFixed(bSq,3)}]])[${asFixed(aSqMinusBSq, 3)}] + $xx[${x}]`
+                  let str2 = `${depthStr}(2.0 * ($Aa[${asFixed(aSig, 3)}] * $Bb[${asFixed(bSig, 3)}])[${asFixed(aTimesB)}])[${asFixed(aTimesBTimes2)}] + $yy[${y}]`
+                  let str3 = `${depthStr}(($Aa[${asFixed(aSig, 3)}] ^ 2)[${asFixed(aSq,3)}] + ($Bb[${asFixed(bSig, 3)}] ^ 2)[${asFixed(bSq,3)}])[${asFixed(aSqMinusBSq,3)}] >= (2.0 * 2.0) = $done_pix[${done}]\n`
+                  aSig.step()
+                  bSig.step()
+                  aSq.step()
+                  bSq.step()
+                  aSqMinusBSq.step()
+                  aSqPlusBSq.step()
+                  aTimesB.step()
+                  aTimesBTimes2.step()
+                  doneSig.step()
+                  str1 += ` => $Aa[${asFixed(aSig, 3)}]\n`
+                  str2 += ` => $Bb[${asFixed(bSig, 3)}]\n`
+                  str += str1 + str2 + str3
+               } while(!done && d <= M4_MAX_DEPTH)
+               this.fromInit().text.setText(str)
                /**/
                
                
@@ -292,41 +292,42 @@
                // This is a static view reflecting the entire simulation,
                // so we create it once, and never again.
                if (!this.fromInit().createdScreen) {
-                  this.fromInit().createdScreen = true;
-                  $done_pix = '$done_pix'; $done_pix.goTo(0);
-                  $done_pix.goToNextTransition();
-                  time = $done_pix.getCycle() - 1;
-                  $PixH = '$PixH'; $PixH.goTo(time);
-                  $PixV = '$PixV'; $PixV.goTo(time);
-                  $color_index = '$color_index'; $color_index.goTo(time);
+                  this.fromInit().createdScreen = true
+                  $done_pix = '$done_pix'; $done_pix.goTo(0)
+                  $done_pix.goToNextTransition()
+                  time = $done_pix.getCycle() - 1
+                  $PixH = '$PixH'; $PixH.goTo(time)
+                  $PixV = '$PixV'; $PixV.goTo(time)
+                  $color_index = '$color_index'; $color_index.goTo(time)
                   // Step over pixels.
                   while (!$done_pix.offEnd()) {  // Trusting that simulation stops after filling screen.
-                     pixH = $PixH.asInt();
-                     pixV = $PixV.asInt();
-                     colorIndex = $color_index.asInt();
+                     pixH = $PixH.asInt()
+                     pixV = $PixV.asInt()
+                     colorIndex = $color_index.asInt()
                      
-                     let color = "#" + (Math.floor(colorIndex / 4) % 10) + "0" + (colorIndex % 4) * 3  + "000";
+                     let color = "#" + (Math.floor(colorIndex / 4) % 10) + "0" + (colorIndex % 4) * 3  + "000"
                      this.getCanvas().add(new fabric.Rect({
                         width: M4_VIZ_CELL_SIZE,
                         height: M4_VIZ_CELL_SIZE,
                         fill: color,
                         left: pixH * M4_VIZ_CELL_SIZE,
                         top: pixV * M4_VIZ_CELL_SIZE
-                     }));
+                     }))
                      
-                     $done_pix.stepTransition(); $done_pix.stepTransition();
-                     time = $done_pix.getCycle() - 1;
-                     $PixH.goTo(time);
-                     $PixV.goTo(time);
-                     $color_index.goTo(time);
+                     $done_pix.stepTransition()
+                     $done_pix.stepTransition()
+                     time = $done_pix.getCycle() - 1
+                     $PixH.goTo(time)
+                     $PixV.goTo(time)
+                     $color_index.goTo(time)
                   }
                   /**/
                }
             
                // Position circle
-               this.getCanvas().bringToFront(this.fromInit().circle);
-               this.fromInit().circle.set("left", ('$PixH'.asInt() + 0.5) * M4_VIZ_CELL_SIZE);
-               this.fromInit().circle.set("top",  ('$PixV'.asInt() + 0.5) * M4_VIZ_CELL_SIZE);
+               this.getCanvas().bringToFront(this.fromInit().circle)
+               this.fromInit().circle.set("left", ('$PixH'.asInt() + 0.5) * M4_VIZ_CELL_SIZE)
+               this.fromInit().circle.set("top",  ('$PixV'.asInt() + 0.5) * M4_VIZ_CELL_SIZE)
             }
 
       
@@ -354,7 +355,7 @@
                         top: 2 + scopes.screen_v.index * M4_VIZ_CELL_SIZE
                      })
                      global.canvas.add(rect)
-                     return {rect: rect}
+                     return {rect}
                   },
                   renderEach() {
                      let background = "#" + (Math.floor('$color_index'.asInt() / 4) % 10) + "0" + ('$color_index'.asInt() % 4) * 3  + "000"

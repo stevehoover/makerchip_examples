@@ -91,57 +91,57 @@
                         left: x,
                         fontFamily: "monospace",
                         fontSize: M4_FONT_SIZE
-                     });
-                     let lineX1 = x + 8;
-                     let lineX2 = x + 48;
-                     let lineY = y + 10;
+                     })
+                     let lineX1 = x + 8
+                     let lineX2 = x + 48
+                     let lineY = y + 10
                      let lineProp = {
                         stroke: "lightgray",
-                        strokeWidth: 4};
-                     let swapLine = null;
-                     let noSwapLine = null;
+                        strokeWidth: 4}
+                     let swapLine = null
+                     let noSwapLine = null
                      //if (level < m4_n - 1) {
                         // No swap line.
                         noSwapLine = new fabric.Line(
                            [lineX1, lineY, lineX2, lineY],
-                           lineProp);
-                        global.canvas.add(noSwapLine);
+                           lineProp)
+                        global.canvas.add(noSwapLine)
                         // Swap line.
                         //if (!((level % 2) && (pos == 0 || pos == m4_n - 1))) {
-                           let fromDelta = ((level + pos + 2) % 2) ? -1 : 1;
+                           let fromDelta = ((level + pos + 2) % 2) ? -1 : 1
                            swapLine = new fabric.Line(
                               [lineX1, lineY, lineX2, lineY + fromDelta * M4_ROW_HEIGHT],
                               lineProp);
-                           global.canvas.add(swapLine);
+                           global.canvas.add(swapLine)
                         //}
                      //}
-                     global.canvas.add(valText);
+                     global.canvas.add(valText)
                      
-                     return {valText, swapLine, noSwapLine};
+                     return {valText, swapLine, noSwapLine}
                   },
                   renderEach() {
-                     debugger;
-                     let level = parseInt(this.scopes.level.index);  // ISSUE: Fix index references.
-                     let validSig = '/level|pipe$valid'.step(level);  // BUG: "/level" required. "'|" doesn't parse.
-                     let numSig = '$in_num'.step(level);
-                     let swapSig = '$swap'.step(level);
+                     debugger
+                     let level = parseInt(this.scopes.level.index)  // ISSUE: Fix index references.
+                     let validSig = '/level|pipe$valid'.step(level) // BUG: "/level" required. "'|" doesn't parse.
+                     let numSig = '$in_num'.step(level)
+                     let swapSig = '$swap'.step(level)
                      
-                     let valid = validSig.asBool();
-                     let num = numSig.asInt();
-                     let swap = swapSig.asBool();
-                     let inRange = typeof valid !== "undefined";
+                     let valid = validSig.asBool()
+                     let num = numSig.asInt()
+                     let swap = swapSig.asBool()
+                     let inRange = typeof valid !== "undefined"
                      
-                     let color = inRange ? (valid ? (`rgb(${num},0,${255-num})`) : "lightgray") : "darkgrey";
+                     let color = inRange ? (valid ? (`rgb(${num},0,${255-num})`) : "lightgray") : "darkgrey"
                      
-                     this.fromInit().valText.setFill(valid ? "white" : "gray");
-                     this.fromInit().valText.setBackgroundColor(valid ? color : "lightgray");
-                     //global.canvas.bringToFront(context.initEach.valText);
-                     this.fromInit().valText.setText(inRange ? num.toString().padStart(3, " ") : "--");
+                     this.fromInit().valText.setFill(valid ? "white" : "gray")
+                     this.fromInit().valText.setBackgroundColor(valid ? color : "lightgray")
+                     //global.canvas.bringToFront(context.initEach.valText)
+                     this.fromInit().valText.setText(inRange ? num.toString().padStart(3, " ") : "--")
                      if (this.fromInit().swapLine) {
-                        this.fromInit().swapLine.setStroke(inRange ? (swap && valid ? color : "lightgray") : "black");
+                        this.fromInit().swapLine.setStroke(inRange ? (swap && valid ? color : "lightgray") : "black")
                      }
                      if (this.fromInit().noSwapLine) {
-                        this.fromInit().noSwapLine.setStroke(inRange ? (!swap && valid ? color : "lightgray") : "black");
+                        this.fromInit().noSwapLine.setStroke(inRange ? (!swap && valid ? color : "lightgray") : "black")
                      }
                   }
    
