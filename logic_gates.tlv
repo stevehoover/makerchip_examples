@@ -4,9 +4,29 @@
    m4_makerchip_module   // (Expanded in Nav-TLV pane.)
    /* verilator lint_on WIDTH */
 
-// Visualization for logic gates
-\TLV calc_logic()
-   /view
+
+\TLV
+   /dummy
+      $reset = *reset;
+      $x[1:0] = $reset ? 3 : >>1$x+1;
+      $x1 = $x[1];
+      $x0 = $x[0];
+      $and = $x1 & $x0;
+      $or = $x1 | $x0;
+      $not_x1 = !$x1;
+      $not_x0 = !$x0;
+      $nand = !($x1 & $x0);
+      $nor = !($x1 | $x0);
+      $xor = $x1 ^ $x0;
+      $xnor = !($x1 ^ $x0);
+
+
+      // Assert these to end simulation (before Makerchip cycle limit).
+      *passed = *cyc_cnt > 40;
+      *failed = 1'b0;
+
+
+      // Visualization for logic gates
       \viz_alpha
          initEach(){
             let title = new fabric.Text("Digital Logic Gates", {
@@ -15,7 +35,6 @@
               fontSize: 28,
               fontFamily: "Courier New",
             })
-             
             let and = new fabric.Text("AND", {
               left: -130,
               top: -170,
@@ -287,42 +306,24 @@
                   },
                   renderEach() {
                      debugger
-            this.getInitObject("and_x0").setText(this.svSigRef(`L0_x0_a0`).asInt(NaN).toString(16))
-            this.getInitObject("and_x1").setText(this.svSigRef(`L0_x1_a0`).asInt(NaN).toString(16))
-            this.getInitObject("and_output").setText(this.svSigRef(`L0_and_a0`).asInt(NaN).toString(16))
-            this.getInitObject("or_x0").setText(this.svSigRef(`L0_x0_a0`).asInt(NaN).toString(16))
-            this.getInitObject("or_x1").setText(this.svSigRef(`L0_x1_a0`).asInt(NaN).toString(16))
-            this.getInitObject("or_output").setText(this.svSigRef(`L0_or_a0`).asInt(NaN).toString(16))
-            this.getInitObject("nand_x0").setText(this.svSigRef(`L0_x0_a0`).asInt(NaN).toString(16))
-            this.getInitObject("nand_x1").setText(this.svSigRef(`L0_x1_a0`).asInt(NaN).toString(16))
-            this.getInitObject("nand_output").setText(this.svSigRef(`L0_nand_a0`).asInt(NaN).toString(16))
-            this.getInitObject("nor_x0").setText(this.svSigRef(`L0_x0_a0`).asInt(NaN).toString(16))
-            this.getInitObject("nor_x1").setText(this.svSigRef(`L0_x1_a0`).asInt(NaN).toString(16))
-            this.getInitObject("nor_output").setText(this.svSigRef(`L0_nor_a0`).asInt(NaN).toString(16))
-            this.getInitObject("xor_x0").setText(this.svSigRef(`L0_x0_a0`).asInt(NaN).toString(16))
-            this.getInitObject("xor_x1").setText(this.svSigRef(`L0_x1_a0`).asInt(NaN).toString(16))
-            this.getInitObject("xor_output").setText(this.svSigRef(`L0_xor_a0`).asInt(NaN).toString(16))
-            this.getInitObject("xnor_x0").setText(this.svSigRef(`L0_x0_a0`).asInt(NaN).toString(16))
-            this.getInitObject("xnor_x1").setText(this.svSigRef(`L0_x1_a0`).asInt(NaN).toString(16))
-            this.getInitObject("xnor_output").setText(this.svSigRef(`L0_xnor_a0`).asInt(NaN).toString(16))
+            this.getInitObject("and_x0").setText('$x0'.asInt().toString())
+            this.getInitObject("and_x1").setText('$x1'.asInt().toString())
+            this.getInitObject("and_output").setText('$and'.asInt().toString())
+            this.getInitObject("or_x0").setText('$x0'.asInt().toString())
+            this.getInitObject("or_x1").setText('$x1'.asInt().toString())
+            this.getInitObject("or_output").setText('$or'.asInt().toString())
+            this.getInitObject("nand_x0").setText('$x0'.asInt().toString())
+            this.getInitObject("nand_x1").setText('$x1'.asInt().toString())
+            this.getInitObject("nand_output").setText('$nand'.asInt().toString())
+            this.getInitObject("nor_x0").setText('$x0'.asInt().toString())
+            this.getInitObject("nor_x1").setText('$x1'.asInt().toString())
+            this.getInitObject("nor_output").setText('$nor'.asInt().toString())
+            this.getInitObject("xor_x0").setText('$x0'.asInt().toString())
+            this.getInitObject("xor_x1").setText('$x1'.asInt().toString())
+            this.getInitObject("xor_output").setText('$xor'.asInt().toString())
+            this.getInitObject("xnor_x0").setText('$x0'.asInt().toString())
+            this.getInitObject("xnor_x1").setText('$x1'.asInt().toString())
+            this.getInitObject("xnor_output").setText('$xnor'.asInt().toString())
                   }
-
-\TLV
-   $reset = *reset;
-   $x[1:0] = $reset ? 3 : >>1$x+1;
-   $x1 = $x[1];
-   $x0 = $x[0];
-   $and = $x1 & $x0;
-   $or = $x1 | $x0;
-   $not_x1 = !$x1;
-   $not_x0 = !$x0;
-   $nand = !($x1 & $x0);
-   $nor = !($x1 | $x0);
-   $xor = $x1 ^ $x0;
-   $xnor = !($x1 ^ $x0);
-   // Assert these to end simulation (before Makerchip cycle limit).
-   *passed = *cyc_cnt > 40;
-   *failed = 1'b0;
-   m4+calc_logic()
 \SV
    endmodule
