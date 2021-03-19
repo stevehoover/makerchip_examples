@@ -8,7 +8,8 @@ Note that many of these use a `\viz_alpha` feature of Makerchip that does not ha
 
 `http://www.makerchip.com/sandbox?code_url=https:%2F%2Fraw.githubusercontent.com%2Fstevehoover%2Fwarp-v%2Fmaster%2F` --->
 
-Here are some quick-links, (that could likely be broken):
+Here are some quick-links:
+  - <a href="http://www.makerchip.com/sandbox?code_url=https:%2F%2Fraw.githubusercontent.com%2Fstevehoover%2Fmakerchip_examples%2Fmaster%2Flogic_gates.tlv" target="_blank" atom_fix="_">logic_gates.tlv</a>
   - <a href="http://www.makerchip.com/sandbox?code_url=https:%2F%2Fraw.githubusercontent.com%2Fstevehoover%2Fmakerchip_examples%2Fmaster%2Flife_viz.tlv" target="_blank" atom_fix="_">life_viz.tlv</a>
   - <a href="http://www.makerchip.com/sandbox?code_url=https:%2F%2Fraw.githubusercontent.com%2Fstevehoover%2Fmakerchip_examples%2Fmaster%2Fsort_viz.tlv" target="_blank" atom_fix="_">sort_viz.tlv</a>
   - <a href="http://www.makerchip.com/sandbox?code_url=https:%2F%2Fraw.githubusercontent.com%2Fstevehoover%2Fmakerchip_examples%2Fmaster%2FDAC_ring_example.tlv" target="_blank" atom_fix="_">DAC_ring_example.tlv</a>
