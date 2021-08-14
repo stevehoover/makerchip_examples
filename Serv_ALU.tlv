@@ -1,7 +1,7 @@
 \m4_TLV_version 1d: tl-x.org
 \SV
    // URL include paths:
-   m4_define(['m4_serv_repo'], ['['https://raw.githubusercontent.com/olofk/serv/master/']'])
+   m4_define(['m4_serv_repo'], ['['https://raw.githubusercontent.com/olofk/serv/b845507e32d5d8e6ec43e4a760359096b074ec11/']'])
    m4_define(['m4_serv_rtl'], ['m4_serv_repo['rtl/']'])
    m4_define(['m4_servant_rtl'], ['m4_serv_repo['servant/']'])
    m4_define(['m4_serv_bench'], ['m4_serv_repo['bench/']'])
