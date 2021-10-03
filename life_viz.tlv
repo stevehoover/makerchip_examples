@@ -39,9 +39,8 @@ m4_define_hier(['M4_YY'], 10, 0)
    |default
       @1
 !        $reset = *reset;
-      /M4_YY_HIER
-         /M4_XX_HIER
-            @1
+         /M4_YY_HIER
+            /M4_XX_HIER
                // Cell logic
                
                // -----------
@@ -69,49 +68,52 @@ m4_define_hier(['M4_YY'], 10, 0)
                $alive = |default$reset ? $init_alive :           // init
                         >>1$alive ? ($cnt >= 3 && $cnt <= 4) :   // stay alive
                                     ($cnt == 3);                 // born
-               
-               
-               // ===
-               // VIZ
-               // ===
-               
-               \viz_alpha
-                  initEach() {
-                     debugger
-                     let rect = new fabric.Rect({
-                        width: 20,
-                        height: 20,
-                        fill: "lightgray",
-                        left: scopes.xx.index * 20,
-                        top: scopes.yy.index * 20
-                     })
-                     let shadow = new fabric.Rect({
-                        width: 4,
-                        height: 4,
-                        fill: "lightgray",
-                        left: scopes.xx.index * 20 + 8,
-                        top: scopes.yy.index * 20 + 8
-                     })
-                     return {objects: {rect, shadow}};
+         
+         
+         // ===
+         // VIZ
+         // ===
+         
+         /M4_YY_HIER
+            \viz_js
+               all: {
+                  box: {
+                     width: M4_XX_CNT * 20 + 20,
+                     height: M4_YY_CNT * 20 + 20,
+                     fill: "#505050"
+                  }
+               },
+               where: {left: 10, top: 10}
+            /M4_XX_HIER
+               \viz_js
+                  box: {width: 20, height: 20, fill: "lightgray"},
+                  init() {
+                     //debugger
+                     return {
+                        shadow: new fabric.Rect({
+                           width: 4, height: 4,
+                           fill: "lightgray",
+                           left: 8, top: 8
+                        })
+                     }
                   },
-                  layout: "horizontal",
-                  renderEach() {
-                     debugger
+                  render() {
+                     //debugger
                      let background = ('$alive'.asBool()) ? "#10D080" : "#204030";
                      let prev_prop = ('>>1$alive'.asBool()) ? {fill: "#008000", opacity: 0.3} : {fill: null, opacity: 0};
-                     this.getInitObjects().rect.set("fill", background);
-                     this.getInitObjects().shadow.set(prev_prop);
-                  }
-            
+                     this.getBox().set("fill", background);
+                     this.getObjects().shadow.set(prev_prop);
+                  },
+                  where: {layout: "horizontal"},
       
-
-
+      
+      
       // ==================
       // Embedded Testbench
       // ==================
       //
       // Declare success when total live cells was above 25% and remains below 6.25% for 20 cycles.
-
+      
       // Count live cells through accumulation, into $alive_cnt.
       // Accumulate right-to-left, then bottom-to-top through >yy[0].
       /tb
@@ -130,9 +132,9 @@ m4_define_hier(['M4_YY'], 10, 0)
                              $below_max_stop ? >>1$stop_cnt + 8'b1 :
                                                8'b0;
             *passed = >>1$start_ok && (($alive_cnt == '0) || (>>1$stop_cnt > 8'd20));
-
-
-
+      
+      
+      
       // =====
       // Print
       // =====

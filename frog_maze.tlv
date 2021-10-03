@@ -154,111 +154,91 @@
    // Visualization
    |pipe
       @1
-         \viz_alpha
+         \viz_js
             // Board background
-            initEach() {
+            template() {
+              //debugger
               let objects = {}
               let TILE_SIZE = 2
               for (let x = 0; x < M4_XX_HIGH; x = x + TILE_SIZE) {
                  for (let y = 0; y < M4_YY_HIGH; y = y + TILE_SIZE) {
-                    objects[`b_${x}_${y}`] = new fabric.Rect(
+                    objects[`b_${x}_${y}`] = ["Rect",
                       {left: x * 10,
                        top: y * 10,
                        width:  (x + TILE_SIZE > M4_XX_HIGH ? M4_XX_HIGH - x : TILE_SIZE) * 10,
                        height: (y + TILE_SIZE > M4_YY_HIGH ? M4_YY_HIGH - y : TILE_SIZE) * 10,
                        fill: (((x + y) % (TILE_SIZE * 2)) == 0) ? "#102020" : "#1C2C2C",
                       }
-                    )
+                    ]
                  }
               }
-              return {objects}
+              return objects
             }
+               
          /M4_YY_HIER
+            \viz_js
+               box: {height: 10}
             /M4_XX_HIER
-               \viz_alpha
-                  initEach() {
-                     //debugger
-                     return {objects: {
-                        cell: new fabric.Rect(
-                          {left: this.getIndex("xx") * 10,
-                           top: this.getIndex("yy") * 10,
-                           width: 10,
-                           height: 10,
-                           fill: "#A030A0",
-                           visible: false,
-                          }
-                        ),
-                        arrowhead: new fabric.Triangle(
-                          {left: this.getIndex("xx") * 10 + 10,
-                           top: this.getIndex("yy") * 10 + 10,
-                           width: 6,
-                           height: 6,
-                           originX: "center",
-                           originY: "center",
-                           fill: "gray",
-                           visible: false,
-                          }
-                        )
-                     }}
+               \viz_js
+                  where: {layout: "horizontal"},
+                  box: {
+                     width: 10, height: 10,
+                     fill: "#A030A0",
+                     visible: false,
+                  },   // (TODO: arrowhead is outside the box, which is bad form.)
+                  template: {
+                     arrowhead: ["Triangle",
+                       {left: 10, top: 10,
+                        width: 6, height: 6,
+                        originX: "center", originY: "center",
+                        fill: "gray",
+                        visible: false,
+                       }
+                     ]
                   },
-                  renderEach() {
+                  render() {
                      //debugger
-                     this.getInitObjects().cell.set({visible: '$wall'.asBool()})
-                     this.getInitObjects().arrowhead.set({visible: '$Solved'.asBool() && ! '|pipe$solved'.asBool(),
-                                                          //visible: '$Solved'.asBool(),
-                                                          angle: '$Dir'.asInt() * 90})
+                     this.getObjects().box.set({visible: '$wall'.asBool()})
+                     this.getObjects().arrowhead.set({visible: '$Solved'.asBool() && ! '|pipe$solved'.asBool(),
+                                                     angle: '$Dir'.asInt() * 90})
                   }
          /frog
-            \viz_alpha
-               initEach() {
-                  debugger
-                  let frog_square = new fabric.Rect(
-                     {originX: "center",
-                      originY: "center",
-                      width: 20,
-                      height: 20,
-                      fill: "#ffffff10" //`#00a000`
-                     }
-                  )
+            \viz_js
+               init() {
+                  //debugger
                   let frog_circle = new fabric.Circle(
-                     {originX: "center",
-                      originY: "center",
+                     {originX: "center", originY: "center",
                       radius: 10,
-                      fill: "#ffffff10" //`#00a000`
+                      fill: "#ffffff10"
                      }
                   )
                   
                   // Image is not supposed to be added to canvas until it is drawn, but we need an Object to
                   // work with immediately, so let's wrap the image in a group.
                   let frog = new fabric.Group([frog_circle],
-                     {originX: "center",
-                      originY: "center",
+                     {originX: "center", originY: "center",
                       angle: 0,
-                      width: 20,
-                      height: 20,
+                      width: 20, height: 20,
                      })
                   //let sprite_sheet_url = "https://www.pngfind.com/pngs/m/351-3516508_forget-the-gifs-heres-a-behind-the-scenes.png"
                   let frog_img_url = "https://raw.githubusercontent.com/stevehoover/makerchip_examples/master/viz_imgs/frog.png"
                   let frog_img = new fabric.Image.fromURL(
                      frog_img_url,
-                     function (img) {
+                     (img) => {
                         frog.add(img)
-                        global.canvas.renderAll()
+                        this.getCanvas().renderAll()
                      },
-                     {originX: "center",
-                      originY: "center",
-                      left: 0,
-                      top: 0,
-                      scaleX: 0.03,
-                      scaleY: 0.03,
+                     {originX: "center", originY: "center",
+                      left: 0, top: 0,
+                      scaleX: 0.03, scaleY: 0.03,
                       angle: -7,
                      }
                   )
-                  return {objects: {frog}}
+                  return {frog}
                   /**/
                },
-               renderEach() {
-                  debugger
+               render() {
+                  //debugger
                   // Keep count of the number of renders so we can terminate an animation after another is started.
                   this.render_cnt = this.render_cnt ? this.render_cnt++ : 1
                   render_cnt = this.render_cnt
@@ -279,7 +259,7 @@
                         if (render_cnt == this.render_cnt) {
                            // Keep animating. Jump.
                            this.getInitObjects().frog.animate(
-                             {left: ('$Xx'.asInt() + 1) * 10, top: ('$Yy'.asInt() + 1) * 10},
+                             {left: ('$Xx'.asInt()) * 10, top: ('$Yy'.asInt()) * 10},
                              {onChange: this.global.canvas.renderAll.bind(this.global.canvas),
                               duration: '>>1$hop2_ok'.asBool() ? 400 : '>>1$hop1_ok'.asBool() ? 200 : 0
                              }
