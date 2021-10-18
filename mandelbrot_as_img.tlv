@@ -1,39 +1,31 @@
 \m4_TLV_version 1d: tl-x.org
-\SV
-
-   // ==========================
-   // Mandelbrot Set Calculation
-   // ==========================
-
-   // TL-Verilog docs: http://tl-x.org
-   // Tutorials:       http://makerchip.com/tutorials
-   m4_makerchip_module
-      // To relax Verilator compiler checking:
-      /* verilator lint_off UNOPTFLAT */
-      /* verilator lint_on WIDTH */
-      /* verilator lint_off REALCVT */  // !!! SandPiper DEBUGSIGS BUG.
+m4+definitions(['
    // Parameters:
    m4_define(M4_MAX_DEPTH, 40)
-   m4_define(M4_MAX_H, 100)
-   m4_define(M4_MAX_V, 100)
+   m4_def(MAX_H, 40,
+          MAX_V, 40)
    // Full size.
    //m4_define(M4_MIN_X, -2.0)
    //m4_define(M4_MIN_Y, -2.0)
    //m4_define(M4_MAX_X, 2.0)
    //m4_define(M4_MAX_Y, 2.0)
    // Good place, 20x.  
-   m4_define(M4_MIN_X, -1.3)
-   m4_define(M4_MIN_Y, -0.4)
-   m4_define(M4_MAX_X, -1.2)
-   m4_define(M4_MAX_Y, -0.3)
+   m4_def(MIN_X, -1.3,
+          MIN_Y, -0.4,
+          MAX_X, -1.2,
+          MAX_Y, -0.3)
    /**/
    // Viz parameters.
-   m4_define(M4_VIZ_CELL_SIZE, 20)
-   m4_define(M4_VIZ_FONT_SIZE, 10)
-   m4_define(M4_VIZ_LINE_SIZE, 15)
+   m4_def(VIZ_CELL_SIZE, 10,
+          VIZ_FONT_SIZE, 10,
+          VIZ_LINE_SIZE, 15)
    // Layout
-   m4_define(M4_SCREEN_VIZ_X, -500)
-   m4_define(M4_SCREEN_VIZ_Y, -500)
+   m4_def(VIZ_SCREEN_X, 0,
+          VIZ_SCREEN_Y, 0)
+   // Text box position
+   m4_def(VIZ_TEXT_AREA_WIDTH, M4_VIZ_FONT_SIZE * 55,
+          VIZ_TEXT_X, M4_VIZ_SCREEN_X - M4_VIZ_TEXT_AREA_WIDTH,
+          VIZ_TEXT_Y, M4_VIZ_SCREEN_Y)
    // Coloring mode:
    // Each color component can be one of:
    //   {mode: "depth"}: least-significan-digit of depth
@@ -55,10 +47,22 @@
    // /* Bubbly */ m4_define(M4_COLOR_MODE, ['{mode: "depth"}, {mode: "Exp", val: "doneA", neg: "Black"}, {mode: "Frac", val: "doneA"}'])
    //m4_define(M4_COLOR_MODE, ['{mode: "Smooth", pattern: [0, 50, 50, 0]}, {mode: "Smooth", pattern: [0, 0, 50, 50]}, {mode: "Frac", val: "AB"}'])
    // /* Smoothed w/ AB exp blend */ m4_define(M4_COLOR_MODE, ['{mode: "Smooth", pattern: [0, 155, 155, 0]}, {mode: "Smooth", pattern: [0, 0, 155, 155]}, {mode: "Value", val: "blendAB", neg: "Zero", saturate: true}'])
-   /* Electrified */ m4_define(M4_COLOR_MODE, ['{mode: "Smooth", pattern: [0, 155, 155, 0]}, {mode: "Smooth", pattern: [0, 0, 155, 155]}, {mode: "Frac", val: "blendAB", neg: "Abs", saturate: true}'])
-   m4_define(M4_FIXED_DEPTH, 0)
+   /* Electrified */ m4_def(COLOR_MODE, ['{mode: "Smooth", pattern: [0, 155, 155, 0]}, {mode: "Smooth", pattern: [0, 0, 155, 155]}, {mode: "Frac", val: "blendAB", neg: "Abs", saturate: true}'])
+   m4_def(FIXED_DEPTH, 0)
+'])
+\SV
 
+   // ==========================
+   // Mandelbrot Set Calculation
+   // ==========================
 
+   // TL-Verilog docs: http://tl-x.org
+   // Tutorials:       http://makerchip.com/tutorials
+   m4_makerchip_module
+      // To relax Verilator compiler checking:
+      /* verilator lint_off UNOPTFLAT */
+      /* verilator lint_on WIDTH */
+      /* verilator lint_off REALCVT */  // !!! SandPiper DEBUGSIGS BUG.
 \TLV
    $reset = *reset;
    
@@ -169,14 +173,23 @@
          $bb_vec[63:0] = \$realtobits($Bb);
          /**/
          
-         \viz_alpha
-            initEach() {
-               let text = new fabric.Text("",
-                  {  top: M4_SCREEN_VIZ_Y,
-                     left: - M4_VIZ_FONT_SIZE * 100,
+         \viz_js
+            box: {
+               left: M4_VIZ_TEXT_X,
+               top: M4_VIZ_SCREEN_Y,
+               width: M4_VIZ_TEXT_AREA_WIDTH + M4_VIZ_CELL_SIZE * (M4_MAX_H + 1),
+               height: M4_VIZ_CELL_SIZE * (M4_MAX_V + 1),
+               //stroke: "green",
+               //strokeWidth: 10
+            },
+            init() {
+               let text = new fabric.Text("", {
+                     left: M4_VIZ_TEXT_X,
+                     top: M4_VIZ_TEXT_Y,
                      fontSize: M4_VIZ_FONT_SIZE,
                      fontFamily: "monospace"
                   })
+               //debugger
                let circle = new fabric.Circle({
                   originX: "center",
                   left: 0,
@@ -187,15 +200,167 @@
                   strokeWidth: M4_VIZ_CELL_SIZE / 10,
                   fill: "rgba(128,128,128,0)"
                })
-               //this.getCanvas().add(circle)
                
                // 2D Map
                //debugger
-               return {objects: {circle, text}, createdScreen: false}
+               return {circle, text}
             },
             
-            renderEach() {
+            onTraceData() {
+               // Create the screen image.
+               debugger
                let colorMode = [M4_COLOR_MODE]
+               console.log("Hello")
+               //debugger
+               let screen = new (this.getGlobal().Grid)(window, this, M4_MAX_H + 1, M4_MAX_V + 1,
+                    {left: M4_VIZ_SCREEN_X, top: M4_VIZ_SCREEN_Y,
+                     width: M4_VIZ_CELL_SIZE * (M4_MAX_H + 1),
+                     height: M4_VIZ_CELL_SIZE * (M4_MAX_V + 1)})
+               
+               // Get signals (not setting time, yet).
+               let $PixH = '$PixH'
+               let $PixV = '$PixV'
+               let $color_index = '$color_index'
+               // For coloring by a and b.
+               let $Aa = '$aa_vec'
+               let $Bb = '$bb_vec'
+               
+               // Get $done_pix, and set to first high cycle.
+               let $done_pix = '$done_pix'.goTo(0)
+               $done_pix.stepTransition()
+               
+               // Step over pixels.
+               while (!$done_pix.offEnd()) {  // Trusting that simulation stops after filling screen.
+                  // Take signals to pixel's last not-done cycle, relative to $done_pix at high cycle.
+                  cyc = $done_pix.getCycle() - 1
+                  $PixH.goTo(cyc)
+                  $PixV.goTo(cyc)
+                  $color_index.goTo(cyc)
+                  $Aa.goTo(cyc + 1)
+                  $Bb.goTo(cyc + 1)
+                  let doneA = $Aa.asReal()
+                  let doneB = $Bb.asReal()
+                  $Aa.step(-1)
+                  $Bb.step(-1)
+                  
+                  let pixH = $PixH.asInt()
+                  let pixV = $PixV.asInt()
+                  let colorIndex = $color_index.asInt()
+                  // For A/B-based coloring.
+                  let A = $Aa.asReal()
+                  let B = $Bb.asReal()
+                  let AStr = $Aa.asBinaryStr()
+                  let BStr = $Bb.asBinaryStr()
+                  
+                  // Calculations that are necessary for some modes, but could be common to color components.
+                  let doneCalc = doneA * doneA + doneB * doneB
+                  let notDoneCalc = A * A + B * B
+                  let doneRatio = (4.0 - notDoneCalc) / (doneCalc - notDoneCalc)
+                  
+                  //debugger
+                  
+                  // Determine color by computing each component color according to mode.
+                  let color = "#"
+                  if (colorIndex <= 0) {
+                    color = "#000000"
+                  } else {
+                     if (A > 2.0 || B > 2.0) {
+                        debugger
+                     }
+                     for (m = 0; m < 3; m++) {
+                        let mode = colorMode[m]
+                        let colorCode = null
+                        if (typeof mode === "string") {
+                           color += mode
+                        } else if (mode.mode === "depth") {
+                           color += (colorIndex % 4) * 3  + "0"
+                        } else if (mode.mode === "depth2") {
+                           color += (Math.floor(colorIndex / 4) % 10) + "0"
+                        } else if (mode.mode === "Smooth") {
+                           if (colorIndex == M4_MAX_DEPTH - 1) {
+                              color += "00"
+                           } else if (colorIndex >= M4_MAX_DEPTH) {
+                              console.log("Oops")
+                              debugger
+                           } else {
+                              let beforeVal = mode.pattern[colorIndex % mode.pattern.length]
+                              let afterVal = mode.pattern[(colorIndex + 1) % mode.pattern.length]
+                              let colorVal = beforeVal + (afterVal - beforeVal) * doneRatio
+                              color += Math.floor(colorVal).toString(16).padStart(2, "0")
+                           }
+                        } else if (mode.val) {
+                           let val = mode.val === "A" ? A / 2.0 :
+                                     mode.val === "B" ? B / 2.0 :
+                                     mode.val === "doneA" ? doneA / 2.0 :
+                                     mode.val === "doneB" ? doneB / 2.0 :
+                                     mode.val === "AB" ? A * B / 4.0 :
+                                     mode.val === "doneAB" ? doneA * doneB / 4.0 :
+                                     mode.val === "blendAB" ? ((doneA * doneB) * doneRatio + (A * B) * (1.0 - doneRatio)) / 4.0 :
+                                           console.log("Bad mode.val")
+                           if (mode.mode === "Frac" || mode.mode === "Exp") {
+                              let base = 7
+                              val = Math.abs(val)
+                              let realExp = // log(exp, base)
+                                 Math.log(val) / Math.log(base)
+                              let exp = Math.ceil(realExp)
+                              let pow = Math.pow(base, exp)
+                              let frac = pow ? val / pow : 0.0
+                              //console.log(`frac: ${frac}`)
+                              if (mode.mode === "Frac") {
+                                 val = frac
+                                 if (val > 1.0 && colorIndex > 1) {
+                                   debugger
+                                 }
+                              } else { // "Exp"
+                                 val = - (realExp) / 3.5  // realExp w/ various scaling hacks.
+                              }
+                           } else if (mode.mode === "Value") {
+                              // Keep value as is.
+                           } else {
+                              console.log("Unrecognized mode: " + mode)
+                              debugger
+                           }
+                           if (val < 0) {
+                              if (mode.neg === "Abs") {
+                                 val = -val
+                              } else if (mode.neg === "Continuous") {
+                                 val += 256 * 10000 // Bring to positive for mod.
+                                 if (val < 0) {val = 0.0}
+                              } else if (mode.neg === "Black") {
+                                 colorCode = "--" // Creates bad color code, resulting in black.
+                              } else if (mode.neg === "Zero") {
+                                 val = 0.0
+                              }
+                           }
+                           if (val >= 1.0) {
+                              if (mode.saturate) {
+                                 val = 0.999
+                              }
+                           }
+                           color += colorCode ? colorCode : (Math.floor(val * 256) % 256).toString(16).padStart(2, "0")
+                        } else {
+                           console.log("Failed to interpret color mode.")
+                           debugger
+                        }
+                     }
+                  }
+                  
+                  // Check color
+                  if (! /^#[0-9a-f]{6}$/i.test(color)) {
+                    debugger
+                  }
+                  screen.setCellColor(pixH, pixV, color)
+               
+                  $done_pix.stepTransition(2)
+               }
+               
+               // Add screen to canvas.
+               let screenImg = screen.getFabricObject()
+               return {objects: {screen: screenImg}}
+            },
+            
+            render() {
+               let ret = []
                
                // Build pixel calculation.
                let x = '$xx_vec'.asRealFixed(3, NaN)
@@ -231,170 +396,20 @@
                  str2 += ` => $Bb (${bSig.asRealFixed(3, NaN)})\n`
                  str += str1 + str2 + str3
                } while(!done && d <= M4_MAX_DEPTH)
-               this.getInitObjects().text.setText(str)
-               
+               this.getObjects().text.setText(str)
                // Calculate the screen.
                // This is a static view reflecting the entire simulation,
                // so we create it once, and never again.
-               if (!this.fromInit().createdScreen) {
-                  this.fromInit().createdScreen = true
-                  
-                  //debugger
-                  let screen = new global.Grid(top, M4_MAX_H + 1, M4_MAX_V + 1,
-                       {top: M4_SCREEN_VIZ_Y, left: M4_SCREEN_VIZ_X,
-                        width: 20 * (M4_MAX_H + 1),
-                        height: 20 * (M4_MAX_V + 1)})
-                  
-                  // Get signals (not setting time, yet).
-                  let $PixH = '$PixH'
-                  let $PixV = '$PixV'
-                  let $color_index = '$color_index'
-                  // For coloring by a and b.
-                  let $Aa = '$aa_vec'
-                  let $Bb = '$bb_vec'
-                  
-                  // Get $done_pix, and set to first high cycle.
-                  let $done_pix = '$done_pix'.goTo(0)
-                  $done_pix.stepTransition()
-                  
-                  // Step over pixels.
-                  while (!$done_pix.offEnd()) {  // Trusting that simulation stops after filling screen.
-                     // Take signals to pixel's last not-done cycle, relative to $done_pix at high cycle.
-                     cyc = $done_pix.getCycle() - 1
-                     $PixH.goTo(cyc)
-                     $PixV.goTo(cyc)
-                     $color_index.goTo(cyc)
-                     $Aa.goTo(cyc + 1)
-                     $Bb.goTo(cyc + 1)
-                     let doneA = $Aa.asReal()
-                     let doneB = $Bb.asReal()
-                     $Aa.step(-1)
-                     $Bb.step(-1)
-                     
-                     let pixH = $PixH.asInt()
-                     let pixV = $PixV.asInt()
-                     let colorIndex = $color_index.asInt()
-                     // For A/B-based coloring.
-                     let A = $Aa.asReal()
-                     let B = $Bb.asReal()
-                     let AStr = $Aa.asBinaryStr()
-                     let BStr = $Bb.asBinaryStr()
-                     
-                     // Calculations that are necessary for some modes, but could be common to color components.
-                     let doneCalc = doneA * doneA + doneB * doneB
-                     let notDoneCalc = A * A + B * B
-                     let doneRatio = (4.0 - notDoneCalc) / (doneCalc - notDoneCalc)
-                     
-                     //debugger
-                     
-                     // Determine color by computing each component color according to mode.
-                     let color = "#"
-                     if (colorIndex <= 0) {
-                       color = "#000000"
-                     } else {
-                        if (A > 2.0 || B > 2.0) {
-                           debugger
-                        }
-                        for (m = 0; m < 3; m++) {
-                           let mode = colorMode[m]
-                           let colorCode = null
-                           if (typeof mode === "string") {
-                              color += mode
-                           } else if (mode.mode === "depth") {
-                              color += (colorIndex % 4) * 3  + "0"
-                           } else if (mode.mode === "depth2") {
-                              color += (Math.floor(colorIndex / 4) % 10) + "0"
-                           } else if (mode.mode === "Smooth") {
-                              if (colorIndex == M4_MAX_DEPTH - 1) {
-                                 color += "00"
-                              } else if (colorIndex >= M4_MAX_DEPTH) {
-                                 console.log("Oops")
-                                 debugger
-                              } else {
-                                 let beforeVal = mode.pattern[colorIndex % mode.pattern.length]
-                                 let afterVal = mode.pattern[(colorIndex + 1) % mode.pattern.length]
-                                 let colorVal = beforeVal + (afterVal - beforeVal) * doneRatio
-                                 color += Math.floor(colorVal).toString(16).padStart(2, "0")
-                              }
-                           } else if (mode.val) {
-                              let val = mode.val === "A" ? A / 2.0 :
-                                        mode.val === "B" ? B / 2.0 :
-                                        mode.val === "doneA" ? doneA / 2.0 :
-                                        mode.val === "doneB" ? doneB / 2.0 :
-                                        mode.val === "AB" ? A * B / 4.0 :
-                                        mode.val === "doneAB" ? doneA * doneB / 4.0 :
-                                        mode.val === "blendAB" ? ((doneA * doneB) * doneRatio + (A * B) * (1.0 - doneRatio)) / 4.0 :
-                                              console.log("Bad mode.val")
-                              if (mode.mode === "Frac" || mode.mode === "Exp") {
-                                 let base = 7
-                                 val = Math.abs(val)
-                                 let realExp = // log(exp, base)
-                                    Math.log(val) / Math.log(base)
-                                 let exp = Math.ceil(realExp)
-                                 let pow = Math.pow(base, exp)
-                                 let frac = pow ? val / pow : 0.0
-                                 console.log(`frac: ${frac}`)
-                                 if (mode.mode === "Frac") {
-                                    val = frac
-                                    if (val > 1.0 && colorIndex > 1) {
-                                      debugger
-                                    }
-                                 } else { // "Exp"
-                                    val = - (realExp) / 3.5  // realExp w/ various scaling hacks.
-                                 }
-                              } else if (mode.mode === "Value") {
-                                 // Keep value as is.
-                              } else {
-                                 console.log("Unrecognized mode: " + mode)
-                                 debugger
-                              }
-                              if (val < 0) {
-                                 if (mode.neg === "Abs") {
-                                    val = -val
-                                 } else if (mode.neg === "Continuous") {
-                                    val += 256 * 10000 // Bring to positive for mod.
-                                    if (val < 0) {val = 0.0}
-                                 } else if (mode.neg === "Black") {
-                                    colorCode = "--" // Creates bad color code, resulting in black.
-                                 } else if (mode.neg === "Zero") {
-                                    val = 0.0
-                                 }
-                              }
-                              if (val >= 1.0) {
-                                 if (mode.saturate) {
-                                    val = 0.999
-                                 }
-                              }
-                              color += colorCode ? colorCode : (Math.floor(val * 256) % 256).toString(16).padStart(2, "0")
-                           } else {
-                              console.log("Failed to interpret color mode.")
-                              debugger
-                           }
-                        }
-                     }
-                     
-                     // Check color
-                     if (! /^#[0-9a-f]{6}$/i.test(color)) {
-                       debugger
-                     }
-                     screen.setCellColor(pixH, pixV, color)
-                     
-                     $done_pix.stepTransition(2)
-                  }
-                  
-                  // Add screen to canvas.
-                  let screenImg = screen.getFabricObject()
-                  this.getCanvas().add(screenImg)
-               }
-               
+               //debugger
                // Position circle
-               let circle = this.getInitObjects().circle
-               this.getCanvas().bringToFront(circle)
-               circle.set("left", M4_SCREEN_VIZ_X + ('$PixH'.asInt() + 0.5) * M4_VIZ_CELL_SIZE)
-               circle.set("top",  M4_SCREEN_VIZ_Y + ('$PixV'.asInt() + 0.5) * M4_VIZ_CELL_SIZE)
+               let circle = this.getObjects().circle
+               //debugger
+               circle.bringToFront()
+               circle.set("left", M4_VIZ_SCREEN_X + ('$PixH'.asInt() + 0.5) * M4_VIZ_CELL_SIZE)
+               circle.set("top",  M4_VIZ_SCREEN_Y + ('$PixV'.asInt() + 0.5) * M4_VIZ_CELL_SIZE)
+               return ret
             }
-
-   
+      
       /*
       // The screen, one pixel updated each cycle
       // (for debug of small models only)
@@ -425,7 +440,6 @@
                      let background = "#" + (Math.floor('$color_index'.asInt() / 4) % 10) + "0" + ('$color_index'.asInt() % 4) * 3  + "000";
                      this.fromInit().rect.set("fill", background);
                   }
-      /*
       @0
          // Screen array write (fast approach).
          $wr = |pipe$done_pix;

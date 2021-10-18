@@ -83,10 +83,11 @@ m4_define_hier(['M4_YY'], 10, 0)
                      fill: "#505050"
                   }
                },
-               where: {left: 10, top: 10}
+               where0: {left: 10, top: 10}
             /M4_XX_HIER
                \viz_js
-                  box: {width: 20, height: 20, fill: "lightgray"},
+                  box: {width: 20, height: 20,
+                        fill: "lightgray"},
                   init() {
                      //debugger
                      return {
@@ -104,7 +105,7 @@ m4_define_hier(['M4_YY'], 10, 0)
                      this.getBox().set("fill", background);
                      this.getObjects().shadow.set(prev_prop);
                   },
-                  where: {layout: "horizontal"},
+                  layout: "horizontal",
       
       
       
