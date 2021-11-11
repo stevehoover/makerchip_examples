@@ -80,14 +80,16 @@ m4_define_hier(['M4_YY'], 10, 0)
                   box: {
                      width: M4_XX_CNT * 20 + 20,
                      height: M4_YY_CNT * 20 + 20,
-                     fill: "#505050"
+                     fill: "#505050",
+                     strokeWidth: 0
                   }
                },
                where0: {left: 10, top: 10}
             /M4_XX_HIER
                \viz_js
                   box: {width: 20, height: 20,
-                        fill: "lightgray"},
+                        fill: "lightgray",
+                        strokeWidth: 0},
                   init() {
                      //debugger
                      return {
