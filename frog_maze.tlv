@@ -158,6 +158,7 @@
    |pipe
       @1
          \viz_js
+            strokeWidth: 0,
             // Board background
             template() {
               //debugger
@@ -181,14 +182,15 @@
                
          /M4_YY_HIER
             \viz_js
-               layout: {top: 10},
-               box: {height: 10}
+               box: {height: 10, strokeWidth: 0},
+               layout: {top: 10}
             /M4_XX_HIER
                \viz_js
                   layout: {left: 10},
                   box: {
                      width: 10, height: 10,
                      fill: "#A030A0",
+                     strokeWidth: 0,
                      visible: false,
                   },   // (TODO: arrowhead is outside the box, which is bad form.)
                   template: {
@@ -208,6 +210,7 @@
                   }
          /frog
             \viz_js
+               box: {width: 10 * M4_XX_HIGH, height: 10 * M4_YY_HIGH, strokeWidth: 0},
                init() {
                   //debugger
                   let frog_circle = new fabric.Circle(
