@@ -17,7 +17,7 @@ m4+definitions(['
    /**/
    // Viz parameters.
    m4_def(VIZ_CELL_SIZE, 10,
-          VIZ_FONT_SIZE, 10,
+          VIZ_FONT_SIZE, 5,
           VIZ_LINE_SIZE, 15)
    // Layout
    m4_def(VIZ_SCREEN_X, 0,
@@ -208,14 +208,13 @@ m4+definitions(['
             
             onTraceData() {
                // Create the screen image.
-               debugger
                let colorMode = [M4_COLOR_MODE]
-               console.log("Hello")
-               //debugger
                let screen = new (this.getGlobal().Grid)(window, this, M4_MAX_H + 1, M4_MAX_V + 1,
                     {left: M4_VIZ_SCREEN_X, top: M4_VIZ_SCREEN_Y,
-                     width: M4_VIZ_CELL_SIZE * (M4_MAX_H + 1),
-                     height: M4_VIZ_CELL_SIZE * (M4_MAX_V + 1)})
+                     scaleX: M4_VIZ_CELL_SIZE,
+                     scaleY: M4_VIZ_CELL_SIZE,
+                     width: M4_MAX_H + 1,
+                     height: M4_MAX_V + 1})
                
                // Get signals (not setting time, yet).
                let $PixH = '$PixH'
@@ -256,8 +255,6 @@ m4+definitions(['
                   let doneCalc = doneA * doneA + doneB * doneB
                   let notDoneCalc = A * A + B * B
                   let doneRatio = (4.0 - notDoneCalc) / (doneCalc - notDoneCalc)
-                  
-                  //debugger
                   
                   // Determine color by computing each component color according to mode.
                   let color = "#"
@@ -396,7 +393,7 @@ m4+definitions(['
                  str2 += ` => $Bb (${bSig.asRealFixed(3, NaN)})\n`
                  str += str1 + str2 + str3
                } while(!done && d <= M4_MAX_DEPTH)
-               this.getObjects().text.setText(str)
+               this.getObjects().text.set("text", str)
                // Calculate the screen.
                // This is a static view reflecting the entire simulation,
                // so we create it once, and never again.
@@ -409,46 +406,6 @@ m4+definitions(['
                circle.set("top",  M4_VIZ_SCREEN_Y + ('$PixV'.asInt() + 0.5) * M4_VIZ_CELL_SIZE)
                return ret
             }
-      
-      /*
-      // The screen, one pixel updated each cycle
-      // (for debug of small models only)
-      /screen_v[M4_MAX_V:0]
-         /screen_h[M4_MAX_H:0]
-            @0
-               /-* Clean, low performance approach:
-               $ColorIndex[\$clog2(M4_MAX_DEPTH+1)-1:0] <=
-                  (|pipe$PixH == #screen_h &&
-                   |pipe$PixV == #screen_v &&
-                   |pipe$done_pix) ?
-                     |pipe>>1$color_index :
-                     $RETAIN;
-               *-/
-               \viz_alpha
-                  initEach() {
-                     let rect = new fabric.Rect({
-                        width: M4_VIZ_CELL_SIZE,
-                        height: M4_VIZ_CELL_SIZE,
-                        fill: "green",
-                        left: scopes.screen_h.index * M4_VIZ_CELL_SIZE,
-                        top: 2 + scopes.screen_v.index * M4_VIZ_CELL_SIZE
-                     });
-                     this.getCanvas().add(rect);
-                     return {rect};
-                  },
-                  renderEach() {
-                     let background = "#" + (Math.floor('$color_index'.asInt() / 4) % 10) + "0" + ('$color_index'.asInt() % 4) * 3  + "000";
-                     this.fromInit().rect.set("fill", background);
-                  }
-      @0
-         // Screen array write (fast approach).
-         $wr = |pipe$done_pix;
-         \always_comb
-            if ($wr) begin
-               /screen_v[|pipe$PixV]/screen_h[|pipe$PixH]$$color_index[\$clog2(M4_MAX_DEPTH+1)-1:0] =
-                  |pipe>>1$color_index;
-            end
-      */
    
    // Assert these to end simulation (before Makerchip cycle limit).
    *passed = !clk || (|pipe>>1$wrap_v && |pipe>>1$wrap_h && |pipe>>1$done_pix) || *cyc_cnt > 1000000;
