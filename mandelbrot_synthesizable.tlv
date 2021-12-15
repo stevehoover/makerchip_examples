@@ -284,7 +284,7 @@
                   str2 += ` => $Bb[${asFixed(bSig, 3)}]\n`
                   str += str1 + str2 + str3
                } while(!done && d <= M4_MAX_DEPTH)
-               this.fromInit().text.setText(str)
+               this.fromInit().text.set({text: str})
                /**/
                
                
@@ -326,8 +326,9 @@
             
                // Position circle
                this.getCanvas().bringToFront(this.fromInit().circle)
-               this.fromInit().circle.set("left", ('$PixH'.asInt() + 0.5) * M4_VIZ_CELL_SIZE)
-               this.fromInit().circle.set("top",  ('$PixV'.asInt() + 0.5) * M4_VIZ_CELL_SIZE)
+               this.fromInit().circle.set({
+                  left: ('$PixH'.asInt() + 0.5) * M4_VIZ_CELL_SIZE,
+                  top:  ('$PixV'.asInt() + 0.5) * M4_VIZ_CELL_SIZE})
             }
 
       
@@ -359,7 +360,7 @@
                   },
                   renderEach() {
                      let background = "#" + (Math.floor('$color_index'.asInt() / 4) % 10) + "0" + ('$color_index'.asInt() % 4) * 3  + "000"
-                     context.initEach.rect.set("fill", background)
+                     context.initEach.rect.set({fill: background})
                   }
       /*
       @0

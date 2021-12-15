@@ -18,10 +18,10 @@
       // Random $valid w/ 1/2 probability.
       m4_rand($rand_valid, 0, 0)
       $valid = (& $rand_valid) && ! /top$reset;
-      /pos[m4_n-1:0]
+      /pos[m4_eval(m4_n-1):0]
          m4_rand($num, 7, 0, pos)
          //$num[7:0] = (m4_n - 1 - #pos) * 32;  // Reverse order.
-   /level[m4_n-1:0]
+   /level[m4_eval(m4_n-1):0]
       |pipe
          // Stage $valid.
          @1
@@ -35,7 +35,7 @@
                   $lower_num[7:0] = |pipe/pos[((#pair << 1) -  (#level % 2) + m4_n) % m4_n]$in_num;
                   $swap = ((#level % 2) && (#pair == 0)) ^ // Reverse comparison for wrap-around case. 
                           ($upper_num < $lower_num);
-               /pos[m4_n-1:0]
+               /pos[m4_eval(m4_n-1):0]
                   // Pull $num from previous stage as $in_num.
                   $in_num[7:0] = (#level == 0) ? /top/tb/pos<>0$num :
                                                  /level[(#level - 1) % m4_n]|pipe/pos[#pos]>>1$num;
@@ -52,76 +52,78 @@
    // Visualization
    // =============
    
-   m4_define(M4_ROW_HEIGHT, 20)
-   m4_define(M4_COL_WIDTH, 40)
-   m4_define(M4_FONT_SIZE, 10)
+   m4_def(ROW_HEIGHT, 20)
+   m4_def(COL_WIDTH, 40)
+   m4_def(FONT_SIZE, 10)
+   m4_def(LINE_WIDTH, 4)
    |pipe
       @1
-         \viz_alpha
-            initEach() {
-               return {objects: {title: new fabric.Text("Sorting Network",
+         \viz_js
+            box: {strokeWidth: 0},
+            init() {
+               return {title: new fabric.Text("Sorting Network",
                   {  top: -40,
                      left: 0,
                      fontSize: 20,
                      fontWeight: 800
                      //fontFamily: "monospace"
-                  })}}
-            }
+                  })}
+            },
+            where: {left: 0, top: -38}
    /level[m4_eval(m4_n-1):0]
+      \viz_js
+         box: {strokeWidth: 0},
+         layout: {left: M4_COL_WIDTH},
+         where: {left: 0, top: 0}
       |pipe
          @1
             /pos[m4_eval(m4_n-1):0]
-               \viz_alpha
-                  initEach() {
+               \viz_js
+                  // 0,0: left center of value rect.
+                  box: {left: 0, top: -M4_ROW_HEIGHT, width: M4_COL_WIDTH, height: 2 * M4_ROW_HEIGHT, strokeWidth: 0},
+                  layout: {top: M4_ROW_HEIGHT},
+                  init() {
+                     ret = {}
                      //debugger
-                     let level = parseInt(scopes.level.index)
-                     let pos = parseInt(scopes.pos.index)
-                     let x = level * M4_COL_WIDTH
-                     let y = pos * M4_ROW_HEIGHT
+                     let level = this.getIndex("level")
+                     let pos = this.getIndex("pos")
                      if (level == 0 && pos == 0) {
-                        global.canvas.add(new fabric.Rect({
+                        ret.highlight = new fabric.Rect({
                            width: M4_COL_WIDTH,
                            height: M4_ROW_HEIGHT * m4_n,
-                           left: -10,
-                           top: 0,
-                           fill: "rgb(0, 255, 150)"}))
+                           left: 0,
+                           top: -M4_ROW_HEIGHT / 2,
+                           fill: "rgb(0, 255, 150)"})
                      }
-                     let valText = new fabric.Text("",
-                     {  top: y + 5,
-                        left: x,
-                        fontFamily: "monospace",
-                        fontSize: M4_FONT_SIZE
-                     })
-                     let lineX1 = x + 8
-                     let lineX2 = x + 48
-                     let lineY = y + 10
+                     let lineX1 = M4_COL_WIDTH / 2
+                     let lineX2 = M4_COL_WIDTH * 3 / 2
+                     let lineY = 0 - M4_LINE_WIDTH / 2
                      let lineProp = {
                         stroke: "lightgray",
                         strokeWidth: 4}
                      let swapLine = null
                      let noSwapLine = null
-                     //if (level < m4_n - 1) {
-                        // No swap line.
-                        noSwapLine = new fabric.Line(
-                           [lineX1, lineY, lineX2, lineY],
-                           lineProp)
-                        global.canvas.add(noSwapLine)
-                        // Swap line.
-                        //if (!((level % 2) && (pos == 0 || pos == m4_n - 1))) {
-                           let fromDelta = ((level + pos + 2) % 2) ? -1 : 1
-                           swapLine = new fabric.Line(
-                              [lineX1, lineY, lineX2, lineY + fromDelta * M4_ROW_HEIGHT],
-                              lineProp);
-                           global.canvas.add(swapLine)
-                        //}
-                     //}
-                     global.canvas.add(valText)
+                     ret.noSwapLine = new fabric.Line(
+                        [lineX1, lineY, lineX2, lineY],
+                        lineProp)
+                     let fromDelta = ((level + pos + 2) % 2) ? -1 : 1
+                     ret.swapLine = new fabric.Line(
+                        [lineX1, lineY, lineX2, lineY + fromDelta * M4_ROW_HEIGHT],
+                        lineProp);
+                     ret.valText = new fabric.Text("", {
+                        top: 0,
+                        left: M4_COL_WIDTH / 2,
+                        originX: "center",
+                        originY: "center",
+                        fontFamily: "monospace",
+                        fontSize: M4_FONT_SIZE
+                     })
                      
-                     return {valText, swapLine, noSwapLine}
+                     return ret
                   },
-                  renderEach() {
-                     debugger
-                     let level = parseInt(this.scopes.level.index)  // ISSUE: Fix index references.
+                  render() {
+                     //debugger
+                     let level = this.getIndex("level")
                      let validSig = '/level|pipe$valid'.step(level) // BUG: "/level" required. "'|" doesn't parse.
                      let numSig = '$in_num'.step(level)
                      let swapSig = '$swap'.step(level)
@@ -132,17 +134,17 @@
                      let inRange = typeof valid !== "undefined"
                      
                      let color = inRange ? (valid ? (`rgb(${num},0,${255-num})`) : "lightgray") : "darkgrey"
+                     let obj = this.getObjects()
+                     obj.valText.set({fill: valid ? "white" : "gray",
+                                      backgroundColor: valid ? color : "lightgray",
+                                      text: inRange ? num.toString().padStart(3, " ") : "--"})
+                     if (obj.swapLine) {
+                        obj.swapLine.set({stroke: inRange ? (swap && valid ? color : "lightgray") : "black"})
+                     }
+                     if (obj.noSwapLine) {
+                        obj.noSwapLine.set({stroke: inRange ? (!swap && valid ? color : "lightgray") : "black"})
+                     }
                      
-                     this.fromInit().valText.setFill(valid ? "white" : "gray")
-                     this.fromInit().valText.setBackgroundColor(valid ? color : "lightgray")
-                     //global.canvas.bringToFront(context.initEach.valText)
-                     this.fromInit().valText.setText(inRange ? num.toString().padStart(3, " ") : "--")
-                     if (this.fromInit().swapLine) {
-                        this.fromInit().swapLine.setStroke(inRange ? (swap && valid ? color : "lightgray") : "black")
-                     }
-                     if (this.fromInit().noSwapLine) {
-                        this.fromInit().noSwapLine.setStroke(inRange ? (!swap && valid ? color : "lightgray") : "black")
-                     }
                   }
    
    

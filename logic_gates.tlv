@@ -211,26 +211,26 @@
             // The objects that was returned in initEach() function are used below using this.getInitObject("<object_name>") method
             
             // set inputs
-            this.getInitObject("and_x0").setText(x0)
-            this.getInitObject("and_x1").setText(x1)
-            this.getInitObject("or_x0").setText(x0)
-            this.getInitObject("or_x1").setText(x1)
-            this.getInitObject("nand_x0").setText(x0)
-            this.getInitObject("nand_x1").setText(x1)
-            this.getInitObject("nor_x0").setText(x0)
-            this.getInitObject("nor_x1").setText(x1)
-            this.getInitObject("xor_x0").setText(x0)
-            this.getInitObject("xor_x1").setText(x1)
-            this.getInitObject("xnor_x0").setText(x0)
-            this.getInitObject("xnor_x1").setText(x1)
+            this.getInitObject("and_x0").set({text: x0})
+            this.getInitObject("and_x1").set({text: x1})
+            this.getInitObject("or_x0").set({text: x0})
+            this.getInitObject("or_x1").set({text: x1})
+            this.getInitObject("nand_x0").set({text: x0})
+            this.getInitObject("nand_x1").set({text: x1})
+            this.getInitObject("nor_x0").set({text: x0})
+            this.getInitObject("nor_x1").set({text: x1})
+            this.getInitObject("xor_x0").set({text: x0})
+            this.getInitObject("xor_x1").set({text: x1})
+            this.getInitObject("xnor_x0").set({text: x0})
+            this.getInitObject("xnor_x1").set({text: x1})
             
             // set outputs
-            this.getInitObject("and_output").setText('$and'.asBinaryStr())
-            this.getInitObject("or_output").setText('$or'.asBinaryStr())
-            this.getInitObject("nand_output").setText('$nand'.asBinaryStr())
-            this.getInitObject("nor_output").setText('$nor'.asBinaryStr())
-            this.getInitObject("xor_output").setText('$xor'.asBinaryStr())
-            this.getInitObject("xnor_output").setText('$xnor'.asBinaryStr())
+            this.getInitObject("and_output").set({text: '$and'.asBinaryStr()})
+            this.getInitObject("or_output").set({text: '$or'.asBinaryStr()})
+            this.getInitObject("nand_output").set({text: '$nand'.asBinaryStr()})
+            this.getInitObject("nor_output").set({text: '$nor'.asBinaryStr()})
+            this.getInitObject("xor_output").set({text: '$xor'.asBinaryStr()})
+            this.getInitObject("xnor_output").set({text: '$xnor'.asBinaryStr()})
             }
 \SV
    endmodule      // close the module

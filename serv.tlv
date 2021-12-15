@@ -100,9 +100,8 @@
    |default 
       @1
          /dummy
-            \viz_alpha
-               initEach() {
-               debugger
+            \viz_js
+               init() {
                let serv_immdec = new fabric.Rect({
                   width : 40, 
                   height: 8,  
@@ -589,158 +588,156 @@
                   fontFamily: "monospace"
                })
                
-               return {objects: {serv_immdec , serv_immdec_text , serv_rf_if , serv_rf_if_text , serv_buffreg , serv_buffreg_text , op_b_source , op_b_source_text , serv_ctrl , serv_ctrl_text, serv_csr , serv_csr_text , serv_alu , serv_alu_text , serv_mem_if , serv_mem_if_text , serv_rf_if_out , serv_rf_if_out_text , o_imm , o_csr_imm, o_csr_pc , o_csr , o_rs1 , o_rs2 , i_imm , i_rs1 , o_q, imm , rs2 , op_b , i_imm_ctrl , i_csr_pc_ctrl , i_buf_ctrl , o_rd_ctrl ,o_bad_pc_ctrl , o_ibus_addr0_ctrl , i_csr_imm_csr , i_rf_csr_out_csr ,i_rs1_csr , o_q_csr , o_csr_in_csr , i_buf_alu ,i_rs1_alu , i_op_b_alu , o_rd_alu , i_op_b_mem_if , o_rd_mem_if , i_ctrl_rd_rf_if , i_bad_pc_rf_if , i_mepc_rf_if , i_csr_rd_rf_if , i_csr_rf_if , i_buf_rf_if , i_alu_rd_rf_if , i_mem_rd_rf_if }};  
+               return {serv_immdec , serv_immdec_text , serv_rf_if , serv_rf_if_text , serv_buffreg , serv_buffreg_text , op_b_source , op_b_source_text , serv_ctrl , serv_ctrl_text, serv_csr , serv_csr_text , serv_alu , serv_alu_text , serv_mem_if , serv_mem_if_text , serv_rf_if_out , serv_rf_if_out_text , o_imm , o_csr_imm, o_csr_pc , o_csr , o_rs1 , o_rs2 , i_imm , i_rs1 , o_q, imm , rs2 , op_b , i_imm_ctrl , i_csr_pc_ctrl , i_buf_ctrl , o_rd_ctrl ,o_bad_pc_ctrl , o_ibus_addr0_ctrl , i_csr_imm_csr , i_rf_csr_out_csr ,i_rs1_csr , o_q_csr , o_csr_in_csr , i_buf_alu ,i_rs1_alu , i_op_b_alu , o_rd_alu , i_op_b_mem_if , o_rd_mem_if , i_ctrl_rd_rf_if , i_bad_pc_rf_if , i_mepc_rf_if , i_csr_rd_rf_if , i_csr_rf_if , i_buf_rf_if , i_alu_rd_rf_if , i_mem_rd_rf_if};  
                }, 
-               layout: "horizontal",
-               renderEach() {
-                  debugger
+               render() {
                  let o_imm_decode = this.svSigRef(`servant_sim.dut.cpu.cpu.immdec.o_imm`).asInt()
                  let o_imm_decode_string = o_imm_decode.toString()
-                 this.getInitObject("o_imm").setText(`${o_imm_decode_string}`)
+                 this.getInitObject("o_imm").set({text: `${o_imm_decode_string}`})
                  
                  let o_csr_imm_decode = this.svSigRef(`servant_sim.dut.cpu.cpu.immdec.o_csr_imm`).asInt()
                  let o_csr_imm_decode_string = o_csr_imm_decode.toString()
-                 this.getInitObject("o_csr_imm").setText(`${o_csr_imm_decode_string}`)
+                 this.getInitObject("o_csr_imm").set({text: `${o_csr_imm_decode_string}`})
                  
                  let o_csr_pc_decode = this.svSigRef(`servant_sim.dut.cpu.cpu.rf_if.o_csr_pc`).asInt()
                  let o_csr_pc_decode_string = o_csr_pc_decode.toString()
-                 this.getInitObject("o_csr_pc").setText(`${o_csr_pc_decode_string}`)
+                 this.getInitObject("o_csr_pc").set({text: `${o_csr_pc_decode_string}`})
                  
                  let o_csr_decode = this.svSigRef(`servant_sim.dut.cpu.cpu.rf_if.o_csr`).asInt()
                  let o_csr_decode_string = o_csr_decode.toString()
-                 this.getInitObject("o_csr").setText(`${o_csr_decode_string}`)
+                 this.getInitObject("o_csr").set({text: `${o_csr_decode_string}`})
                  
                  let o_rs1_decode = this.svSigRef(`servant_sim.dut.cpu.cpu.rf_if.o_rs1`).asInt()
                  let o_rs1_decode_string = o_rs1_decode.toString()
-                 this.getInitObject("o_rs1").setText(`${o_rs1_decode_string}`)
+                 this.getInitObject("o_rs1").set({text: `${o_rs1_decode_string}`})
                  
                  let o_rs2_decode = this.svSigRef(`servant_sim.dut.cpu.cpu.rf_if.o_rs2`).asInt()
                  let o_rs2_decode_string = o_rs2_decode.toString()
-                 this.getInitObject("o_rs2").setText(`${o_rs2_decode_string}`)
+                 this.getInitObject("o_rs2").set({text: `${o_rs2_decode_string}`})
                  
                  let i_imm_decode = this.svSigRef(`servant_sim.dut.cpu.cpu.bufreg.i_imm`).asInt()
                  let i_imm_decode_string = i_imm_decode.toString()
-                 this.getInitObject("i_imm").setText(`${i_imm_decode_string}`)
+                 this.getInitObject("i_imm").set({text: `${i_imm_decode_string}`})
                  
                  let i_rs1_decode = this.svSigRef(`servant_sim.dut.cpu.cpu.bufreg.i_rs1`).asInt()
                  let i_rs1_decode_string = i_rs1_decode.toString()
-                 this.getInitObject("i_rs1").setText(`${i_rs1_decode_string}`)
+                 this.getInitObject("i_rs1").set({text: `${i_rs1_decode_string}`})
                  
                  let o_q_decode = this.svSigRef(`servant_sim.dut.cpu.cpu.bufreg.o_q`).asInt()
                  let o_q_decode_string = o_q_decode.toString()
-                 this.getInitObject("o_q").setText(`${o_q_decode_string}`)
+                 this.getInitObject("o_q").set({text: `${o_q_decode_string}`})
                  
                  let imm_decode = this.svSigRef(`servant_sim.dut.cpu.cpu.immdec.o_imm`).asInt()
                  let imm_decode_string = imm_decode.toString()
-                 this.getInitObject("imm").setText(`${imm_decode_string}`)
+                 this.getInitObject("imm").set({text: `${imm_decode_string}`})
                  
                  let rs2_decode = this.svSigRef(`servant_sim.dut.cpu.cpu.rf_if.o_rs2`).asInt()
                  let rs2_decode_string = rs2_decode.toString()
-                 this.getInitObject("rs2").setText(`${rs2_decode_string}`)
+                 this.getInitObject("rs2").set({text: `${rs2_decode_string}`})
                  
                  let op_b_decode = this.svSigRef(`servant_sim.dut.cpu.cpu.op_b`).asInt()
                  let op_b_decode_string = op_b_decode.toString()
-                 this.getInitObject("op_b").setText(`${op_b_decode_string}`)
+                 this.getInitObject("op_b").set({text: `${op_b_decode_string}`})
                  
                  let i_imm_ctrl_decode = this.svSigRef(`servant_sim.dut.cpu.cpu.ctrl.i_imm`).asInt()
                  let i_imm_ctrl_decode_string = i_imm_ctrl_decode.toString()
-                 this.getInitObject("i_imm_ctrl").setText(`${i_imm_ctrl_decode_string}`)
+                 this.getInitObject("i_imm_ctrl").set({text: `${i_imm_ctrl_decode_string}`})
                  
                  let i_csr_pc_ctrl_decode = this.svSigRef(`servant_sim.dut.cpu.cpu.ctrl.i_csr_pc`).asInt()
                  let i_csr_pc_ctrl_decode_string = i_csr_pc_ctrl_decode.toString()
-                 this.getInitObject("i_csr_pc_ctrl").setText(`${i_csr_pc_ctrl_decode_string}`)
+                 this.getInitObject("i_csr_pc_ctrl").set({text: `${i_csr_pc_ctrl_decode_string}`})
                  
                  let i_buf_ctrl_decode = this.svSigRef(`servant_sim.dut.cpu.cpu.ctrl.i_buf`).asInt()
                  let i_buf_ctrl_decode_string = i_buf_ctrl_decode.toString()
-                 this.getInitObject("i_buf_ctrl").setText(`${i_buf_ctrl_decode_string}`)
+                 this.getInitObject("i_buf_ctrl").set({text: `${i_buf_ctrl_decode_string}`})
                  
                  let o_rd_ctrl_decode = this.svSigRef(`servant_sim.dut.cpu.cpu.ctrl.o_rd`).asInt()
                  let o_rd_ctrl_decode_string = o_rd_ctrl_decode.toString()
-                 this.getInitObject("o_rd_ctrl").setText(`${o_rd_ctrl_decode_string}`)
+                 this.getInitObject("o_rd_ctrl").set({text: `${o_rd_ctrl_decode_string}`})
                  
                  let o_bad_pc_ctrl_decode = this.svSigRef(`servant_sim.dut.cpu.cpu.ctrl.o_bad_pc`).asInt()
                  let o_bad_pc_ctrl_decode_string = o_bad_pc_ctrl_decode.toString()
-                 this.getInitObject("o_bad_pc_ctrl").setText(`${o_bad_pc_ctrl_decode_string}`)
+                 this.getInitObject("o_bad_pc_ctrl").set({text: `${o_bad_pc_ctrl_decode_string}`})
                  
                  let o_ibus_addr0_ctrl_decode = this.svSigRef(`servant_sim.dut.cpu.cpu.ctrl.o_ibus_adr`).asInt()
                  let o_ibus_addr0_ctrl_decode_string = o_ibus_addr0_ctrl_decode.toString()
-                 this.getInitObject("o_ibus_addr0_ctrl").setText(`${o_ibus_addr0_ctrl_decode_string}`)
+                 this.getInitObject("o_ibus_addr0_ctrl").set({text: `${o_ibus_addr0_ctrl_decode_string}`})
                
                  /*let i_csr_imm_csr_decode = this.svSigRef(`servant_sim.dut.cpu.cpu.csr.i_csr_imm`).asInt()
                  let i_csr_imm_csr_decode_string = i_csr_imm_csr_decode.toString()
-                 this.getInitObject("i_csr_imm_csr").setText(`${i_csr_imm_csr_decode_string}`)
+                 this.getInitObject("i_csr_imm_csr").set({text: `${i_csr_imm_csr_decode_string}`})
                
                  let i_rf_csr_out_csr_decode = this.svSigRef(`servant_sim.dut.cpu.cpu.csr.i_rf_csr_out`).asInt()
                  let i_rf_csr_out_csr_decode_string = i_rf_csr_out_csr_decode.toString()
-                 this.getInitObject("i_rf_csr_out_csr").setText(`${i_rf_csr_out_csr_decode_string}`)
+                 this.getInitObject("i_rf_csr_out_csr").set({text: `${i_rf_csr_out_csr_decode_string}`})
                  
                  let i_rs1_csr_decode = this.svSigRef(`servant_sim.dut.cpu.cpu.csr.i_rs1`).asInt()
                  let i_rs1_csr_decode_string = i_rs1_csr_decode.toString()
-                 this.getInitObject("i_rs1_csr").setText(`${i_rs1_csr_decode_string}`)
+                 this.getInitObject("i_rs1_csr").set({text: `${i_rs1_csr_decode_string}`})
                  
                  let o_q_csr_decode = this.svSigRef(`servant_sim.dut.cpu.cpu.csr.o_q`).asInt()
                  let o_q_csr_decode_string = o_q_csr_decode.toString()
-                 this.getInitObject("o_q_csr").setText(`${o_q_csr_decode_string}`)
+                 this.getInitObject("o_q_csr").set({text: `${o_q_csr_decode_string}`})
                  
                  let o_csr_in_csr_decode = this.svSigRef(`servant_sim.dut.cpu.cpu.csr.o_csr_in`).asInt()
                  let o_csr_in_csr_decode_string = o_csr_in_csr_decode.toString()
-                 this.getInitObject("o_csr_in_csr").setText(`${o_csr_in_csr_decode_string}`)
+                 this.getInitObject("o_csr_in_csr").set({text: `${o_csr_in_csr_decode_string}`})
                  */
                  let i_buf_alu_decode = this.svSigRef(`servant_sim.dut.cpu.cpu.alu.i_buf`).asInt()
                  let i_buf_alu_decode_string = i_buf_alu_decode.toString()
-                 this.getInitObject("i_buf_alu").setText(`${i_buf_alu_decode_string}`)
+                 this.getInitObject("i_buf_alu").set({text: `${i_buf_alu_decode_string}`})
                  
                  let i_rs1_alu_decode = this.svSigRef(`servant_sim.dut.cpu.cpu.alu.i_rs1`).asInt()
                  let i_rs1_alu_decode_string = i_rs1_alu_decode.toString()
-                 this.getInitObject("i_rs1_alu").setText(`${i_rs1_alu_decode_string}`)
+                 this.getInitObject("i_rs1_alu").set({text: `${i_rs1_alu_decode_string}`})
                  
                  let i_op_b_alu_decode = this.svSigRef(`servant_sim.dut.cpu.cpu.alu.i_op_b`).asInt()
                  let i_op_b_alu_decode_string = i_op_b_alu_decode.toString()
-                 this.getInitObject("i_op_b_alu").setText(`${i_op_b_alu_decode_string}`)
+                 this.getInitObject("i_op_b_alu").set({text: `${i_op_b_alu_decode_string}`})
                  
                  let o_rd_alu_decode = this.svSigRef(`servant_sim.dut.cpu.cpu.alu.o_rd`).asInt()
                  let o_rd_alu_decode_string = o_rd_alu_decode.toString()
-                 this.getInitObject("o_rd_alu").setText(`${o_rd_alu_decode_string}`)
+                 this.getInitObject("o_rd_alu").set({text: `${o_rd_alu_decode_string}`})
                  
                  let i_op_b_mem_if_decode = this.svSigRef(`servant_sim.dut.cpu.cpu.mem_if.i_op_b`).asInt()
                  let i_op_b_mem_if_decode_string = i_op_b_mem_if_decode.toString()
-                 this.getInitObject("i_op_b_mem_if").setText(`${i_op_b_mem_if_decode_string}`)
+                 this.getInitObject("i_op_b_mem_if").set({text: `${i_op_b_mem_if_decode_string}`})
                  
                  let o_rd_mem_if_decode = this.svSigRef(`servant_sim.dut.cpu.cpu.mem_if.o_rd`).asInt()
                  let o_rd_mem_if_decode_string = o_rd_mem_if_decode.toString()
-                 this.getInitObject("o_rd_mem_if").setText(`${o_rd_mem_if_string}`)
+                 this.getInitObject("o_rd_mem_if").set({text: `${o_rd_mem_if_string}`})
                  
                  let i_ctrl_rd_rf_if_decode = this.svSigRef(`servant_sim.dut.cpu.cpu.rf_if.i_ctrl_rd`).asInt()
                  let i_ctrl_rd_rf_if_decode_string = i_ctrl_rd_rf_if_decode.toString()
-                 this.getInitObject("i_ctrl_rd_rf_if").setText(`${i_ctrl_rd_rf_if_string}`)
+                 this.getInitObject("i_ctrl_rd_rf_if").set({text: `${i_ctrl_rd_rf_if_string}`})
                  
                  let i_bad_pc_rf_if_decode = this.svSigRef(`servant_sim.dut.cpu.cpu.rf_if.i_bad_pc`).asInt()
                  let i_bad_pc_rf_if_decode_string = i_bad_pc_rf_if_decode.toString()
-                 this.getInitObject("i_bad_pc_rf_if").setText(`${i_bad_pc_rf_if_string}`)
+                 this.getInitObject("i_bad_pc_rf_if").set({text: `${i_bad_pc_rf_if_string}`})
                  
                  let i_mepc_rf_if_decode = this.svSigRef(`servant_sim.dut.cpu.cpu.rf_if.i_mepc`).asInt()
                  let i_mepc_rf_if_decode_string = i_mepc_rf_if_decode.toString()
-                 this.getInitObject("i_mepc_rf_if").setText(`${i_mepc_rf_if_string}`)
+                 this.getInitObject("i_mepc_rf_if").set({text: `${i_mepc_rf_if_string}`})
                  
                  let i_csr_rd_rf_if_decode = this.svSigRef(`servant_sim.dut.cpu.cpu.rf_if.i_csr_rd`).asInt()
                  let i_csr_rd_rf_if_decode_string = i_csr_rd_rf_if_decode.toString()
-                 this.getInitObject("i_csr_rd_rf_if").setText(`${i_csr_rd_rf_if_string}`)
+                 this.getInitObject("i_csr_rd_rf_if").set({text: `${i_csr_rd_rf_if_string}`})
                  
                  let i_csr_rf_if_decode = this.svSigRef(`servant_sim.dut.cpu.cpu.rf_if.i_csr`).asInt()
                  let i_csr_rf_if_decode_string = i_csr_rf_if_decode.toString()
-                 this.getInitObject("i_csr_rf_if").setText(`${i_csr_rf_if_string}`)
+                 this.getInitObject("i_csr_rf_if").set({text: `${i_csr_rf_if_string}`})
                  
                  let i_buf_rf_if_decode = this.svSigRef(`servant_sim.dut.cpu.cpu.rf_if.i_bufreg_q`).asInt()
                  let i_buf_rf_if_decode_string = i_buf_rf_if_decode.toString()
-                 this.getInitObject("i_buf_rf_if").setText(`${i_buf_rf_if_string}`)
+                 this.getInitObject("i_buf_rf_if").set({text: `${i_buf_rf_if_string}`})
                  
                  let i_alu_rd_rf_if_decode = this.svSigRef(`servant_sim.dut.cpu.cpu.rf_if.i_alu_rd`).asInt()
                  let i_alu_rd_rf_if_decode_string = i_alu_rd_rf_if_decode.toString()
-                 this.getInitObject("i_alu_rd_rf_if").setText(`${i_alu_rd_rf_if_string}`)
+                 this.getInitObject("i_alu_rd_rf_if").set({text: `${i_alu_rd_rf_if_string}`})
                  
                  let i_mem_rd_rf_if_decode = this.svSigRef(`servant_sim.dut.cpu.cpu.rf_if.i_mem_rd`).asInt()
                  let i_mem_rd_rf_if_decode_string = i_mem_rd_rf_if_decode.toString()
-                 this.getInitObject("i_mem_rd_rf_if").setText(`${i_mem_rd_rf_if_string}`)
+                 this.getInitObject("i_mem_rd_rf_if").set({text: `${i_mem_rd_rf_if_string}`})
                  
                }
 

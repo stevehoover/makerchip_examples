@@ -124,38 +124,25 @@ module top(input logic clk,
       end
    end
 
+   // Stop simulation.
    assign passed = cyc_cnt > 32'd20;
+
+
+
+// ===
+// VIZ
+// ===
 
 \TLV
    /yy[19:0]
       /xx[19:0]
-         \viz_alpha
-            initEach() {
-               let rect = new fabric.Rect({
-                  width: 10,
-                  height: 10,
-                  fill: "green",
-                  left: this.scopes.xx.index * 10,
-                  top: this.scopes.yy.index * 10
-               })
-               let shadow = new fabric.Rect({
-                  width: 10,
-                  height: 10,
-                  fill: "green",
-                  left: this.scopes.xx.index * 10,
-                  top: this.scopes.yy.index * 10
-               })
-               return {objects: {rect, shadow}}
-            },
-            renderEach() {
-               let alive_sig_name = `L1_Yy[${this.scopes.yy.index}]` + `.alive_a2(${this.scopes.xx.index})`
-               let background = (this.svSigRef(alive_sig_name, 0).asInt() == 1) ? "blue" : "red"
-               let background2 = (this.svSigRef(alive_sig_name, -1).asInt() == 1) ? "black" : null
-               let opacity2 = (this.svSigRef(alive_sig_name, -1).asInt() == 1) ? 0.2 : 0
-               let objects = this.fromInit().objects
-               objects.rect.set("fill", background)
-               objects.shadow.set("fill", background2)
-               objects.shadow.set("opacity", opacity2)
+         \viz_js
+            box: {width: 10, height: 10, strokeWidth: 0},
+            renderFill() {
+               let alive_sig_name = `L1_Yy[${this.getIndex("yy")}]` + `.alive_a2(${this.getIndex("xx")})`
+               let alive = this.svSigRef(alive_sig_name, 0).asBool()
+               let brightness = this.svSigRef(alive_sig_name, -1).asBool() ? 0.8 : 1
+               return `rgb(${(alive ? 0 : 255) * brightness}, 0, ${(alive ? 255 : 0) * brightness})`
             }
 
 \SV
