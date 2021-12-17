@@ -1,236 +1,78 @@
 \m4_TLV_version 1d: tl-x.org
-\SV      // System Verilog
-   
-   m4_makerchip_module   // (Expanded in Nav-TLV pane.)
-   // module top(input wire clk, input wire reset, input wire [31:0] cyc_cnt, output wire passed, output wire failed); // This is the equivalent of the above line
-   /* verilator lint_on WIDTH */
-
-
-\TLV     // TL-Verilog
-   /dummy
-      // reset signal from instantiation of m4_makerchip_module above
-      $reset = *reset;
-      
-      // Two inputs, x1 and x2, used a counter to increment its value to obtain all input values
-      $x[1:0] = $reset ? 3 : >>1$x+1;
-      $x1 = $x[1];
-      $x0 = $x[0];
-      
-      // Logic
-      $and = $x1 & $x0;
-      $or = $x1 | $x0;
-      $not_x1 = !$x1;
-      $not_x0 = !$x0;
-      $nand = !($x1 & $x0);
-      $nor = !($x1 | $x0);
-      $xor = $x1 ^ $x0;
-      $xnor = !($x1 ^ $x0);
-
-
-      // Assert these to end simulation (before Makerchip cycle limit).
-      *passed = *cyc_cnt > 40;      // Simulation ends after 40 cycles
-      *failed = 1'b0;
-
-
-      // Visualization for logic gates
+\SV
+   m4_makerchip_module
+// A logic gate in its own scope with its own \viz_js.
+\TLV gate(/_top, /_gate, _label, #_x, #_y, _not, _op, _url)
+   /_gate
+      $out = _not(/_top$in0 _op /_top$in1);
       \viz_js
-         // JavaScript code
-         box: {top: -300, left: -300, width: 590, height: 630, fill: "#fcf5ee"},
-         init() {               // This function executes at the start
-            ret = {}
-            
-            // Function to add text - used for displaying the logic gate names
-            function addtext(text, left, top){
-               // Fabric.js Text object
-               var value = new fabric.Text(text, {
-                    left: left,
-                    top: top,
-                    fontSize: 28,
-                    fontFamily: "Courier New",
-                  })
-               ret[text] = value
+         box: {width: 100, height: 60, strokeWidth: 0},
+         init() {
+            let ret = {}
+            // Heading
+            ret.heading = new fabric.Text("_label", {
+               left: 47, top: 0,
+               originX: "center",
+               fontSize: 16, fontFamily: "Courier New",
+            })
+            // Image
+            ret.img = this.newImageFromURL(['"_url"'], {left: 10, top: 20, width: 80})
+            // IO Values
+            IO = function (left, top) {
+               return new fabric.Text("", {
+                 left, top,
+                 fontSize: 14, fontFamily: "Courier New",
+               })
             }
-            addtext("Digital Logic Gates", -200, -250)
-            addtext("AND", -130, -170)
-            addtext("OR", 80, -170)
-            addtext("NAND", -130, -20)
-            addtext("NOR", 70, -20)
-            addtext("XOR", -130, 130)
-            addtext("XNOR", 70, 130)
-            
-            // Image URLs
-            let and_img_url = "https://upload.wikimedia.org/wikipedia/commons/thumb/6/64/AND_ANSI.svg/150px-AND_ANSI.svg.png"
-            let or_img_url = "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b5/OR_ANSI.svg/150px-OR_ANSI.svg.png"
-            let nand_img_url = "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f2/NAND_ANSI.svg/150px-NAND_ANSI.svg.png"
-            let nor_img_url = "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6c/NOR_ANSI.svg/150px-NOR_ANSI.svg.png"
-            let xor_img_url = "https://upload.wikimedia.org/wikipedia/commons/thumb/0/01/XOR_ANSI.svg/150px-XOR_ANSI.svg.png"
-            let xnor_img_url = "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d6/XNOR_ANSI.svg/150px-XNOR_ANSI.svg.png"
-            
-            // Function to add image - used for displaying the logic gate images
-            add_image = (url, left, top) => {
-            // Fabric.js add image object
-               fabric.Image.fromURL(
-                        url,
-                        (img) => {
-                           this.getBox().group.add(img)     // Add the image object into the canvas
-                        },
-                        {originX: "center",
-                         originY: "center",
-                         left: left,
-                         top: top,
-                         scaleX: 0.8,
-                         scaleY: 0.8,
-                         angle: 0,
-                        }
-                     )
-            }
-            add_image(and_img_url, -100, -100)
-            add_image(or_img_url, 100, -100)
-            add_image(nand_img_url, -100, 50)
-            add_image(nor_img_url, 100, 50)
-            add_image(xor_img_url, -100, 200)
-            add_image(xnor_img_url, 100, 200)
-            
-            // Value for logic gate gate inputs and outputs
-            ret.and_x1 = new fabric.Text("", {
-              left: -180,
-              top: -130,
-              fontSize: 28,
-              fontFamily: "Courier New",
-            })
-            ret.and_x0 = new fabric.Text("", {
-              left: -180,
-              top: -100,
-              fontSize: 28,
-              fontFamily: "Courier New",
-            })
-            ret.and_output = new fabric.Text("", {
-              left: -40,
-              top: -120,
-              fontSize: 28,
-              fontFamily: "Courier New",
-            })
-            ret.or_x1 = new fabric.Text("", {
-              left: 20,
-              top: -130,
-              fontSize: 28,
-              fontFamily: "Courier New",
-            })
-            ret.or_x0 = new fabric.Text("", {
-              left: 20,
-              top: -100,
-              fontSize: 28,
-              fontFamily: "Courier New",
-            })
-            ret.or_output = new fabric.Text("", {
-              left: 160,
-              top: -120,
-              fontSize: 28,
-              fontFamily: "Courier New",
-            })
-            ret.nand_x1 = new fabric.Text("", {
-              left: -180,
-              top: 20,
-              fontSize: 28,
-              fontFamily: "Courier New",
-            })
-            ret.nand_x0 = new fabric.Text("", {
-              left: -180,
-              top: 50,
-              fontSize: 28,
-              fontFamily: "Courier New",
-            })
-            ret.nand_output = new fabric.Text("", {
-              left: -40,
-              top: 35,
-              fontSize: 28,
-              fontFamily: "Courier New",
-            })
-            ret.nor_x1 = new fabric.Text("", {
-              left: 20,
-              top: 20,
-              fontSize: 28,
-              fontFamily: "Courier New",
-            })
-            ret.nor_x0 = new fabric.Text("", {
-              left: 20,
-              top: 50,
-              fontSize: 28,
-              fontFamily: "Courier New",
-            })
-            ret.nor_output = new fabric.Text("", {
-              left: 160,
-              top: 35,
-              fontSize: 28,
-              fontFamily: "Courier New",
-            })
-            ret.xor_x1 = new fabric.Text("", {
-              left: -180,
-              top: 170,
-              fontSize: 28,
-              fontFamily: "Courier New",
-            })
-            ret.xor_x0 = new fabric.Text("", {
-              left: -180,
-              top: 200,
-              fontSize: 28,
-              fontFamily: "Courier New",
-            })
-            ret.xor_output = new fabric.Text("", {
-              left: -40,
-              top: 185,
-              fontSize: 28,
-              fontFamily: "Courier New",
-            })
-            ret.xnor_x1 = new fabric.Text("", {
-              left: 20,
-              top: 170,
-              fontSize: 28,
-              fontFamily: "Courier New",
-            })
-            ret.xnor_x0 = new fabric.Text("", {
-              left: 20,
-              top: 200,
-              fontSize: 28,
-              fontFamily: "Courier New",
-            })
-            ret.xnor_output = new fabric.Text("", {
-              left: 160,
-              top: 185,
-              fontSize: 28,
-              fontFamily: "Courier New",
-            })
-            // The objects that we return here only can be used in the below renderEach function
+            ret.in0 = IO(0, 24)
+            ret.in1 = IO(0, 40)
+            ret.out = IO(90, 32)
             return ret
          },
-         render() {                 // This method executes for every cycle
-            // Get TLV signals $x0 and $x1 from TLV as a Binary String
-            let x0 = '$x0'.asBinaryStr()
-            let x1 = '$x1'.asBinaryStr()
-            
-            // The objects that was returned in initEach() function are used below using this.getInitObject("<object_name>") method
-            
-            // set inputs
-            this.getInitObject("and_x0").set({text: x0})
-            this.getInitObject("and_x1").set({text: x1})
-            this.getInitObject("or_x0").set({text: x0})
-            this.getInitObject("or_x1").set({text: x1})
-            this.getInitObject("nand_x0").set({text: x0})
-            this.getInitObject("nand_x1").set({text: x1})
-            this.getInitObject("nor_x0").set({text: x0})
-            this.getInitObject("nor_x1").set({text: x1})
-            this.getInitObject("xor_x0").set({text: x0})
-            this.getInitObject("xor_x1").set({text: x1})
-            this.getInitObject("xnor_x0").set({text: x0})
-            this.getInitObject("xnor_x1").set({text: x1})
-            
-            // set outputs
-            this.getInitObject("and_output").set({text: '$and'.asBinaryStr()})
-            this.getInitObject("or_output").set({text: '$or'.asBinaryStr()})
-            this.getInitObject("nand_output").set({text: '$nand'.asBinaryStr()})
-            this.getInitObject("nor_output").set({text: '$nor'.asBinaryStr()})
-            this.getInitObject("xor_output").set({text: '$xor'.asBinaryStr()})
-            this.getInitObject("xnor_output").set({text: '$xnor'.asBinaryStr()})
-            }
+         render() {
+            let objs = this.getObjects()
+            objs.in0.set({text: '/_top$in0'.asBinaryStr()})
+            objs.in1.set({text: '/_top$in1'.asBinaryStr()})
+            objs.out.set({text: '$out'.asBinaryStr()})
+            return []
+         },
+         where: {left: #_x * 120, top: #_y * 75}
+\TLV
+   |example
+      @0
+         m4+gate(|example, /and,  AND,  0, 0,  , &&, ['https:/']['/upload.wikimedia.org/wikipedia/commons/thumb/6/64/AND_ANSI.svg/150px-AND_ANSI.svg.png'])
+         m4+gate(|example, /nand, NAND, 1, 0, ~, &&, ['https:/']['/upload.wikimedia.org/wikipedia/commons/thumb/f/f2/NAND_ANSI.svg/150px-NAND_ANSI.svg.png'])
+         m4+gate(|example, /or,   OR,   0, 1,  , ||, ['https:/']['/upload.wikimedia.org/wikipedia/commons/thumb/b/b5/OR_ANSI.svg/150px-OR_ANSI.svg.png'])
+         m4+gate(|example, /nor,  NOR,  1, 1, ~, ||, ['https:/']['/upload.wikimedia.org/wikipedia/commons/thumb/6/6c/NOR_ANSI.svg/150px-NOR_ANSI.svg.png'])
+         m4+gate(|example, /xor,  XOR,  0, 2,  , ^,  ['https:/']['/upload.wikimedia.org/wikipedia/commons/thumb/0/01/XOR_ANSI.svg/150px-XOR_ANSI.svg.png'])
+         m4+gate(|example, /xnor, XNOR, 1, 2, ~, ^,  ['https:/']['/upload.wikimedia.org/wikipedia/commons/thumb/d/d6/XNOR_ANSI.svg/150px-XNOR_ANSI.svg.png'])
+
+         // reset signal from instantiation of m4_makerchip_module above
+         $reset = *reset;
+
+         // Two inputs, x1 and x2, used a counter to increment its value to obtain all input values
+         $cnt[1:0] = $reset ? 0 : >>1$cnt + 1;
+         $in1 = $cnt[1];
+         $in0 = $cnt[0];
+
+
+         // Assert these to end simulation (before Makerchip cycle limit).
+         *passed = *cyc_cnt > 40;      // Simulation ends after 40 cycles
+         *failed = 1'b0;
+
+
+         // Visualization for logic gates
+         \viz_js
+            // JavaScript code
+            box: {left: -40, top: -75, width: 300, height: 330, fill: "#fcf5ee"},
+            init() {
+               return {
+                  title: new fabric.Text("Digital Logic Gates", {
+                     left: 110, top: -50,
+                     originX: "center",
+                     fontSize: 20, fontFamily: "Courier New",
+                  })
+               }
+            },
 \SV
    endmodule      // close the module
