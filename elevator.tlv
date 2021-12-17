@@ -7,23 +7,24 @@
    //   1) in SystemVerilog, in a big always_ff block
    //   2) directly translated to TL-Verilog
    //   3) cleanly rewritten in TL-Verilog with a single assignment for each signal
-   //   4) (and the generated Verilog could be considered a fourth style)
+   //   4) (and the SandPiper(TM)-generated Verilog could be considered a fourth style)
    //
    //   Sequential style: 1) SV -> 2) TLV
    //                        |         |
    //   Parallel style:   4) SV <- 3) TLV
 
    // Observations:
-   //  o Using a nested if-else structure is not better or worse than individual assignments
-   //    in terms of code size. With nested if-else, signals are repeated multiple times.
-   //    With individual assignments, cases are repeated multiple times.
-   //  o TL-Verilog is optimized for individual assignment statements
-   //     - allowing signal declarations to be incorporated into assignments
-   //     - providing many atomic re-timable statements.
-   //  o The style chosen for TL-Verilog is less specific to 3 floors, with more logic replicated
-   //    per floor, where Verilog logic is coded uniquely per-floor.
-   //  o Coding time was about the same for Verilog and TL-Verilog, but, for what it's
-   //    worth, I had two bugs of any significance in my Verilog and none in TL-Verilog.
+   //  o Using a nested if-else structure (sequential style) is not better or worse than
+   //    individual assignments (parallel style) in terms of code size. With sequential style,
+   //    signals are repeated multiple times. With parallel style, cases are repeated
+   //    multiple times.
+   //  o TL-Verilog lends itself to parallel style. This:
+   //     - allows signal declarations to be incorporated into assignments
+   //     - provides individual atomic re-timable statements.
+   //  o The logic representation chosen for TL-Verilog is less specific to 3 floors, with more
+   //    logic replicated per floor, where Verilog logic is coded uniquely per-floor.
+   //  o Coding time was roughly the same for Verilog and TL-Verilog (but, for what it's
+   //    worth, I had two bugs of any significance in my Verilog and none in TL-Verilog).
    //  o Even though no simplicity benefit is claimed for TL-Verilog for state machines, the code
    //    is about half the size.
 
@@ -36,7 +37,7 @@
 
    // Inputs:
    logic [2:0] up_pressed, down_pressed;  // Elevator up/down button input on each floor. 1 == pressed.
-   logic [2:0] elevator_button_pressed;  // The floor buttons/lights in the elevator. 1 == pressed.
+   logic [2:0] elevator_button_pressed;   // The floor buttons/lights in the elevator. 1 == pressed.
 
    logic [2:0] floor_mask;  // Floor the elevator is on (1-hot decoded).
    logic [1:0] up_light; logic [2:1] down_light;   // Elevator up/down button lights on each floor. 1 == lit. Cleared after departure.
@@ -236,6 +237,8 @@
                   if ($up_pressed[fl]) $next_up_light[fl] = '1;
                   if ($down_pressed[fl]) $next_down_light[fl] = '1;
                end
+            
+            // Stage next state values from combinational state update logic.
             $went_down = >>1$next_went_down;
             //$went_up = >>1$next_went_up;
             $floor_mask[2:0] = >>1$next_floor_mask;

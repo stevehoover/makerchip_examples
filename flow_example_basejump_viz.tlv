@@ -30,23 +30,20 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-//m4_include_url(['http://localhost:8080/wip/viz.tlv'])
-// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
 m4_include_url(['https://raw.githubusercontent.com/stevehoover/tlv_flow_lib/5a8c0387be80b2deccfcd1506299b36049e0663e/fundamentals_lib.tlv'])
 m4_include_url(['https://raw.githubusercontent.com/stevehoover/tlv_flow_lib/5a8c0387be80b2deccfcd1506299b36049e0663e/pipeflow_lib.tlv'])
 
 // Include BaseJump STL FIFO files.
 /* verilator lint_off CMPCONST */
 /* verilator lint_off WIDTH */
-m4_sv_include_url(['https://raw.githubusercontent.com/bespoke-silicon-group/basejump_stl/master/bsg_misc/bsg_defines.v'])
-m4_sv_include_url(['https://raw.githubusercontent.com/bespoke-silicon-group/basejump_stl/master/bsg_dataflow/bsg_fifo_tracker.v'])
-m4_sv_include_url(['https://raw.githubusercontent.com/bespoke-silicon-group/basejump_stl/master/bsg_misc/bsg_circular_ptr.v'])
-m4_sv_include_url(['https://raw.githubusercontent.com/bespoke-silicon-group/basejump_stl/master/bsg_dataflow/bsg_fifo_1r1w_small.v'])
-m4_sv_include_url(['https://raw.githubusercontent.com/bespoke-silicon-group/basejump_stl/master/bsg_dataflow/bsg_fifo_1r1w_small_unhardened.v'])
-m4_sv_include_url(['https://raw.githubusercontent.com/bespoke-silicon-group/basejump_stl/master/bsg_mem/bsg_mem_1r1w.v'])
-m4_sv_include_url(['https://raw.githubusercontent.com/bespoke-silicon-group/basejump_stl/master/bsg_mem/bsg_mem_1r1w_synth.v'])
+m4_def(basejump, ['['https://raw.githubusercontent.com/bespoke-silicon-group/basejump_stl/67830f05ffce1333c7b790600530da0681af74fe']'])
+m4_sv_include_url(m4_basejump['/bsg_misc/bsg_defines.v'])
+m4_sv_include_url(m4_basejump['/bsg_dataflow/bsg_fifo_tracker.v'])
+m4_sv_include_url(m4_basejump['/bsg_misc/bsg_circular_ptr.v'])
+m4_sv_include_url(m4_basejump['/bsg_dataflow/bsg_fifo_1r1w_small.v'])
+m4_sv_include_url(m4_basejump['/bsg_dataflow/bsg_fifo_1r1w_small_unhardened.v'])
+m4_sv_include_url(m4_basejump['/bsg_mem/bsg_mem_1r1w.v'])
+m4_sv_include_url(m4_basejump['/bsg_mem/bsg_mem_1r1w_synth.v'])
 /* verilator lint_on WIDTH */
 /* verilator lint_on CMPCONST */
 
