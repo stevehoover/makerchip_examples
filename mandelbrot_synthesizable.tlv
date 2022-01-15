@@ -1,6 +1,13 @@
 \m4_TLV_version 1d: tl-x.org
 \SV
 
+   // *******************************
+   // This example is no longer maintained.
+   // It uses an obsolete \viz_alpha API.
+   // The 1st CLaaS Mandelbrot application hosted at fractalvalley.net uses fixed-point arithmetic as well.
+   // The code can be found here: https://github.com/stevehoover/1st-CLaaS/blob/master/apps/mandelbrot/fpga/src/mandelbrot_kernel.tlv
+   // *******************************
+
    // ==========================
    // Mandelbrot Set Calculation
    // ==========================

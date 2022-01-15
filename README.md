@@ -2,8 +2,6 @@
 
 Various examples of TL-Verilog code to run in Makerchip.com.
 
-Note that many of these use a `\viz_alpha` feature of Makerchip that does not have long-term support in its current form.
-
 <!--- To open one of these in makerchip, copy the following into your browser, and append the corresponding file name.
 
 `http://www.makerchip.com/sandbox?code_url=https:%2F%2Fraw.githubusercontent.com%2Fstevehoover%2Fwarp-v%2Fmaster%2F` --->

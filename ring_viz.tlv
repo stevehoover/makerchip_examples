@@ -3,7 +3,7 @@
 m4_makerchip_module
 
 // Include fifo and ring components from a git repo.
-m4_include_url(['https://raw.githubusercontent.com/stevehoover/tlv_flow_lib/5a8c0387be80b2deccfcd1506299b36049e0663e/pipeflow_lib.tlv'])
+m4_include_url(['https://raw.githubusercontent.com/stevehoover/tlv_flow_lib/c48ad6c12e21f6fb49d77e7a633387264660d401/pipeflow_lib.tlv'])
 
 m4_define_hier(M4_RING_STOP, 4, 0)
 m4_define_hier(M4_FIFO_ENTRY, 6)
@@ -12,7 +12,6 @@ parameter NUM_PACKETS_WIDTH = M4_NUM_PACKETS_WIDTH;
 
 /* verilator lint_off MULTIDRIVEN */
 \TLV
-   
    
    // *********************
    // * DESIGN UNDER TEST *
@@ -42,10 +41,13 @@ parameter NUM_PACKETS_WIDTH = M4_NUM_PACKETS_WIDTH;
       // FIFOs
       m4+flop_fifo_v2(/ring_stop, |inpipe, @1, |fifo_out, @0, 6, /trans)
       
+      |fifo_out
+         @0
+            $dest[M4_RING_STOP_INDEX_RANGE] = /trans$dest;
+      
       // Outputs
       |outpipe
          @1
-            $blocked = 1'b0;  // No blocking at output.
             $accepted = $avail && ! $blocked;
             ?$accepted
                /trans
@@ -55,7 +57,7 @@ parameter NUM_PACKETS_WIDTH = M4_NUM_PACKETS_WIDTH;
                   // [+] $parity_error = $parity != ^ {$data, $dest};
    
    // Instantiate the ring.
-   m4+simple_ring(/ring_stop, |fifo_out, @0, |outpipe, @0, $reset, |rg, /trans)
+   m4+simple_ring_v2(/ring_stop, |fifo_out, @0, |outpipe, @0, $reset, |rg, /trans)
    
    // End of DUT
    // ==========
@@ -66,66 +68,76 @@ parameter NUM_PACKETS_WIDTH = M4_NUM_PACKETS_WIDTH;
    // * VIZ *
    // *******
    
-   \viz_alpha
-      initEach() {
+   \viz_js
+      box: {strokeWidth: 0},
+      init() {
+         let testRect = new fabric.Rect({width: 10, height: 10, strikeWidth: 2})
+         console.log(`testRect.getScaledWidth(): ${testRect.getScaledWidth()}`)
          
-         //debugger
          this.transObj = {} // A map of transaction fabric objects, indexed by $uid.
-         let animationRect = new fabric.Rect({
-                     width: 5,
-                     height: 5,
-                     fill: "red",
-                     stroke: "black",
-                     left: -20,
-                     top: -20,
-                     angle: 0})
-         
+         this.setTrans = (uid, obj) => {
+            if (typeof(this.transObj[uid]) !== "undefined") {
+               console.log(`Adding duplicate trans #${uid.toString(16)}`)
+               debugger
+            }
+            this.transObj[uid] = obj
+            console.log(`Added trans #${uid.toString(16)}`)
+            //debugger
+         }
+         this.getTrans = (uid) => {
+            let ret = this.transObj[uid]
+            if (typeof(ret) === "undefined") {
+               console.log(`Failed to find trans #${uid.toString(16)}`)
+               debugger
+            }
+            return this.transObj[uid]
+         }
+         console.log(`top init: ${this.scopes}`)
          return {
-            transObj: this.transObj,
-            setTrans: (uid, obj) => {
-               if (typeof(this.transObj[uid]) !== "undefined") {
-                  console.log(`Adding duplicate trans #${uid.toString(16)}`)
-                  debugger
-               }
-               this.transObj[uid] = obj
-               console.log(`Added trans #${uid.toString(16)}`)
-               //debugger
-            },
-            getTrans: (uid) => {
-               let ret = this.transObj[uid]
-               if (typeof(ret) === "undefined") {
-                  console.log(`Failed to find trans #${uid.toString(16)}`)
-                  debugger
-               }
-               return this.transObj[uid]
-            },
-            objects: {animationRect}
-         };
+            animationRect: new fabric.Rect({
+                        width: 5,
+                        height: 5,
+                        fill: "red",
+                        stroke: "black",
+                        left: -20,
+                        top: -20,
+                        angle: 0})
+         }
       },
-      renderEach() {
-         //debugger
+      onTraceData() {
+         // Add all transactions to this top level.
+         return {objects: this.transObj}
+      },
+      render() {
+         // Force animation rendering.
+         this.getObjects().animationRect.set("angle", 0)
+         this.getObjects().animationRect.animate("angle", 90, {
+              onChange: this.global.canvas.renderAll.bind(this.global.canvas),
+              duration: 1000  // To cover default 500 + extra (hack).
+         })
+      },
+      unrender() {
          // Make every transaction invisible (and other render methods will make them visible again.
-         for (const uid in this.fromInit().transObj) {
-            const trans = this.fromInit().transObj[uid]
+         for (const uid in this.transObj) {
+            const trans = this.transObj[uid]
             trans.set("opacity", 1)
             trans.wasVisible = trans.visible
             trans.visible = false
          }
-         // Force animation rendering.
-         this.getInitObjects().animationRect.set("angle", 0)
-         this.getInitObjects().animationRect.animate("angle", 90, {
-              onChange: this.global.canvas.renderAll.bind(this.global.canvas),
-              duration: 1000  // To cover default 500 + extra (hack).
-         })
       }
+      
    
    /M4_RING_STOP_HIER
+      \viz_js
+         box: {width: M4_FIFO_ENTRY_CNT * 15 + 10, height: 50, strokeWidth: 0},
+         where: {left: -5, top: -5}
       |inpipe
          @1
-            \viz_alpha
-               initEach() {
-                  context.global.getRingStopColor = function (stop) {
-                     return "#00" + (255 - Math.floor((stop / M4_RING_STOP_CNT) * 256)).toString(16) + "00"
+            \viz_js
+               box: {strokeWidth: 0},
+               init() {
+                  this.getColor = () => {
+                     return "#00" + (255 - Math.floor((this.getIndex("ring_stop") / M4_RING_STOP_CNT) * 256)).toString(16) + "00"
                   }
                   
                   // FIFO outer box.
@@ -134,93 +146,83 @@ parameter NUM_PACKETS_WIDTH = M4_NUM_PACKETS_WIDTH;
                      width: M4_FIFO_ENTRY_CNT * 15 + 10,
                      height: 20,
                      fill: "lightgray",
-                     stroke: context.global.getRingStopColor(stop),
-                     left: -5,
-                     top: -5 + 50 * stop
+                     stroke: this.getColor(),
+                     left: 0,
+                     top: 0
                   })
                   
-                  return {objects: {fifoBox}}
+                  return {fifoBox}
                },
-               renderEach() {
+               onTraceData() {
+                  // Process the trace.
                   // Look over the entire simulation and register an object for every transaction.
-                  // BUG: waveform is not available to initEach(). Do we need a new method after waveform loads?
-                  // Hack it here. Assume whole trace loads before any rendering.
-                  if (typeof this.getContext().preppedTrace === "undefined") {
-                     
-                     // Process the trace.
-                     let $accepted = '$accepted'.goTo(-1)
-                     let $uid      = '/trans$uid'
-                     let $response = '/trans$response'
-                     let $sender   = '/trans$sender'
-                     let $dest     = '/trans$dest'
-                     let $data     = '/trans$data'
-                     let $cnt      = '/trans$cnt'
-                     while ($accepted.forwardToValue(1)) {
-                        //debugger
-                        let response = $response.goTo($accepted.getCycle()).asInt()
-                        if (!response) {
-                           let uid      = $uid     .goTo($accepted.getCycle()).asInt()
-                           let sender   = $sender  .goTo($accepted.getCycle()).asInt()
-                           let dest     = $dest    .goTo($accepted.getCycle()).asInt()
-                           let data     = $data    .goTo($accepted.getCycle()).asInt()
-                           let cnt      = $cnt     .goTo($accepted.getCycle()).asInt()
-                           // TODO: Use global function.
-                           let senderColor = (255 - Math.floor((sender / M4_RING_STOP_CNT) * 256)).toString(16)
-                           let destColor   = (255 - Math.floor((dest   / M4_RING_STOP_CNT) * 256)).toString(16)
-                           //debugger
-                           let transRect = new fabric.Rect({
-                              width: 10,
-                              height: 10,
-                              stroke: "#00" + senderColor + "00",
-                              fill: "#00" + destColor + "00",
-                              left: 0,
-                              top: 0
-                           })
-                           let transText = new fabric.Text(`cnt: ${cnt.toString(16)}\ndata: ${data.toString(16)}`, {
-                              left: 1,
-                              top: 1,
-                              fontSize: 2,
-                              fill: "white",
-                              textBackgroundColor: `#${(cnt & 1) ? "ff" : "00"}10${(cnt & 2) ? "ff" : "00"}`
-                           })
-                           let transObj = new fabric.Group(
-                              [transRect,
-                               transText
-                              ],
-                              {width: 10,
-                               height: 10,
-                               visible: false}
-                           )
-                           context.global.canvas.add(transObj)
-                           this.getScope("top").initResults.setTrans(uid, transObj)
-                         }
-                     }
-                     
-                     this.getContext().preppedTrace = true
+                  let $accepted = '$accepted'.goTo(-1)
+                  let $uid      = '/trans$uid'
+                  let $response = '/trans$response'
+                  let $sender   = '/trans$sender'
+                  let $dest     = '/trans$dest'
+                  let $data     = '/trans$data'
+                  let $cnt      = '/trans$cnt'
+                  while ($accepted.forwardToValue(1)) {
+                     let response = $response.goTo($accepted.getCycle()).asInt()
+                     if (!response) {
+                        let uid      = $uid     .goTo($accepted.getCycle()).asInt()
+                        let sender   = $sender  .goTo($accepted.getCycle()).asInt()
+                        let dest     = $dest    .goTo($accepted.getCycle()).asInt()
+                        let data     = $data    .goTo($accepted.getCycle()).asInt()
+                        let cnt      = $cnt     .goTo($accepted.getCycle()).asInt()
+                        // TODO: Use global function.
+                        let senderColor = (255 - Math.floor((sender / M4_RING_STOP_CNT) * 256)).toString(16)
+                        let destColor   = (255 - Math.floor((dest   / M4_RING_STOP_CNT) * 256)).toString(16)
+                        let transRect = new fabric.Rect({
+                           width: 10,
+                           height: 10,
+                           stroke: "#00" + senderColor + "00",
+                           fill: "#00" + destColor + "00",
+                           left: 0,
+                           top: 0
+                        })
+                        let transText = new fabric.Text(`cnt: ${cnt.toString(16)}\ndata: ${data.toString(16)}`, {
+                           left: 1,
+                           top: 1,
+                           fontSize: 2,
+                           fill: "white",
+                           textBackgroundColor: `#${(cnt & 1) ? "ff" : "00"}10${(cnt & 2) ? "ff" : "00"}`
+                        })
+                        let transObj = new fabric.Group(
+                           [transRect,
+                            transText
+                           ],
+                           {width: 10,
+                            height: 10,
+                            visible: false}
+                        )
+                        this.getScope("top").context.setTrans(uid, transObj)
+                      }
                   }
-                  
-                  //context.global.canvas.add(fifoBox);
-                  // Find head entry.
-                  let head_ptr = -1
-                  for (var i = 0; i < M4_FIFO_ENTRY_CNT; i++) {
-                     if ('/entry[i]>>1$is_head'.step(1).asBool()) {  // '/entry[i]$is_head', but can't access @1 (will be fixed).
-                        head_ptr = i
-                     }
-                  }
-                  
-                  return {head_ptr}
                }
             /entry[M4_FIFO_ENTRY_RANGE]
-               \viz_alpha
-                  renderEach() {
+               \viz_js
+                  box: {strokeWidth: 0},
+                  render() {
+                     // Find head entry.
+                     // TODO: This is repeated for every entry unnecessarily.
+                     //       With the current API, leaf processing is first, so its hard
+                     //       to pass info from ancestors.
+                     let head_ptr = -1
+                     for (var i = 0; i < M4_FIFO_ENTRY_CNT; i++) {
+                        if ('/entry[i]>>1$is_head'.step(1).asBool()) {  // '/entry[i]$is_head', but can't access @1 (will be fixed).
+                           head_ptr = i
+                        }
+                     }
+                     
                      if ('$valid'.asBool()) {
+                        debugger
                         let uid = '/trans$uid'.asInt()
-                        let trans = this.getScope("top").initResults.getTrans(uid)
-                        let canvas = context.global.canvas
+                        let trans = this.getScope("top").context.getTrans(uid)
                         if (typeof(trans) !== "undefined") {
                            // Set position.
-                           debugger
-                           let pos = M4_FIFO_ENTRY_MAX - ((this.getIndex() + M4_FIFO_ENTRY_CNT - this.getScope("inpipe").renderResults.head_ptr) % M4_FIFO_ENTRY_CNT)
+                           let pos = M4_FIFO_ENTRY_MAX - ((this.getIndex() + M4_FIFO_ENTRY_CNT - head_ptr) % M4_FIFO_ENTRY_CNT)
                            if (!trans.wasVisible) {
                               trans.set("top", this.getIndex("ring_stop") * 50 + 10)
                               trans.set("left", pos * 15 - 10)
@@ -235,11 +237,12 @@ parameter NUM_PACKETS_WIDTH = M4_NUM_PACKETS_WIDTH;
                   }
       |fifo_out
          @0
-            \viz_alpha
-               renderEach() {
+            \viz_js
+               box: {strokeWidth: 0},
+               render() {
                   if ('$accepted'.asBool()) {
                      let uid = '/trans$uid'.asInt()
-                     let trans = this.getScope("top").initResults.getTrans(uid)
+                     let trans = this.getScope("top").context.getTrans(uid)
                      if (typeof(trans) !== "undefined") {
                         // Set position.
                         if (!trans.wasVisible) {
@@ -257,11 +260,17 @@ parameter NUM_PACKETS_WIDTH = M4_NUM_PACKETS_WIDTH;
                
       |rg
          @1
-            \viz_alpha
-               renderEach() {
+            \viz_js
+               box: {strokeWidth: 0},
+               render() {
                   if ('$valid'.asBool()) {
                      let uid = '/trans$uid'.asInt()
-                     let trans = this.getScope("top").initResults.getTrans(uid)
+                     //-debugger
+                     //-let common1 = this.getScope("top").children.tb.children.count._commonAncestorDeleteMe(this.getScope("top").children.tb.children.ring_stop.children[2].children.send)
+                     //-let common2 = this._viz._commonAncestor(this.getScope("top").children.tb.children.ring_stop.children[2].children.send)
+                     //-console.log(`common ancestor: ${common1.name()}, ${common2.name()}`)
+                     //-debugger
+                     let trans = this.getScope("top").context.getTrans(uid)
                      if (typeof(trans) !== "undefined") {
                         // To position.
                         // If wrapping, adjust initial position.
@@ -277,11 +286,12 @@ parameter NUM_PACKETS_WIDTH = M4_NUM_PACKETS_WIDTH;
             
       |outpipe
          @2
-            \viz_alpha
-               renderEach() {
+            \viz_js
+               box: {strokeWidth: 0},
+               render() {
                   if ('$accepted'.asBool()) {
                      let uid = '/trans$uid'.asInt()
-                     let trans = this.getScope("top").initResults.getTrans(uid)
+                     let trans = this.getScope("top").context.getTrans(uid)
                      if (typeof(trans) !== "undefined") {
                         // Set position and fade.
                         trans.animate("top", this.getIndex("ring_stop") * 50 - 15)

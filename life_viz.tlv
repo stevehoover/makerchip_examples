@@ -4,7 +4,7 @@
 // --------------------------------------------------------------------
 //
 // This example implements Conway's Game of Life.
-// In this "game", a grid of cells (10x10) are born and die based on the
+// In this "game", a grid of cells are born and die based on the
 // number of live neighbors they have in each step (clock cycle).
 // A cell's neighbors are the surrounding 8 cells, which includes the
 // diagonals.
@@ -13,6 +13,9 @@
 //     neighbors.
 //
 // Output shows the grid in each step of simulation.
+//
+// There is support here for multiple boards simulated simultaneously and
+// mirrored symmetry.
 //
 // --------------------------------------------------------------------
 
@@ -28,17 +31,34 @@ m4_define_hier(['M4_YY'], 10, 0)
 
 /* verilator lint_off UNOPTFLAT */  // To silence Verilator warnings.
 
-\TLV
 
-
-
-   // ======
-   // Design
-   // ======
-   
+// Provide $init_alive to initialize to random 3x (8-section) mirroring.
+\TLV snowflake_init()
    |default
       @1
-!        $reset = *reset;
+         /M4_YY_HIER
+            /M4_XX_HIER
+               // -----------
+               // Am I alive?
+               \SV_plus
+                  localparam mirrored_x = (#xx >= (M4_XX_CNT / 2)) ? (M4_XX_MAX - #xx) \: #xx;
+                  localparam mirrored_y = (#yy >= (M4_YY_CNT / 2)) ? (M4_YY_MAX - #yy) \: #yy;
+                  localparam swap = mirrored_x > mirrored_y;
+                  localparam ind_x = swap ? mirrored_y : mirrored_x;
+                  localparam ind_y = swap ? mirrored_x : mirrored_y;
+               $init_alive = /yy[ind_y]/xx[ind_x]$rand;
+
+
+\TLV life()
+   |default
+      
+      
+      // ======
+      // Design
+      // ======
+      
+      @1
+         $reset = *reset;
          /M4_YY_HIER
             /M4_XX_HIER
                // Cell logic
@@ -68,12 +88,39 @@ m4_define_hier(['M4_YY'], 10, 0)
                $alive = |default$reset ? $init_alive :           // init
                         >>1$alive ? ($cnt >= 3 && $cnt <= 4) :   // stay alive
                                     ($cnt == 3);                 // born
+               
+               
+      // ==================
+      // Embedded Testbench
+      // ==================
+      //
+      // Declare success when total live cells was above 25% and remains below 6.25% for 20 cycles.
+      
+      // Count live cells through accumulation, into $alive_cnt.
+      // Accumulate right-to-left, then bottom-to-top through >yy[0].
+      /tb
+         @2
+            /M4_YY_HIER
+               /M4_XX_HIER
+                  $right_alive_accum[10:0] = (xx < M4_XX_MAX) ? /xx[xx + 1]$horiz_alive_accum : 11'b0;
+                  $horiz_alive_accum[10:0] = $right_alive_accum + {10'b0, |default/yy/xx$alive};
+               $below_alive_accum[21:0] = (yy < M4_YY_MAX) ? /yy[yy + 1]$vert_alive_accum : 22'b0;
+               $vert_alive_accum[21:0] = $below_alive_accum + {11'b0, /xx[0]$horiz_alive_accum};
+            $alive_cnt[21:0] = /yy[0]$vert_alive_accum;
+            $above_min_start = $alive_cnt > (M4_XX_CNT * M4_YY_CNT) >> 2;  // 1/4
+            $below_max_stop  = $alive_cnt < (M4_XX_CNT * M4_YY_CNT) >> 4;  // 1/16
+            $start_ok = |default$reset ? 1'b0 : (>>1$start_ok || $above_min_start);
+            $stop_cnt[7:0] = |default$reset  ? 8'b0 :
+                             $below_max_stop ? >>1$stop_cnt + 8'b1 :
+                                               8'b0;
+            $passed = >>1$start_ok && (($alive_cnt == '0) || (>>1$stop_cnt > 8'd20));
+            
+      
+      // ===
+      // VIZ
+      // ===
          
-         
-         // ===
-         // VIZ
-         // ===
-         
+      @1
          /M4_YY_HIER
             \viz_js
                all: {
@@ -108,51 +155,19 @@ m4_define_hier(['M4_YY'], 10, 0)
                      this.getObjects().shadow.set(prev_prop);
                   },
                   layout: "horizontal",
-      
-      
-      
-      // ==================
-      // Embedded Testbench
-      // ==================
-      //
-      // Declare success when total live cells was above 25% and remains below 6.25% for 20 cycles.
-      
-      // Count live cells through accumulation, into $alive_cnt.
-      // Accumulate right-to-left, then bottom-to-top through >yy[0].
-      /tb
-         @2
-            /M4_YY_HIER
-               /M4_XX_HIER
-                  $right_alive_accum[10:0] = (xx < M4_XX_MAX) ? /xx[xx + 1]$horiz_alive_accum : 11'b0;
-                  $horiz_alive_accum[10:0] = $right_alive_accum + {10'b0, |default/yy/xx$alive};
-               $below_alive_accum[21:0] = (yy < M4_YY_MAX) ? /yy[yy + 1]$vert_alive_accum : 22'b0;
-               $vert_alive_accum[21:0] = $below_alive_accum + {11'b0, /xx[0]$horiz_alive_accum};
-            $alive_cnt[21:0] = /yy[0]$vert_alive_accum;
-            $above_min_start = $alive_cnt > (M4_XX_CNT * M4_YY_CNT) >> 2;  // 1/4
-            $below_max_stop  = $alive_cnt < (M4_XX_CNT * M4_YY_CNT) >> 4;  // 1/16
-            $start_ok = |default$reset ? 1'b0 : (>>1$start_ok || $above_min_start);
-            $stop_cnt[7:0] = |default$reset  ? 8'b0 :
-                             $below_max_stop ? >>1$stop_cnt + 8'b1 :
-                                               8'b0;
-            *passed = >>1$start_ok && (($alive_cnt == '0) || (>>1$stop_cnt > 8'd20));
-      
-      
-      
-      // =====
-      // Print
-      // =====
-      
-      /print
-         @2
-            \SV_plus
-               always_ff @(posedge clk) begin
-                  \$display("---------------");
-                  for (int y = 0; y < M4_YY_CNT; y++) begin
-                     if (! |default$reset) begin
-                        \$display("    \%10b", |default/yy[y]/xx[*]$alive);
-                     end
-                  end
-               end
-   
+
+
+\TLV
+   /board_y[0:0]     // E.g., [2:0] for 3 boards high.
+      /board_x[0:0]  // E.g., [2:0] for 3 boards across.
+         \viz_js
+            layout: "horizontal"
+         //m4+snowflake_init()   // Uncomment to enable "snowflake" symmetry.
+         m4+life()
+   |tb
+      @2
+         // Determine passed by looking at top boards only.
+         *passed = | /top/board_y[0]/board_x[*]|default/tb<>0$passed;
+
 \SV
 endmodule

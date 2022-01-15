@@ -56,8 +56,8 @@
                box: {strokeWidth: 0},
                init() {
                   let ring = new fabric.Rect({
-                     top: 9.5,
-                     left: 9.5,
+                     top: -0.5,
+                     left: -0.5,
                      height: (#_size - 1) * 20,
                      width: 20,
                      stroke: "black",
@@ -74,7 +74,7 @@
                      /in
                         m4+_in
                      \viz_js
-                        box: {left: 0, top: 0, width: 40, height: 20, strokeWidth: 0},
+                        box: {left: -10, top: -10, width: 40, height: 20, strokeWidth: 0},
                         init() {
                            // TODO: HACK for broken this.getScope.
                            this.getScope = (index) => {return this.scopes[index]}
@@ -83,8 +83,7 @@
                            let colorByteString2 = (255 - colorByte).toString(16).padStart(2, "0")
                            this.color = "#00" + colorByteString + colorByteString2
                            let dot = new fabric.Circle({
-                              top: 10 - 2,
-                              left: 10 - 2,
+                              left: - 2, top: - 2,
                               radius: 2,
                               fill: this.color,
                               strokeWidth: 0
@@ -101,16 +100,16 @@
                                  ret.push(trans)
                                  if ('$valid'.asBool() && ! '/upstream$continue'.asBool()) {
                                     // Entering.
-                                    trans.set({opacity: 0, top: 0, left: -20})
-                                    trans.animate({left: 0, top: 5, opacity: 1}, { onChange: this.global.canvas.renderAll.bind(this.global.canvas) })
+                                    trans.set({opacity: 0, top: -5, left: -20})
+                                    trans.animate({left: 0, top: 0, opacity: 1}, { onChange: this.global.canvas.renderAll.bind(this.global.canvas) })
                                  } else {
                                     // Continuing from ring.
                                     if (this.getIndex("port") == 0) {
-                                       trans.set({opacity: 1, left: 15, top: 20 * #_size - 15})
+                                       trans.set({opacity: 1, left: 15, top: 20 * #_size - 20})
                                     } else {
-                                       trans.set({opacity: 1, left: 0, top: -15})
+                                       trans.set({opacity: 1, left: 0, top: -20})
                                     }
-                                    trans.animate({top: 5, left: 0}, { onChange: this.global.canvas.renderAll.bind(this.global.canvas) })
+                                    trans.animate({top: 0, left: 0}, { onChange: this.global.canvas.renderAll.bind(this.global.canvas) })
                                  }
                               } else {
                                  console.log(`Transaction ${uid} not found.`)
@@ -122,8 +121,8 @@
                               let trans = _trans_scope.context.transObj[uid]
                               if (trans) {
                                  ret.push(trans)
-                                 trans.set({top: 5, left: 0, opacity: 1})
-                                 trans.animate({left: -20, top: 10, opacity: 0}, { onChange: this.global.canvas.renderAll.bind(this.global.canvas) })
+                                 trans.set({top: 0, left: 0, opacity: 1})
+                                 trans.animate({left: -20, top: 5, opacity: 0}, { onChange: this.global.canvas.renderAll.bind(this.global.canvas) })
                               }
                            }
                            return ret
@@ -212,8 +211,8 @@
                      [transRect,
                       transText
                      ],
-                     {width: 20,
-                      height: 10}
+                     {width: 20, height: 10,
+                      originX: "center", originY: "center"}
                   )
                   this.getScope("my_ring").context.transObj[uid] = transObj
                }
@@ -242,7 +241,7 @@
                // Consume outputs:
                `BOGUS_USE($hour $valid)
    // Instantiate Ring
-   m4+ring(/my_other_ring, 6, ['{left: 40, top: -20, width: 40, height: 30}'], this.getScope("my_other_ring"),
+   m4+ring(/my_other_ring, 6, ['{left: 40, top: -20, width: 40, height: 30, angle: -90}'], this.getScope("my_other_ring"),
       \TLV
          $src[2:0] = #port;
          $uid[31:0] = {$src, *cyc_cnt[28:0]};
@@ -262,7 +261,7 @@
                   let dest = $dest.goTo($enter.getCycle()).asInt()
                   let data = $hour.goTo($enter.getCycle()).asInt()
                   let transRect = new fabric.Rect({
-                     width: 20,
+                     width: 16,
                      height: 10,
                      rx: 4,
                      ry: 3,
@@ -283,8 +282,8 @@
                      [transRect,
                       transText
                      ],
-                     {width: 20,
-                      height: 10}
+                     {angle: 90,
+                      originX: "center", originY: "center"}
                   )
                   transObj.debug_name = `${uid}`  // Just to help w/ debug.
                   console.log(`Created trans ${uid}, at ${$enter.getCycle()}, with canvas: ${!!transObj.canvas}`)
