@@ -56,8 +56,6 @@ m4+definitions(['
    // Mandelbrot Set Calculation
    // ==========================
 
-   // TL-Verilog docs: http://tl-x.org
-   // Tutorials:       http://makerchip.com/tutorials
    m4_makerchip_module
       // To relax Verilator compiler checking:
       /* verilator lint_off UNOPTFLAT */
