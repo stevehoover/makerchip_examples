@@ -220,29 +220,22 @@
                      }
                   )
                   
-                  // Image is not supposed to be added to canvas until it is drawn, but we need an Object to
-                  // work with immediately, so let's wrap the image in a group.
-                  let frog = new fabric.Group([frog_circle],
+                  frog_image = this.newImageFromURL(
+                       "https://raw.githubusercontent.com/stevehoover/makerchip_examples/master/viz_imgs/frog.png",
+                       "",
+                       {originX: "center", originY: "center",
+                        left: 0, top: 0,
+                        scaleX: 0.03, scaleY: 0.03,
+                        angle: -7,
+                       }
+                  )
+                  let frog = new fabric.Group([frog_circle, frog_image],
                      {originX: "center", originY: "center",
                       angle: 0,
                       width: 20, height: 20,
                      })
-                  //let sprite_sheet_url = "https://www.pngfind.com/pngs/m/351-3516508_forget-the-gifs-heres-a-behind-the-scenes.png"
-                  let frog_img_url = "https://raw.githubusercontent.com/stevehoover/makerchip_examples/master/viz_imgs/frog.png"
-                  let frog_img = new fabric.Image.fromURL(
-                     frog_img_url,
-                     (img) => {
-                        frog.add(img)
-                        this.getCanvas().renderAll()
-                     },
-                     {originX: "center", originY: "center",
-                      left: 0, top: 0,
-                      scaleX: 0.03, scaleY: 0.03,
-                      angle: -7,
-                     }
-                  )
+                  
                   return {frog}
-                  /**/
                },
                render() {
                   //debugger
