@@ -78,7 +78,7 @@
       init() {
          return {
             caravel_img: this.newImageFromURL(
-               "https://github.com/efabless/caravel/raw/main/docs/source/_static/caravel_block_diagram.jpg",
+               "https://github.com/stevehoover/makerchip_examples/blob/7829b5bd8be361988d430d56b96727611a4046d3/viz_imgs/caravel_block_diagram.jpg",
                { left: 0,
                  top: 0,
                  width: 100,
