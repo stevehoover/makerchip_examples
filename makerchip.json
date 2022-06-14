@@ -1,0 +1,25 @@
+{ "1st-class-template_no_macros": {
+    "desc": "Template for 1st CLaaS kernel development without the use of m4+ macros.",
+    "details": "Template for 1st CLaaS kernel development without the use of m4+ macros.",
+    "tags": ["1st-CLaaS"],
+    "src": "1st-claas_template_no_macros.tlv"
+  },
+  "1st-class-template_with_macros": {
+    "desc": "Template for 1st CLaaS kernel development with the use of m4+ macros.",
+    "details": "Template for 1st CLaaS kernel development with the use of m4+ macros.",
+    "tags": ["1st-CLaaS"],
+    "src": "1st-claas_template_with_macros.tlv"
+  },
+  "caravel_example": {
+    "desc": "A concept for a Caravel template.",
+    "details": "See Caravel repo: https://github.com/efabless/caravel.",
+    "tags": ["Caravel", "efabless", "MPW"],
+    "src": "caravel_example.tlv"
+  },
+  "DAC Ring": {
+    "desc": "A simple ring example.",
+    "details": "This example was presented at the Design Automation Conference 2020.",
+    "tags": ["flow"],
+    "src": "DAC_ring_example.tlv"
+  }
+}
