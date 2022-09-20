@@ -820,21 +820,21 @@ m4_def(
                      this.getObjects().letter_t.set({text: this.getScope("pipe").context.toLetter(sigs.sig("$nuc_t").asInt())})
                   },
                   where: {left: -50, top: 0}
-\SV
- m4_makerchip_module
-   // Character to nucleotide value.
-   function logic [1:0] nuc (logic [7:0] ch);
-      return ch == "A" ? 0 : ch == "C" ? 1 : ch == "T" ? 2 : 3;
-   endfunction
-   // Max score.
-   function logic [M4_SCORE_RANGE] max (logic [M4_SCORE_RANGE] a, logic [M4_SCORE_RANGE] b);
-      return (a > b) ? a : b;
-   endfunction
-   // Decrement, saturating at 0 to avoid wrap.
-   function logic [M4_SCORE_RANGE] decr (logic [M4_SCORE_RANGE] val, logic [M4_SCORE_RANGE] dec);
-      return (dec > val) ? 0 : val - dec;
-   endfunction
-\TLV
+
+\TLV smith_waterman_example(_where)
+   \SV_plus
+      // Character to nucleotide value.
+      function logic [1:0] nuc (logic [7:0] ch);
+         return ch == "A" ? 0 : ch == "C" ? 1 : ch == "T" ? 2 : 3;
+      endfunction
+      // Max score.
+      function logic [M4_SCORE_RANGE] max (logic [M4_SCORE_RANGE] a, logic [M4_SCORE_RANGE] b);
+         return (a > b) ? a : b;
+      endfunction
+      // Decrement, saturating at 0 to avoid wrap.
+      function logic [M4_SCORE_RANGE] decr (logic [M4_SCORE_RANGE] val, logic [M4_SCORE_RANGE] dec);
+         return (dec > val) ? 0 : val - dec;
+      endfunction
    /sw
       |pipe
          @-1
@@ -886,5 +886,10 @@ m4_def(
                $nucleotide_s[M4_N_RANGE] = |pipe/tb/pe$nuc_s;
             $nucleotide_t[M4_N_RANGE] = /tb/pe[0]$shifted_nuc_t;
    m4+smith_waterman(/top, /sw, $reset)
+
 \SV
-endmodule
+   m4_makerchip_module
+\TLV
+   m4+smith_waterman_example()
+\SV
+   endmodule

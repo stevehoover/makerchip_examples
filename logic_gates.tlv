@@ -39,9 +39,7 @@
          where: {left: #_x * 120, top: #_y * 75}
 
 
-\SV
-   m4_makerchip_module
-\TLV
+\TLV gates(_where)
    |example
       @0
          m4+gate(|example, /and,  AND,  0, 0,  , &&, ['https:/']['/upload.wikimedia.org/wikipedia/commons/6/64/AND_ANSI.svg'])
@@ -60,15 +58,10 @@
          $in0 = $cnt[0];
          
          
-         // Assert these to end simulation (before Makerchip cycle limit).
-         *passed = *cyc_cnt > 40;      // Simulation ends after 40 cycles
-         *failed = 1'b0;
-         
-         
-         // Visualization for logic gates
+         // Visualization context for logic gates
          \viz_js
             // JavaScript code
-            box: {left: -40, top: -75, width: 300, height: 330, fill: "#fcf5ee"},
+            box: {strokeWidth: 0, left: -40, top: -75, width: 300, height: 330, fill: "#fcf5ee"},
             init() {
                return {
                   title: new fabric.Text("Digital Logic Gates", {
@@ -78,5 +71,16 @@
                   })
                }
             },
+            where: {_where}
+
+\SV
+   m4_makerchip_module
+\TLV
+   m4+gates()   
+         
+   // Assert these to end simulation (before Makerchip cycle limit).
+   *passed = *cyc_cnt > 40;      // Simulation ends after 40 cycles
+   *failed = 1'b0;
+         
 \SV
    endmodule      // close the module

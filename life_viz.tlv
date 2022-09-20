@@ -49,7 +49,7 @@ m4_define_hier(['M4_YY'], 10, 0)
                $init_alive = /yy[ind_y]/xx[ind_x]$rand;
 
 
-\TLV life()
+\TLV life(_where)
    |default
       
       
@@ -116,11 +116,15 @@ m4_define_hier(['M4_YY'], 10, 0)
             $passed = >>1$start_ok && (($alive_cnt == '0) || (>>1$stop_cnt > 8'd20));
             
       
-      // ===
-      // VIZ
-      // ===
-         
+   // ===
+   // VIZ
+   // ===
+   |default
       @1
+         \viz_js
+            box: {strokeWidth: 0},
+            where: {_where}
+         
          /M4_YY_HIER
             \viz_js
                all: {

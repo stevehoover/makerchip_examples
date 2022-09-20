@@ -1,17 +1,12 @@
 \m4_TLV_version 1d: tl-x.org
 \SV
-   // Sort a set of numbers, provided in a 1-dimensional array.
-   // The sorting network is a pipeline (though not using a TLV pipeline because stages are replicas).
-   // Each pipeline stage has a copy of the array and performs one sorting step.
-   // A sorting step involves sorting adjacent pairs of numbers.
-   // In even stages, natural pairs are compared ((0,1), (2,3), ...); on odd ((0), (1,2), (3,4), ...).
-   
-   m4_makerchip_module
-      // To relax Verilator compiler checking:
-      /* verilator lint_off MULTIDRIVEN */
-      m4_define(m4_n, 8)
-      m4_define(m4_half, m4_eval(m4_n/2))
-\TLV
+\TLV sort_example(_where)
+
+   // To relax Verilator compiler checking:
+   /* verilator lint_save */
+   /* verilator lint_off MULTIDRIVEN */
+   m4_define(m4_n, 8)
+   m4_define(m4_half, m4_eval(m4_n/2))
    $reset = *reset;
    
    /tb
@@ -56,6 +51,9 @@
    m4_def(COL_WIDTH, 40)
    m4_def(FONT_SIZE, 10)
    m4_def(LINE_WIDTH, 4)
+   \viz_js
+      box: {strokeWidth: 0},
+      where: {_where}
    |pipe
       @1
          \viz_js
@@ -147,7 +145,18 @@
                      
                   }
    
+   /* verilator lint_restore */
    
+\SV
+   // Sort a set of numbers, provided in a 1-dimensional array.
+   // The sorting network is a pipeline (though not using a TLV pipeline because stages are replicas).
+   // Each pipeline stage has a copy of the array and performs one sorting step.
+   // A sorting step involves sorting adjacent pairs of numbers.
+   // In even stages, natural pairs are compared ((0,1), (2,3), ...); on odd ((0), (1,2), (3,4), ...).
+   
+   m4_makerchip_module
+\TLV
+   m4+sort_example()
    
    // Assert these to end simulation (before Makerchip cycle limit).
    *passed = *cyc_cnt > 40;

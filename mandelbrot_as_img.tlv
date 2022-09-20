@@ -50,19 +50,13 @@ m4+definitions(['
    /* Electrified */ m4_def(COLOR_MODE, ['{mode: "Smooth", pattern: [0, 155, 155, 0]}, {mode: "Smooth", pattern: [0, 0, 155, 155]}, {mode: "Frac", val: "blendAB", neg: "Abs", saturate: true}'])
    m4_def(FIXED_DEPTH, 0)
 '])
-\SV
-
-   // ==========================
-   // Mandelbrot Set Calculation
-   // ==========================
-
-   m4_makerchip_module
-      // To relax Verilator compiler checking:
-      /* verilator lint_off UNOPTFLAT */
-      /* verilator lint_on WIDTH */
-      /* verilator lint_off REALCVT */  // !!! SandPiper DEBUGSIGS BUG.
-\TLV
+// Params:
+//   _out_prefix: ['*'] or ['$'] to prefix passed/failed output signals in |pipe@0.
+\TLV mandelbrot(_out_prefix, _where)
    $reset = *reset;
+   \viz_js
+      box: {strokeWidth: 0},
+      where: {_where}
    
    |pipe
       @0
@@ -404,10 +398,23 @@ m4+definitions(['
                circle.set("top",  M4_VIZ_SCREEN_Y + ('$PixV'.asInt() + 0.5) * M4_VIZ_CELL_SIZE)
                return ret
             }
-   
-   // Assert these to end simulation (before Makerchip cycle limit).
-   *passed = !clk || (|pipe>>1$wrap_v && |pipe>>1$wrap_h && |pipe>>1$done_pix) || *cyc_cnt > 1000000;
-   *failed = !clk || 1'b0;
+      @1
+         // Assert these to end simulation (before Makerchip cycle limit).
+         _out_prefix['']passed = !clk || ($wrap_v && $wrap_h && $done_pix) || *cyc_cnt > 40000;
+         _out_prefix['']failed = !clk || 1'b0;
 
+\SV
+
+   // ==========================
+   // Mandelbrot Set Calculation
+   // ==========================
+
+   m4_makerchip_module
+      // To relax Verilator compiler checking:
+      /* verilator lint_off UNOPTFLAT */
+      /* verilator lint_on WIDTH */
+      /* verilator lint_off REALCVT */  // !!! SandPiper DEBUGSIGS BUG.
+\TLV
+   m4+mandelbrot(*,)
 \SV
    endmodule

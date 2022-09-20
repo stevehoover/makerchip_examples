@@ -1,18 +1,22 @@
 \m4_TLV_version 1d: tl-x.org
 \SV
-m4_makerchip_module
 
-// Include fifo and ring components from a git repo.
-m4_include_url(['https://raw.githubusercontent.com/stevehoover/tlv_flow_lib/c48ad6c12e21f6fb49d77e7a633387264660d401/pipeflow_lib.tlv'])
-
-m4_define_hier(M4_RING_STOP, 4, 0)
-m4_define_hier(M4_FIFO_ENTRY, 6)
-m4_define(M4_NUM_PACKETS_WIDTH, 16)
-parameter NUM_PACKETS_WIDTH = M4_NUM_PACKETS_WIDTH;
-
-/* verilator lint_off MULTIDRIVEN */
-\TLV
+\TLV ring_example(_where)
    
+   // Include fifo and ring components from a git repo.
+   m4_include_url(['https://raw.githubusercontent.com/stevehoover/tlv_flow_lib/c48ad6c12e21f6fb49d77e7a633387264660d401/pipeflow_lib.tlv'])
+
+   m4_define_hier(M4_RING_STOP, 4, 0)
+   m4_define_hier(M4_FIFO_ENTRY, 6)
+   m4_define(M4_NUM_PACKETS_WIDTH, 16)
+   \SV_plus
+      parameter NUM_PACKETS_WIDTH = M4_NUM_PACKETS_WIDTH;
+
+   /* verilator lint_save */
+   /* verilator lint_off MULTIDRIVEN */
+   
+   
+
    // *********************
    // * DESIGN UNDER TEST *
    // *********************
@@ -124,7 +128,8 @@ parameter NUM_PACKETS_WIDTH = M4_NUM_PACKETS_WIDTH;
             trans.wasVisible = trans.visible
             trans.visible = false
          }
-      }
+      },
+      where: {_where}
       
    
    /M4_RING_STOP_HIER
@@ -375,8 +380,15 @@ parameter NUM_PACKETS_WIDTH = M4_NUM_PACKETS_WIDTH;
          @0
             $reset = /top>>1$reset;
             $packets[M4_RING_STOP_CNT * NUM_PACKETS_WIDTH - 1:0] = /tb/ring_stop[*]|receive<>0$NumPackets;
-            *passed = !$reset && ($packets == '0) && (/tb|count<>0$CycCount > 6);
+            $passed = !$reset && ($packets == '0) && (/tb|count<>0$CycCount > 6);
+   
+   /* verilator lint_restore */
+   
+\SV
+   m4_makerchip_module
 
-
+\TLV
+   m4+ring_example()
+   *passed = /tb|pass<>0$passed;
 \SV
 endmodule

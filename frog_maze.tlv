@@ -3,7 +3,7 @@
    m4_include_lib(['https://raw.githubusercontent.com/stevehoover/tlv_lib/db48b4c22c4846c900b3fa307e87d9744424d916/fundamentals_lib.tlv'])
    m4_makerchip_module   // (Expanded in Nav-TLV pane.)
    /* verilator lint_on WIDTH */
-\TLV
+\TLV frog_maze()
    |pipe
       @1
          $reset = *reset;
@@ -151,8 +151,6 @@
       @1
          /frog
             $done = ($Xx == 0 || $Yy == 0 || $Xx >= M4_XX_MAX-1 || $Yy >= M4_YY_MAX-1);
-            *passed = *cyc_cnt > 10 && >>1$done;
-            *failed = 1'b0;
    
    // Visualization
    |pipe
@@ -271,5 +269,11 @@
                     }
                   )
                }
+
+\TLV
+   m4+frog_maze()
+   
+   *passed = *cyc_cnt > 10 && |pipe/frog>>2$done;
+   *failed = 1'b0;
 \SV
    endmodule
