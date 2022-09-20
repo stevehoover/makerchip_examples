@@ -49,116 +49,115 @@ m4_define_hier(['M4_YY'], 10, 0)
                $init_alive = /yy[ind_y]/xx[ind_x]$rand;
 
 
-\TLV life(_where)
-   |default
-      
-      
-      // ======
-      // Design
-      // ======
-      
-      @1
-         $reset = *reset;
-         /M4_YY_HIER
-            /M4_XX_HIER
-               // Cell logic
-               
-               // -----------
-               // Population count ($cnt) of 3x3 square (with edge logic).
-               
-               // Sum left + me + right.
-               $row_cnt[1:0] = {1'b0, (/xx[(xx + M4_XX_CNT-1) % M4_XX_CNT]>>1$alive & (xx > 0))} +
-                               {1'b0, >>1$alive} +
-                               {1'b0, (/xx[(xx + 1) % M4_XX_CNT]>>1$alive & (xx < M4_XX_CNT-1))};
-               // Sum three $row_cnt's: above + mine + below.
-               $cnt[3:0] = {2'b00, (/yy[(yy + M4_YY_CNT-1) % M4_YY_CNT]/xx$row_cnt & {2{(yy > 0)}})} +
-                           {2'b00, $row_cnt[1:0]} +
-                           {2'b00, (/yy[(yy + 1) % M4_YY_CNT]/xx$row_cnt & {2{(yy < M4_YY_CNT-1)}})};
-               
-               
-               // ----------
-               // Init state
-               
-               //m4_rand($init_alive, 0, 0, (yy * xx) ^ ((3 * xx) + yy))
-               
-               
-               // -----------
-               // Am I alive?
-               
-               $alive = |default$reset ? $init_alive :           // init
-                        >>1$alive ? ($cnt >= 3 && $cnt <= 4) :   // stay alive
-                                    ($cnt == 3);                 // born
-               
-               
-      // ==================
-      // Embedded Testbench
-      // ==================
-      //
-      // Declare success when total live cells was above 25% and remains below 6.25% for 20 cycles.
-      
-      // Count live cells through accumulation, into $alive_cnt.
-      // Accumulate right-to-left, then bottom-to-top through >yy[0].
-      /tb
-         @2
+\TLV life(/_top, _where)
+   /_top
+      \viz_js
+         box: {strokeWidth: 0},
+         where: {_where}
+      |default
+
+
+         // ======
+         // Design
+         // ======
+
+         @1
+            $reset = *reset;
             /M4_YY_HIER
                /M4_XX_HIER
-                  $right_alive_accum[10:0] = (xx < M4_XX_MAX) ? /xx[xx + 1]$horiz_alive_accum : 11'b0;
-                  $horiz_alive_accum[10:0] = $right_alive_accum + {10'b0, |default/yy/xx$alive};
-               $below_alive_accum[21:0] = (yy < M4_YY_MAX) ? /yy[yy + 1]$vert_alive_accum : 22'b0;
-               $vert_alive_accum[21:0] = $below_alive_accum + {11'b0, /xx[0]$horiz_alive_accum};
-            $alive_cnt[21:0] = /yy[0]$vert_alive_accum;
-            $above_min_start = $alive_cnt > (M4_XX_CNT * M4_YY_CNT) >> 2;  // 1/4
-            $below_max_stop  = $alive_cnt < (M4_XX_CNT * M4_YY_CNT) >> 4;  // 1/16
-            $start_ok = |default$reset ? 1'b0 : (>>1$start_ok || $above_min_start);
-            $stop_cnt[7:0] = |default$reset  ? 8'b0 :
-                             $below_max_stop ? >>1$stop_cnt + 8'b1 :
-                                               8'b0;
-            $passed = >>1$start_ok && (($alive_cnt == '0) || (>>1$stop_cnt > 8'd20));
-            
-      
-   // ===
-   // VIZ
-   // ===
-   |default
-      @1
-         \viz_js
-            box: {strokeWidth: 0},
-            where: {_where}
-         
-         /M4_YY_HIER
-            \viz_js
-               all: {
-                  box: {
-                     width: M4_XX_CNT * 20 + 20,
-                     height: M4_YY_CNT * 20 + 20,
-                     fill: "#505050",
-                     strokeWidth: 0
-                  }
-               },
-               where0: {left: 10, top: 10}
-            /M4_XX_HIER
+                  // Cell logic
+
+                  // -----------
+                  // Population count ($cnt) of 3x3 square (with edge logic).
+
+                  // Sum left + me + right.
+                  $row_cnt[1:0] = {1'b0, (/xx[(xx + M4_XX_CNT-1) % M4_XX_CNT]>>1$alive & (xx > 0))} +
+                                  {1'b0, >>1$alive} +
+                                  {1'b0, (/xx[(xx + 1) % M4_XX_CNT]>>1$alive & (xx < M4_XX_CNT-1))};
+                  // Sum three $row_cnt's: above + mine + below.
+                  $cnt[3:0] = {2'b00, (/yy[(yy + M4_YY_CNT-1) % M4_YY_CNT]/xx$row_cnt & {2{(yy > 0)}})} +
+                              {2'b00, $row_cnt[1:0]} +
+                              {2'b00, (/yy[(yy + 1) % M4_YY_CNT]/xx$row_cnt & {2{(yy < M4_YY_CNT-1)}})};
+
+
+                  // ----------
+                  // Init state
+
+                  //m4_rand($init_alive, 0, 0, (yy * xx) ^ ((3 * xx) + yy))
+
+
+                  // -----------
+                  // Am I alive?
+
+                  $alive = |default$reset ? $init_alive :           // init
+                           >>1$alive ? ($cnt >= 3 && $cnt <= 4) :   // stay alive
+                                       ($cnt == 3);                 // born
+
+
+         // ==================
+         // Embedded Testbench
+         // ==================
+         //
+         // Declare success when total live cells was above 25% and remains below 6.25% for 20 cycles.
+
+         // Count live cells through accumulation, into $alive_cnt.
+         // Accumulate right-to-left, then bottom-to-top through >yy[0].
+         /tb
+            @2
+               /M4_YY_HIER
+                  /M4_XX_HIER
+                     $right_alive_accum[10:0] = (xx < M4_XX_MAX) ? /xx[xx + 1]$horiz_alive_accum : 11'b0;
+                     $horiz_alive_accum[10:0] = $right_alive_accum + {10'b0, |default/yy/xx$alive};
+                  $below_alive_accum[21:0] = (yy < M4_YY_MAX) ? /yy[yy + 1]$vert_alive_accum : 22'b0;
+                  $vert_alive_accum[21:0] = $below_alive_accum + {11'b0, /xx[0]$horiz_alive_accum};
+               $alive_cnt[21:0] = /yy[0]$vert_alive_accum;
+               $above_min_start = $alive_cnt > (M4_XX_CNT * M4_YY_CNT) >> 2;  // 1/4
+               $below_max_stop  = $alive_cnt < (M4_XX_CNT * M4_YY_CNT) >> 4;  // 1/16
+               $start_ok = |default$reset ? 1'b0 : (>>1$start_ok || $above_min_start);
+               $stop_cnt[7:0] = |default$reset  ? 8'b0 :
+                                $below_max_stop ? >>1$stop_cnt + 8'b1 :
+                                                  8'b0;
+               $passed = >>1$start_ok && (($alive_cnt == '0) || (>>1$stop_cnt > 8'd20));
+
+
+         // ===
+         // VIZ
+         // ===
+         @1
+            /M4_YY_HIER
                \viz_js
-                  box: {width: 20, height: 20,
-                        fill: "lightgray",
-                        strokeWidth: 0},
-                  init() {
-                     //debugger
-                     return {
-                        shadow: new fabric.Rect({
-                           width: 4, height: 4,
-                           fill: "lightgray",
-                           left: 8, top: 8
-                        })
+                  all: {
+                     box: {
+                        width: M4_XX_CNT * 20 + 20,
+                        height: M4_YY_CNT * 20 + 20,
+                        fill: "#505050",
+                        strokeWidth: 0
                      }
                   },
-                  render() {
-                     //debugger
-                     let background = ('$alive'.asBool()) ? "#10D080" : "#204030";
-                     let prev_prop = ('>>1$alive'.asBool()) ? {fill: "#008000", opacity: 0.3} : {fill: null, opacity: 0};
-                     this.getBox().set("fill", background);
-                     this.getObjects().shadow.set(prev_prop);
-                  },
-                  layout: "horizontal",
+                  where0: {left: 10, top: 10}
+               /M4_XX_HIER
+                  \viz_js
+                     box: {width: 20, height: 20,
+                           fill: "lightgray",
+                           strokeWidth: 0},
+                     init() {
+                        //debugger
+                        return {
+                           shadow: new fabric.Rect({
+                              width: 4, height: 4,
+                              fill: "lightgray",
+                              left: 8, top: 8
+                           })
+                        }
+                     },
+                     render() {
+                        //debugger
+                        let background = ('$alive'.asBool()) ? "#10D080" : "#204030";
+                        let prev_prop = ('>>1$alive'.asBool()) ? {fill: "#008000", opacity: 0.3} : {fill: null, opacity: 0};
+                        this.getBox().set("fill", background);
+                        this.getObjects().shadow.set(prev_prop);
+                     },
+                     layout: "horizontal",
 
 
 \TLV
@@ -167,11 +166,11 @@ m4_define_hier(['M4_YY'], 10, 0)
          \viz_js
             layout: "horizontal"
          //m4+snowflake_init()   // Uncomment to enable "snowflake" symmetry.
-         m4+life()
+         m4+life(/life, )
    |tb
       @2
          // Determine passed by looking at top boards only.
-         *passed = | /top/board_y[0]/board_x[*]|default/tb<>0$passed;
+         *passed = | /top/board_y[0]/board_x[*]/life|default/tb<>0$passed;
 
 \SV
 endmodule

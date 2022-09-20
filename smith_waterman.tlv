@@ -257,7 +257,6 @@ m4_def(
                \viz_js
                   box: {width: M4_PE_CNT * 2 * 32, height: 300 + M4_PE_CNT * 50, strokeWidth: 0},
                   render() {
-                     debugger
                      // Put all sigs into sig_obj.
                      let sig_obj = {$max: '|pipe$max'}
                      for (let i = 0; i < M4_PE_CNT; i++) {
@@ -586,7 +585,6 @@ m4_def(
                         // color1 is transparent if future (cycle > 0), opaque if now (cycle == 0), faded if past (cycle < 0).
                         // color2 is overlayed, transparent in future, slightly faded (opaquely) if past.
                         this.cellColor = function(color1, cycle1, color2, cycle2) {
-                           debugger
                            color1 = new fabric.Color(color1)
                            if (cycle1 > 0) {  // future
                               color1.setAlpha(M4_FUTURE_OPACITY)
@@ -646,7 +644,6 @@ m4_def(
                         }
                      },
                      render() {
-                        //debugger
                         
                         //
                         // Signals
@@ -741,6 +738,7 @@ m4_def(
                         let match = sigs.sig("$match").asBool()
                         // Confirm arrows are the same for max and arrow phase.
                         let back_arrow2 = sigs.sig("$back_arrow_fwd").asInt()
+                        /*
                         if (back_arrow2 != back_arrow) {
                            console.log("Back arrow mismatch between max phase and arrow phase.")
                            debugger
@@ -749,6 +747,7 @@ m4_def(
                            console.log("Back arrow mismatch between max phase and backtrack phase.")
                            debugger
                         }
+                        */
                         
                         // Set backtrack text.
                         this.getObjects().back_text.set({text: ``})
@@ -821,75 +820,76 @@ m4_def(
                   },
                   where: {left: -50, top: 0}
 
-\TLV smith_waterman_example(_where)
-   \SV_plus
-      // Character to nucleotide value.
-      function logic [1:0] nuc (logic [7:0] ch);
-         return ch == "A" ? 0 : ch == "C" ? 1 : ch == "T" ? 2 : 3;
-      endfunction
-      // Max score.
-      function logic [M4_SCORE_RANGE] max (logic [M4_SCORE_RANGE] a, logic [M4_SCORE_RANGE] b);
-         return (a > b) ? a : b;
-      endfunction
-      // Decrement, saturating at 0 to avoid wrap.
-      function logic [M4_SCORE_RANGE] decr (logic [M4_SCORE_RANGE] val, logic [M4_SCORE_RANGE] dec);
-         return (dec > val) ? 0 : val - dec;
-      endfunction
-   /sw
-      |pipe
-         @-1
-            $reset = *reset;
-            $start = *cyc_cnt == 10;  // Asserts for the computation of [0,0].
-         @0
-            /tb
-               m4+ifelse(1, 1,
-                  \TLV
-                     // Fixed sequences.
-                     $genome_s[8 * M4_PE_CNT - 1 : 0] = "M4_S_GENOME";
-                     $genome_t[8 * M4_PE_CNT - 1 : 0] = "M4_T_GENOME";
-                     /pe[M4_PE_RANGE]
-                        $nuc_s_char[7:0] = /tb$genome_s[((M4_PE_MAX - #pe) + 1) * 8 - 1 : (M4_PE_MAX - #pe) * 8];
-                        $nuc_t_char[7:0] = /tb$genome_t[((M4_PE_MAX - #pe) + 1) * 8 - 1 : (M4_PE_MAX - #pe) * 8];
-                        $nuc_s[M4_PE_RANGE] = nuc($nuc_s_char);
-                        $nuc_t[M4_PE_RANGE] = nuc($nuc_t_char);
-                  , 1, 1,
-                  \TLV
-                     // Random sequences.
-                     /pe[M4_PE_RANGE]
-                        m4_rand($rand0, M4_N_SIZE - 1, 0, pe + M4_SEED)
-                        m4_rand($rand1, M4_N_SIZE - 1, 0, pe + M4_SEED)
-                        m4_rand($rand2, M4_N_SIZE - 1, 0, pe + M4_SEED)
-                        m4_rand($rand3, M4_N_SIZE - 1, 0, pe + M4_SEED)
-                        $nuc_t[M4_N_SIZE-1:0] = $rand0 | ($rand1 & 2'b01);
-                        $nuc_s[M4_N_SIZE-1:0] = $rand2 | ($rand1 & 2'b01);
-                  ,
-                  \TLV
-                     // (Unassigned) random sequences.
-                     /pe[M4_PE_RANGE]
-                        `BOGUS_USE($nuc_s[M4_PE_RANGE] $nuc_t[M4_PE_RANGE])
-                  )
+\TLV smith_waterman_example(/_top, _where)
+   /_top
+      \SV_plus
+         // Character to nucleotide value.
+         function logic [1:0] nuc (logic [7:0] ch);
+            return ch == "A" ? 0 : ch == "C" ? 1 : ch == "T" ? 2 : 3;
+         endfunction
+         // Max score.
+         function logic [M4_SCORE_RANGE] max (logic [M4_SCORE_RANGE] a, logic [M4_SCORE_RANGE] b);
+            return (a > b) ? a : b;
+         endfunction
+         // Decrement, saturating at 0 to avoid wrap.
+         function logic [M4_SCORE_RANGE] decr (logic [M4_SCORE_RANGE] val, logic [M4_SCORE_RANGE] dec);
+            return (dec > val) ? 0 : val - dec;
+         endfunction
+      /sw
+         |pipe
+            @-1
+               $reset = *reset;
+               $start = *cyc_cnt == 10;  // Asserts for the computation of [0,0].
+            @0
+               /tb
+                  m4+ifelse(1, 1,
+                     \TLV
+                        // Fixed sequences.
+                        $genome_s[8 * M4_PE_CNT - 1 : 0] = "M4_S_GENOME";
+                        $genome_t[8 * M4_PE_CNT - 1 : 0] = "M4_T_GENOME";
+                        /pe[M4_PE_RANGE]
+                           $nuc_s_char[7:0] = /tb$genome_s[((M4_PE_MAX - #pe) + 1) * 8 - 1 : (M4_PE_MAX - #pe) * 8];
+                           $nuc_t_char[7:0] = /tb$genome_t[((M4_PE_MAX - #pe) + 1) * 8 - 1 : (M4_PE_MAX - #pe) * 8];
+                           $nuc_s[M4_PE_RANGE] = nuc($nuc_s_char);
+                           $nuc_t[M4_PE_RANGE] = nuc($nuc_t_char);
+                     , 1, 1,
+                     \TLV
+                        // Random sequences.
+                        /pe[M4_PE_RANGE]
+                           m4_rand($rand0, M4_N_SIZE - 1, 0, pe + M4_SEED)
+                           m4_rand($rand1, M4_N_SIZE - 1, 0, pe + M4_SEED)
+                           m4_rand($rand2, M4_N_SIZE - 1, 0, pe + M4_SEED)
+                           m4_rand($rand3, M4_N_SIZE - 1, 0, pe + M4_SEED)
+                           $nuc_t[M4_N_SIZE-1:0] = $rand0 | ($rand1 & 2'b01);
+                           $nuc_s[M4_N_SIZE-1:0] = $rand2 | ($rand1 & 2'b01);
+                     ,
+                     \TLV
+                        // (Unassigned) random sequences.
+                        /pe[M4_PE_RANGE]
+                           `BOGUS_USE($nuc_s[M4_PE_RANGE] $nuc_t[M4_PE_RANGE])
+                     )
+                  /pe[M4_PE_RANGE]
+                     $shifted_nuc_t[7:0] =
+                          // reset
+                          |pipe$reset ? $nuc_t :
+                          // cyclic left shift
+                          |pipe/pe[0]>>1$valid_fwd
+                                      ? /pe[(#pe + 1) % M4_PE_CNT]>>1$shifted_nuc_t :
+                          // retain
+                                    $RETAIN;
+
+      // Inputs:
+      /sw
+         |pipe
+            @0
                /pe[M4_PE_RANGE]
-                  $shifted_nuc_t[7:0] =
-                       // reset
-                       |pipe$reset ? $nuc_t :
-                       // cyclic left shift
-                       |pipe/pe[0]>>1$valid_fwd
-                                   ? /pe[(#pe + 1) % M4_PE_CNT]>>1$shifted_nuc_t :
-                       // retain
-                                 $RETAIN;
-            
-   // Inputs:
-   /sw
-      |pipe
-         @0
-            /pe[M4_PE_RANGE]
-               $nucleotide_s[M4_N_RANGE] = |pipe/tb/pe$nuc_s;
-            $nucleotide_t[M4_N_RANGE] = /tb/pe[0]$shifted_nuc_t;
-   m4+smith_waterman(/top, /sw, $reset)
+                  $nucleotide_s[M4_N_RANGE] = |pipe/tb/pe$nuc_s;
+               $nucleotide_t[M4_N_RANGE] = /tb/pe[0]$shifted_nuc_t;
+      m4+smith_waterman(/_top, /sw, $reset)
 
 \SV
    m4_makerchip_module
 \TLV
-   m4+smith_waterman_example()
+   m4+smith_waterman_example(/example,)
 \SV
    endmodule
