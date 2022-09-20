@@ -154,6 +154,9 @@
                $done = ($Xx == 0 || $Yy == 0 || $Xx >= M4_XX_MAX-1 || $Yy >= M4_YY_MAX-1);
 
       // Visualization
+      \viz_js
+         box: {strokeWidth: 0},
+         where: {_where}
       |pipe
          @1
             \viz_js
