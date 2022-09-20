@@ -61,7 +61,7 @@ m4+definitions(['
 
       |pipe
          @0
-            $reset = /top<>0$reset;
+            $reset = /_top<>0$reset;
 
 
             //

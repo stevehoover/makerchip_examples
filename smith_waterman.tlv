@@ -822,6 +822,9 @@ m4_def(
 
 \TLV smith_waterman_example(/_top, _where)
    /_top
+      \viz_js
+         box: {strokeWidth: 0},
+         where: {_where}
       \SV_plus
          // Character to nucleotide value.
          function logic [1:0] nuc (logic [7:0] ch);
