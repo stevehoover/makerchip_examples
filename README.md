@@ -7,6 +7,7 @@ Various examples of TL-Verilog code to run in Makerchip.com.
 `http://www.makerchip.com/sandbox?code_url=https:%2F%2Fraw.githubusercontent.com%2Fstevehoover%2Fwarp-v%2Fmaster%2F` --->
 
 Here are some quick-links:
+  - <a href="http://www.makerchip.com/sandbox?code_url=https:%2F%2Fraw.githubusercontent.com%2Fstevehoover%2Fmakerchip_examples%2Fmaster%2Fall_examples.tlv" target="_blank" atom_fix="_">all_examples.tlv</a>
   - <a href="http://www.makerchip.com/sandbox?code_url=https:%2F%2Fraw.githubusercontent.com%2Fstevehoover%2Fmakerchip_examples%2Fmaster%2Flogic_gates.tlv" target="_blank" atom_fix="_">logic_gates.tlv</a>
   - <a href="http://www.makerchip.com/sandbox?code_url=https:%2F%2Fraw.githubusercontent.com%2Fstevehoover%2Fmakerchip_examples%2Fmaster%2Flife_viz.tlv" target="_blank" atom_fix="_">life_viz.tlv</a>
   - <a href="http://www.makerchip.com/sandbox?code_url=https:%2F%2Fraw.githubusercontent.com%2Fstevehoover%2Fmakerchip_examples%2Fmaster%2Fsort_viz.tlv" target="_blank" atom_fix="_">sort_viz.tlv</a>

@@ -74,7 +74,7 @@
       // *******
 
       \viz_js
-         box: {strokeWidth: 0},
+         box: {strokeWidth: 2, top: -25, left: -30, width: 215, height: 210, fill: "white"},
          init() {
             let testRect = new fabric.Rect({width: 10, height: 10, strikeWidth: 2})
             console.log(`testRect.getScaledWidth(): ${testRect.getScaledWidth()}`)
