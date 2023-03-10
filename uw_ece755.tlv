@@ -7,7 +7,7 @@
    |node
       @1
          // Capture input on rise of $in_ready.
-         $capture = ! /top$reset && |node$in_ready && ! |node>>1$in_ready;
+         $capture = ! /top<>0$reset && |node$in_ready && ! |node>>1$in_ready;
          /in[3:0]
             $value[4:0] = |node$capture ? $random[4:0] : $RETAIN;
          /hidden[3:0]
@@ -24,10 +24,10 @@
             /in
                /weight[3:0]
                   $value[4:0] = |node$capture ? $random[4:0] : $RETAIN;
-            $out[16:0] = \$signed(|node/hidden[0]$relu) * \$signed(/in/weight[0]$value[4:0]) +
-                         \$signed(|node/hidden[1]$relu) * \$signed(/in/weight[1]$value[4:0]) +
-                         \$signed(|node/hidden[2]$relu) * \$signed(/in/weight[2]$value[4:0]) +
-                         \$signed(|node/hidden[3]$relu) * \$signed(/in/weight[3]$value[4:0]);
+            $out[16:0] = |node/hidden[0]$relu * \$signed(/in/weight[0]$value[4:0]) +
+                         |node/hidden[1]$relu * \$signed(/in/weight[1]$value[4:0]) +
+                         |node/hidden[2]$relu * \$signed(/in/weight[2]$value[4:0]) +
+                         |node/hidden[3]$relu * \$signed(/in/weight[3]$value[4:0]);
          $out0_ready = ! $reset && ($capture || >>1$out0_ready);
          $out1_ready = ! $reset && ($capture || >>1$out1_ready);
          
