@@ -12,8 +12,8 @@
 // A ripple-carry adder chaining full adders, instantiating full adders in /_slice[*].
 // Input and output bits are under /_slice[*].
 \TLV ripple_carry_adder(/_slice, #_width, $_out, $_carry_out, $_in1, $_in2)
-   /_slice[#_width-1:0]
-      $carry_in = (#m4_strip_prefix(/_slice) == 0) ? 1'b0 : /slice[(#m4_strip_prefix(/_slice) - 1) % #_width]$_carry_out;
+   /_slice[m5_calc((#_width)-1):0]
+      $carry_in = (#m4_strip_prefix(/_slice) == 0) ? 1'b0 : /_slice[(#m4_strip_prefix(/_slice) - 1) % (#_width)]$_carry_out;
       m5+full_adder($_out, $_carry_out, $_in1, $_in2, $carry_in)
 
 \SV
@@ -26,6 +26,7 @@
    // Inputs
    m4_rand($addend1, m5_width-1, 0)
    m4_rand($addend2, m5_width-1, 0)
+   // Connect inputs
    /slice[m5_width-1:0]
       $in1 = /top$addend1[#slice];
       $in2 = /top$addend2[#slice];
@@ -39,7 +40,7 @@
       box: {width: 80, height: 12, fill: "darkblue", strokeWidth: 0, rx: 2, ry: 2},
       render() {
          return [new fabric.Text(`${'$addend1'.asInt()} + ${'$addend2'.asInt()} = ${'$result'.asInt()}`,
-                                 {left: 2, top: 0, fontFamily: "mono", fontSize: 10, fill: "white"}
+                                 {left: 2, top: 0, fontFamily: "mono", fontSize: 10, fill: "#d0d0d0"}
          )]
       },
 \SV
