@@ -1,24 +1,46 @@
-\m4_TLV_version 1d: tl-x.org
-\SV
-   m4_makerchip_module   // (Expanded in Nav-TLV pane.)
+\m5_TLV_version 1d: tl-x.org
+\m5
+   // This region contains M5 macro definitions. It will not appear
+   // in the resulting TLV code (in the NAV-TLV tab).
+   use(m5-0.2) // Use M5 libraries
 
-\TLV ripple_carry_adder(#_width, $_in1, $_in2, $_out, /_top)
-   /slice[#_width-1:0]
-      $in1 = /_top$_in1[#slice];
-      $in2 = /_top$_in2[#slice];
-      $carry_in = (#slice == 0) ? 1'b0 : /_top/slice[(#slice - 1) % #_width]$carry_out;
-      $out = $in1 ^ $in2 ^ $carry_in;
-      $carry_out = ($in1 + $in2 + $carry_in) > 2'b1;
-   $_out[#_width-1:0] = /slice[*]$out;
-   
+// Full adder adding two bits and a carry to produce an output bit and carry.
+\TLV full_adder($_out, $_carry_out, $_in1, $_in2, $_carry_in)
+   $_out = $_in1 ^ $_in2 ^ $_carry_in;
+   $_carry_out = ($_in1 + $_in2 + $_carry_in) > 2'b1;
+
+// A ripple-carry adder chaining full adders, instantiating full adders in /_slice[*].
+// Input and output bits are under /_slice[*].
+\TLV ripple_carry_adder(/_slice, #_width, $_out, $_carry_out, $_in1, $_in2)
+   /_slice[#_width-1:0]
+      $carry_in = (#m4_strip_prefix(/_slice) == 0) ? 1'b0 : /slice[(#m4_strip_prefix(/_slice) - 1) % #_width]$_carry_out;
+      m5+full_adder($_out, $_carry_out, $_in1, $_in2, $carry_in)
+
+\SV
+   // The main module (as required for Makerchip).
+   m5_makerchip_module
 \TLV
-   m4_define(['m4_width'], 32)
-   $addend1[m4_width-1:0] = *cyc_cnt[m4_width-1:0];
-   $addend2[m4_width-1:0] = *cyc_cnt[m4_width-1:0] + 8'b1;
-   m4+ripple_carry_adder(m4_width, $addend1, $addend2, $sum, /top)
+   // Instantiate an 8-bit ripple-carry adder, connecting input and output bits to vector signals.
    
-   // Assert these to end simulation (before Makerchip cycle limit).
-   *passed = *cyc_cnt > 40;
-   *failed = 1'b0;
+   m5_var(width, 8)  // adder width
+   // Inputs
+   m4_rand($addend1, m5_width-1, 0)
+   m4_rand($addend2, m5_width-1, 0)
+   /slice[m5_width-1:0]
+      $in1 = /top$addend1[#slice];
+      $in2 = /top$addend2[#slice];
+   // Adder
+   m5+ripple_carry_adder(/slice, m5_width, $out, $carry_out, $in1, $in2)
+   // Outputs
+   $result[m5_width:0] = {/slice[m5_width-1]$carry_out, /slice[*]$out};
+   
+   // VIZ
+   \viz_js
+      box: {width: 80, height: 12, fill: "darkblue", strokeWidth: 0, rx: 2, ry: 2},
+      render() {
+         return [new fabric.Text(`${'$addend1'.asInt()} + ${'$addend2'.asInt()} = ${'$result'.asInt()}`,
+                                 {left: 2, top: 0, fontFamily: "mono", fontSize: 10, fill: "white"}
+         )]
+      },
 \SV
    endmodule
