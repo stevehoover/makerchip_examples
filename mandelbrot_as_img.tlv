@@ -14,7 +14,7 @@ m4+definitions(['
           MIN_Y, -0.4,
           MAX_X, -1.2,
           MAX_Y, -0.3)
-   /**/
+   
    // Viz parameters.
    m4_def(VIZ_CELL_SIZE, 10,
           VIZ_FONT_SIZE, 5,
