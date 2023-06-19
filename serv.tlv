@@ -54,7 +54,7 @@
    m4_sv_get_url(m4_servant_rtl['servis_clock_gen.v'])
    m4_sv_get_url(m4_servant_rtl['servive.v'])
    m4_sv_get_url(m4_servant_rtl['servive_clock_gen.v'])
-   m4_sv_get_url(m4_servant_rtl['servix.v '])
+   m4_sv_get_url(m4_servant_rtl['servix.v'])
    m4_sv_get_url(m4_servant_rtl['servix_clock_gen.v'])
    m4_sv_get_url(m4_servant_rtl['servus.v'])
    m4_sv_get_url(m4_servant_rtl['servus_clock_gen.v'])
