@@ -2,7 +2,7 @@
 \m5
    // This region contains M5 macro definitions. It will not appear
    // in the resulting TLV code (in the NAV-TLV tab).
-   use(m5-0.2) // Use M5 libraries
+   use(m5-1.0) // Use M5 libraries
 
 // Full adder adding two bits and a carry to produce an output bit and carry.
 \TLV full_adder($_out, $_carry_out, $_in1, $_in2, $_carry_in)
