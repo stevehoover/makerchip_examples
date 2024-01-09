@@ -1,0 +1,3 @@
+# Example projects for Tiny Tapeout
+
+Examples here are based on a TL-Verilog template file for Tiny Tapeout that could be last found [here](https://github.com/stevehoover/tt06-verilog-template/tree/main/src/tt_um_template.tlv). They can be opened in Makerchip. To use them for Tiny Tapeout, follow instructions in the latest Tiny Tapeout for Makerchip repo, e.g. [this one](https://github.com/stevehoover/tt06-verilog-template).
