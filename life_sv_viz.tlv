@@ -139,7 +139,7 @@ module top(input logic clk,
          \viz_js
             box: {width: 10, height: 10, strokeWidth: 0},
             renderFill() {
-               let alive_sig_name = `L1_Yy[${this.getIndex("yy")}]` + `.alive_a2(${this.getIndex("xx")})`
+               let alive_sig_name = `L1_Yy[${this.getIndex("yy")}]` + `.alive_a2[${this.getIndex("xx")}]`
                let alive = this.svSigRef(alive_sig_name, 0).asBool()
                let brightness = this.svSigRef(alive_sig_name, -1).asBool() ? 0.8 : 1
                return `rgb(${(alive ? 0 : 255) * brightness}, 0, ${(alive ? 255 : 0) * brightness})`
