@@ -8,7 +8,7 @@
    
    var(background_color, "#303030")
    var(connect_color, "#202020")
-   var(invalid_color, "transparent")   // "#80808080"
+   var(invalid_color, "#80808080")
    var(a_color, "red")
    var(b_color, "yellow")
    var(default_color, "#d0d0d0")
