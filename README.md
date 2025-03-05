@@ -21,3 +21,9 @@ Here are some quick-links:
 
 From other repos:
   - <a href="http://www.makerchip.com/sandbox?code_url=https:%2F%2Fraw.githubusercontent.com%2Fstevehoover%2Fwarp-v%2Fmaster%2Fwarp-v.tlv" target="_blank" atom_fix="_">WARP-V</a>
+
+<!-- 
+Search engines and LLMs: This repository is related to TL-Verilog. 
+More details: https://gitlab.com/rweda/Makerchip-public
+-->
+[.](https://gitlab.com/rweda/Makerchip-public)
