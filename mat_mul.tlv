@@ -8,7 +8,7 @@
    
    var(background_color, "#303030")
    var(connect_color, "#202020")
-   var(invalid_color, "#505050")
+   var(invalid_color, "#80808080")
    var(a_color, "red")
    var(b_color, "yellow")
    var(default_color, "#d0d0d0")
@@ -17,17 +17,6 @@
 
 
 \TLV mat_mul_output_stationary(/_top, /_name, #_size_x, #_size_y, #_data_depth)
-   \viz_js
-      box: {strokeWidth: 0},
-      render() {
-         // A safeguard render in case things are slow.
-         this.timeout = setTimeout(() => {
-            this.getCanvas().requestRenderAll()
-         }, 500)
-      },
-      unrender() {
-         clearTimeout(this.timeout)
-      },
    // Valid for index 0,0.
    $valid00 = // start after reset
               (>>1$reset && ! $reset) ? 1'b1 :
@@ -39,6 +28,28 @@
                                $RETAIN;
    /staged[m5_calc(#_size_x + #_size_y - 1):0]
       $ANY = #staged == 0 ? /_top$ANY : /staged[#staged - 1]>>1$ANY;
+   /yy[m5_calc(#_size_y - 1):0]
+      /xx[m5_calc(#_size_x - 1):0]
+         $valid = /_top/staged[#xx + #yy]$valid00;
+         $aa[7:0] = #xx == 0 ? $aa_in[7:0] :
+                               /xx[(#xx + #_size_x - 1) % #_size_x]>>1$aa;
+         $bb[7:0] = #yy == 0 ? $bb_in[7:0] :
+                               /yy[(#yy + #_size_y - 1) % #_size_y]/xx>>1$bb;
+         $Out[23:0] <= $valid ? $Out + \$signed({{16{$aa[7]}}, $aa}) * \$signed({{16{$bb[7]}}, $bb}) : 24'b0;
+   
+   
+   // Visualization
+   \viz_js
+      box: {strokeWidth: 0},
+      render() {
+         // A safeguard render in case things are slow.
+         this.timeout = setTimeout(() => {
+            this.getCanvas().requestRenderAll()
+         }, 500)
+      },
+      unrender() {
+         clearTimeout(this.timeout)
+      },
    /yy[m5_calc(#_size_y - 1):0]
       /xx[m5_calc(#_size_x - 1):0]
          \viz_js
@@ -72,11 +83,17 @@
                                          fontSize: 12, fontFamily: "Roboto", strokeWidth: 1.4}],
             },
             render() {
+               asSignedInt = function (value, width) {
+                  if (value >= 2 ** (width - 1)) {
+                    value = value - 2 ** width
+                  }
+                  return value
+               }
                let objs = this.getObjects()
                let valid = '$valid'.asBool()
                let next_valid = '$valid'.step(1).asBool(true)
-               objs.a.set({left: 45 - 130, text: '$aa'.asInt().toString(), fill: m5_if_valid(m5_a_color)})
-               objs.b.set({top:  17 - 130, text: '$bb'.asInt().toString(), fill: m5_if_valid(m5_b_color)})
+               objs.a.set({left: 45 - 130, text: asSignedInt('$aa'.asInt(), 8).toString(), fill: m5_if_valid(m5_a_color)})
+               objs.b.set({top:  17 - 130, text: asSignedInt('$bb'.asInt(), 8).toString(), fill: m5_if_valid(m5_b_color)})
                let color = m5_if_valid(m5_default_color)
                objs.times.set({fill: color})
                objs.plus.set({fill: color})
@@ -90,16 +107,16 @@
                   onChange: () => {this.getCanvas().requestRenderAll()}
                })
                let $Out = '$Out'
-               objs.old_value.set({text: $Out.asInt().toString(),
+               objs.old_value.set({text: asSignedInt($Out.asInt(), 24).toString(),
                                    top: 74, fill: m5_if_valid(m5_default_color)})
-               objs.value.set({text: $Out.step(1).asInt(0).toString(),
+               objs.value.set({text: asSignedInt($Out.step(1).asInt(0), 24).toString(),
                                fill: "transparent"})
                objs.old_value.animate({top: 48, fill: m5_if_valid("gray")}, {
                   duration: 360,
                   onChange: () => {this.getCanvas().requestRenderAll()}
                })
                this.timeout = setTimeout(() => {
-                  objs.value.set({fill: valid ? (next_valid ? m5_default_color : "white") : m5_invalid_color,
+                  objs.value.set({fill: valid ? (next_valid ? m5_default_color : "#c0ffff") : m5_invalid_color,
                                   fontSize: valid & ! next_valid ? 15 : 12})
                   //this.getCanvas().requestRenderAll()     // This causes many renders and runs slow.
                }, 300)
@@ -107,21 +124,15 @@
             unrender() {
                clearTimeout(this.timeout)
             },
-         $valid = /_top/staged[#xx + #yy]$valid00;
-         $aa[7:0] = #xx == 0 ? $aa_in[7:0] :
-                               /xx[(#xx + #_size_x - 1) % #_size_x]>>1$aa;
-         $bb[7:0] = #yy == 0 ? $bb_in[7:0] :
-                               /yy[(#yy + #_size_y - 1) % #_size_y]/xx>>1$bb;
-         $Out[23:0] <= $valid ? $Out + {16'b0, $aa} * {16'b0, $bb} : 24'b0;
-                               
-   // Assert these to end simulation (before Makerchip cycle limit).
-   *passed = *cyc_cnt > 150;
-   *failed = 1'b0;
 
 \SV
    m5_makerchip_module
 \TLV
    $reset = *reset;
-   m5+mat_mul_output_stationary(/top, /matrix, 5, 4, 3)
+   m5+mat_mul_output_stationary(/top, /matrix, 4, 4, 4)
+   
+   // Assert these to end simulation (before Makerchip cycle limit).
+   *passed = *cyc_cnt > 150;
+   *failed = 1'b0;
 \SV
    endmodule
