@@ -76,9 +76,6 @@
       \viz_js
          box: {strokeWidth: 2, top: -25, left: -30, width: 215, height: 210, fill: "white"},
          init() {
-            let testRect = new fabric.Rect({width: 10, height: 10, strikeWidth: 2})
-            console.log(`testRect.getScaledWidth(): ${testRect.getScaledWidth()}`)
-
             this.transObj = {} // A map of transaction fabric objects, indexed by $uid.
             this.setTrans = (uid, obj) => {
                if (typeof(this.transObj[uid]) !== "undefined") {
@@ -86,7 +83,7 @@
                   debugger
                }
                this.transObj[uid] = obj
-               console.log(`Added trans #${uid.toString(16)}`)
+               //console.log(`Added trans #${uid.toString(16)}`)
                //debugger
             }
             this.getTrans = (uid) => {
@@ -97,37 +94,20 @@
                }
                return this.transObj[uid]
             }
-            console.log(`top init: ${this.scopes}`)
-            return {
-               animationRect: new fabric.Rect({
-                           width: 5,
-                           height: 5,
-                           fill: "red",
-                           stroke: "black",
-                           left: -20,
-                           top: -20,
-                           angle: 0})
-            }
+            //console.log(`top init: ${this.scopes}`)
+            return {}
          },
          onTraceData() {
             // Add all transactions to this top level.
             return {objects: this.transObj}
          },
-         render() {
-            // Force animation rendering.
-            this.getObjects().animationRect.set("angle", 0)
-            this.getObjects().animationRect.animate("angle", 90, {
-                 onChange: this.global.canvas.renderAll.bind(this.global.canvas),
-                 duration: 1000  // To cover default 500 + extra (hack).
-            })
-         },
          unrender() {
             // Make every transaction invisible (and other render methods will make them visible again.
             for (const uid in this.transObj) {
                const trans = this.transObj[uid]
-               trans.set("opacity", 1)
+               trans.set({opacity: 1})
                trans.wasVisible = trans.visible
-               trans.visible = false
+               trans.set({visible: false})
             }
          },
          where: {_where}
@@ -145,7 +125,7 @@
                      this.getColor = () => {
                         return "#00" + (255 - Math.floor((this.getIndex("ring_stop") / M4_RING_STOP_CNT) * 256)).toString(16) + "00"
                      }
-
+                     
                      // FIFO outer box.
                      let stop = this.getScope("ring_stop").index
                      let fifoBox = new fabric.Rect({
@@ -156,7 +136,7 @@
                         left: 0,
                         top: 0
                      })
-
+                     
                      return {fifoBox}
                   },
                   onTraceData() {
@@ -221,22 +201,22 @@
                               head_ptr = i
                            }
                         }
-
+                        
                         if ('$valid'.asBool()) {
                            let uid = '/trans$uid'.asInt()
                            let trans = m4_top_scope.context.getTrans(uid)
                            if (typeof(trans) !== "undefined") {
+                              trans.set({visible: true})
                               // Set position.
                               let pos = M4_FIFO_ENTRY_MAX - ((this.getIndex() + M4_FIFO_ENTRY_CNT - head_ptr) % M4_FIFO_ENTRY_CNT)
                               if (!trans.wasVisible) {
-                                 trans.set("top", this.getIndex("ring_stop") * 50 + 10)
-                                 trans.set("left", pos * 15 - 10)
-                                 trans.set("opacity", 0)
-                                 trans.animate("opacity", 1)
+                                 trans.set({top: this.getIndex("ring_stop") * 50 + 10,
+                                            left: pos * 15 - 10,
+                                            opacity: 0})
+                                 trans.animate({opacity: 1})
                               }
-                              trans.visible = true
-                              trans.animate("top", this.getIndex("ring_stop") * 50)
-                              trans.animate("left", pos * 15)
+                              trans.animate({top: this.getIndex("ring_stop") * 50,
+                                             left: pos * 15})
                            }
                         }
                      }
@@ -249,20 +229,20 @@
                         let uid = '/trans$uid'.asInt()
                         let trans = m4_top_scope.context.getTrans(uid)
                         if (typeof(trans) !== "undefined") {
+                           trans.set({visible: true})
                            // Set position.
                            if (!trans.wasVisible) {
-                              trans.set("top", this.getIndex("ring_stop") * 50 + 10)
-                              trans.set("left", 8 * 15 - 10)
-                              trans.set("opacity", 0)
-                              trans.animate("opacity", 1)
+                              trans.set({top: this.getIndex("ring_stop") * 50 + 10,
+                                         left: 8 * 15 - 10,
+                                         opacity: 0})
+                              trans.animate({opacity: 1}, {duration: 500})
                            }
-                           trans.animate("top", this.getIndex("ring_stop") * 50)
-                           trans.animate("left", 8 * 15)
-                           trans.visible = true
+                           trans.animate({top: this.getIndex("ring_stop") * 50,
+                                          left: 8 * 15})
                         }
                      }
                   }
-
+               
          |rg
             @1
                \viz_js
@@ -270,25 +250,20 @@
                   render() {
                      if ('$valid'.asBool()) {
                         let uid = '/trans$uid'.asInt()
-                        //-debugger
-                        //-let common1 = m4_top_scope.children.tb.children.count._commonAncestorDeleteMe(m4_top_scope.children.tb.children.ring_stop.children[2].children.send)
-                        //-let common2 = this._viz._commonAncestor(m4_top_scope.children.tb.children.ring_stop.children[2].children.send)
-                        //-console.log(`common ancestor: ${common1.name()}, ${common2.name()}`)
-                        //-debugger
                         let trans = m4_top_scope.context.getTrans(uid)
                         if (typeof(trans) !== "undefined") {
+                           trans.set({visible: true})
                            // To position.
                            // If wrapping, adjust initial position.
                            if ((this.getIndex("ring_stop") == 0) && '$passed_on'.asBool()) {
-                             trans.set("left", 11 * 15)
+                             trans.set({left: 11 * 15})
                            }
-                           trans.animate("top", this.getIndex("ring_stop") * 50)
-                           trans.animate("left", 10 * 15)
-                           trans.visible = true
+                           trans.animate({top: this.getIndex("ring_stop") * 50,
+                                          left: 10 * 15})
                         }
                      }
                   }
-
+               
          |outpipe
             @2
                \viz_js
@@ -299,10 +274,10 @@
                         let trans = m4_top_scope.context.getTrans(uid)
                         if (typeof(trans) !== "undefined") {
                            // Set position and fade.
-                           trans.animate("top", this.getIndex("ring_stop") * 50 - 15)
-                           trans.animate("left", 8 * 15)
-                           trans.animate("opacity", 0)
-                           trans.visible = true
+                           trans.set({visible: true})
+                           trans.animate({top: this.getIndex("ring_stop") * 50 - 15,
+                                          left: 8 * 15,
+                                          opacity: 0})
                         }
                      }
                   }
@@ -314,10 +289,10 @@
       // *************
       // * Testbench *
       // *************
-
+      
       // The testbench is not the focus of this lab.
       // You can ignore everything below.
-
+      
       /tb
          |count
             @0
@@ -350,7 +325,7 @@
                      /trans_out
                         $ANY = /ring_stop|receive<>0$request ? /ring_stop|receive/trans<>0$ANY :
                                                                |send/gen_trans<>0$ANY;
-
+                        
                         \SV_plus
                            always_ff @(posedge clk) begin
                               if (|send$accepted) begin
@@ -358,7 +333,7 @@
                                  \$display("Sender: %0d, Destination: %0d", $sender, $dest);
                               end
                            end
-
+            
             |receive
                @0
                   $reset = /_top>>1$reset;
@@ -381,7 +356,7 @@
                $reset = /_top>>1$reset;
                $packets[M4_RING_STOP_CNT * NUM_PACKETS_WIDTH - 1:0] = /tb/ring_stop[*]|receive<>0$NumPackets;
                $passed = !$reset && ($packets == '0) && (/tb|count<>0$CycCount > 6);
-
+      
       /* verilator lint_restore */
 
 \SV
