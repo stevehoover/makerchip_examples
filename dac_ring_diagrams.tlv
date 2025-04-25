@@ -115,16 +115,19 @@
                                  ret.push(trans)
                                  if ('$valid'.asBool() && ! '/upstream$continue'.asBool()) {
                                     // Entering.
-                                    trans.set({opacity: 0, top: 0, left: -20})
-                                    trans.animate({left: 0, top: 5, opacity: 1}, { onChange: this.global.canvas.renderAll.bind(this.global.canvas) })
+                                    trans.set({opacity: 0, left: -20, top: 0})
+                                    trans.animate({opacity: 1, left: 0, top: 5}, {duration: 700})
                                  } else {
                                     // Continuing from ring.
                                     if (this.getIndex("port") == 0) {
-                                       trans.set({opacity: 1, left: 15, top: 20 * #_size - 15})
+                                       trans.set({opacity: 1, left: 0, top: 20 * #_size - 15})
+                                       trans.animate({left: 20}, {duration: 150})
+                                            .thenAnimate({top: 5}, {duration: 400})
+                                            .thenAnimate({left: 0}, {duration: 150})
                                     } else {
                                        trans.set({opacity: 1, left: 0, top: -15})
+                                       trans.animate({left: 0, top: 5}, {duration: 700})
                                     }
-                                    trans.animate({top: 5, left: 0}, { onChange: this.global.canvas.renderAll.bind(this.global.canvas) })
                                  }
                               } else {
                                  console.log(`Transaction ${uid} not found.`)
@@ -137,7 +140,7 @@
                               if (trans) {
                                  ret.push(trans)
                                  trans.set({top: 5, left: 0, opacity: 1})
-                                 trans.animate({left: -20, top: 10, opacity: 0}, { onChange: this.global.canvas.renderAll.bind(this.global.canvas) })
+                                 trans.animate({left: -20, top: 10, opacity: 0})
                               }
                            }
                            return ret
