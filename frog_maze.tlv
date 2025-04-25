@@ -254,24 +254,10 @@
                      }
                      this.getInitObjects().frog.set({angle: old_angle})
                      // Animate
-                     this.getInitObjects().frog.animate(
-                       {angle: new_angle},
-                       {onChange: this.global.canvas.renderAll.bind(this.global.canvas),
-                        onComplete: () => {
-                           if (render_cnt == this.render_cnt) {
-                              // Keep animating. Jump.
-                              this.getInitObjects().frog.animate(
-                                {left: ('$Xx'.asInt() + 1) * 10, top: ('$Yy'.asInt() + 1) * 10},
-                                {onChange: this.global.canvas.renderAll.bind(this.global.canvas),
-                                 duration: '>>1$hop2_ok'.asBool() ? 400 : '>>1$hop1_ok'.asBool() ? 200 : 0
-                                }
-                              )
-                           } else {
-                              console.log("render canceled")
-                           }
-                        }
-                       }
-                     )
+                     this.getInitObjects().frog
+                          .animate({angle: new_angle})
+                          .thenAnimate({left: ('$Xx'.asInt() + 1) * 10, top: ('$Yy'.asInt() + 1) * 10},
+                                       {duration: '>>1$hop2_ok'.asBool() ? 400 : '>>1$hop1_ok'.asBool() ? 200 : 0})
                   }
 
 \TLV
