@@ -42,7 +42,7 @@
 \SV
    m4_include_lib(https:/['']/raw.githubusercontent.com/efabless/chipcraft---mest-course/main/tlv_lib/calculator_shell_lib.tlv)
    // Include Tiny Tapeout Lab.
-   m4_include_lib(https:/['']/raw.githubusercontent.com/os-fpga/Virtual-FPGA-Lab/35e36bd144fddd75495d4cbc01c4fc50ac5bde6f/tlv_lib/tiny_tapeout_lib.tlv)
+   m4_include_lib(https:/['']/raw.githubusercontent.com/os-fpga/Virtual-FPGA-Lab/62d6e18bc3d0ca8af451ccaff6d63974a69e645b/tlv_lib/tiny_tapeout_lib.tlv)
 
 
 // Click ▼ on next line to hide VIZ code (in Makerchip).
@@ -66,11 +66,8 @@
                }
             },
             render() {
-               this.getObjects().round.set({text: `Round: ${'$round'.asInt()}`, fill: "white"}).animate({fill: "white"}, {
-                    // This triggers animation rendering for 1/2 sec for all VIZ. (It animates from "white" to "white".)
-                    onChange: this.global.canvas.renderAll.bind(this.global.canvas),
-                    duration: 600
-               })
+               $round = '$round'
+               this.getObjects().round.set({text: `Round: ${$round.v}`, fill: $round.isValid() ? "white" : "gray"})
             },
             where: {left: 0, top: 0, height: 100}
          /subbytes
@@ -178,11 +175,11 @@
                            if (this.getScope("map").context.sbox_cyc != this.getCycle()) {
                               this.getScope("map").context.sbox_cyc = this.getCycle()
                               ctx.sbox_prop = {}
-                              let rot_word = '|encrypt/keyschedule$rot'.asInt()
+                              let rot_word = '|encrypt/keyschedule$rot'+0
                               for (let y = 0; y < 4; y++) {
                                  let row_prop = {m5_stroke_for_row_val(y)}
                                  for (let x = 0; x < 4; x++) {
-                                    let idx = '/subbytes/xx[x]/yy[y]$word_idx'.asInt()
+                                    let idx = '/subbytes/xx[x]/yy[y]$word_idx'+0
                                     ctx.sbox_prop[idx] = {stroke: row_prop.stroke}
                                     if (x == 2 && y == 2) {
                                        ctx.sbox_prop[idx].rect_fill = "#fdd58a"
@@ -508,7 +505,7 @@
                            render() {
                               let color = {m5_stroke_for_row(cy)}
                               this.getObjects().text.set({
-                                 text: '/mixcolumn/xx[1]/yy[this.getIndex("cx")]$ss'.asHexStr() + "×" + '$cc'.asInt().toString(16) + "\n=" + '/mixcolumn/xx[1]/yy[this.getIndex("cy")]/exp[this.getIndex("cx")]$op'.asHexStr(),
+                                 text: '/mixcolumn/xx[1]/yy[this.getIndex("cx")]$ss'.asHexStr() + "×" + '$cc'.v.toString(16) + "\n=" + '/mixcolumn/xx[1]/yy[this.getIndex("cy")]/exp[this.getIndex("cx")]$op'.asHexStr(),
                                  fill: '|encrypt$do_mixcolumn'.asBool() ? color.stroke : "lightgray"
                               })
                               return [];
@@ -604,11 +601,9 @@
                               fontFamily: "roboto mono", fontSize: 3.5
                         }),
                      }
-                     this.render_cnt = 0
-                     this.last_cyc = -2
                   },
                   render() {
-                     let duration = (this.getCycle() == this.last_cyc + 1) ? 500 : 1
+                     let duration = (this.steppedBy() == 1) ? 500 : 1
                      let format_key = function (sig) {
                         let hex = sig.asHexStr()
                         let ret = hex.substr(0, 8)
@@ -630,23 +625,15 @@
                      obj.xor_con. set({visible: false, text: '/keyschedule$xor_con'.       asHexStr()})
                      
                      // Animate. Some elements are not visible, animate others upward. Then unhide all.
-                     this.render_cnt++  // to support abort
-                     let render_cnt = this.render_cnt  // to support abort
                      obj.img.animate({top: -43.5}, {
-                          onComplete: function() {
-                             obj.img.set({top: 0})
-                             obj.rot.        set({visible: true})
-                             obj.sb_out_word.set({visible: true})
-                             obj.rcon.       set({visible: true})
-                             obj.xor_con.    set({visible: true})
-                          },
-                          // Abort if we've moved on to a new cycle.
-                          abort: () => {
-                             render_cnt != this.render_cnt
-                          },
                           duration
+                     }).then( () => {
+                          obj.img.set({top: 0})
+                          obj.rot.        set({visible: true})
+                          obj.sb_out_word.set({visible: true})
+                          obj.rcon.       set({visible: true})
+                          obj.xor_con.    set({visible: true})
                      })
-                     this.last_cyc = this.getCycle()
                   },
                   where: {left: 630, top: 800, width: 160, height: 160}
                /row[1:0]
@@ -664,7 +651,6 @@
                            box: {width: 10, height: 10, strokeWidth: 0},
                            layout: "vertical",
                            init() {
-                              this.last_cyc = -2
                               return {
                                  circ: new fabric.Circle({
                                     left: 0, top: 0, fill: this.getIndex("row") == 0 ? "#D8FFD8D0" : "#D8D8D8D0", radius: 4.5,
@@ -676,56 +662,31 @@
                                      fontFamily: "roboto", fontSize: 6
                                  }),
                               }
-                              this.render_cnt = 0
-                              this.last_cyc = -2
                            },
                            render() {
-                              let word = (this.getIndex("row") ? '/word[this.getIndex("word")]$next_word' : '/word[this.getIndex("word")]$term2').asInt()
+                              let word = (this.getIndex("row") ? '/word[this.getIndex("word")]$next_word' : '/word[this.getIndex("word")]$term2').v
                               let obj = this.getObjects()
                               obj.text.set({top: 5, text: ((word >> (this.getIndex() * 8)) & 0xFF).toString(16).padStart(2, "0")})
-                              debugger
                               obj.circ.set({top: 0})
-                              // Animate the next key becoming the key.
-                              this.render_cnt++  // to support abort
-                              let render_cnt = this.render_cnt  // to support abort
-                              let duration = (this.getCycle() == this.last_cyc + 1) ? 500 : 1
+                              // Animate the next key becoming the key, only when stepping forward.
+                              let duration = (this.steppedBy() == 1) ? 500 : 1
                               if (this.getIndex("row") == 0) {
                                  let visible = '/keyschedule>>1$compute_next_key'.asBool()
-                                 obj.text.set({top: 63.5, visible}).animate({top: 5}, {
-                                      duration,
-                                      onComplete: function () {obj.text.set({visible: true})},
-                                      // Abort if we've moved on to a new cycle.
-                                      abort: () => {
-                                         render_cnt != this.render_cnt
-                                      }
-                                 })
-                                 obj.circ.set({top: 63.5, visible}).animate({top: 0}, {
-                                      duration,
-                                      onComplete: function () {obj.circ.set({visible: true})},
-                                      // Abort if we've moved on to a new cycle.
-                                      abort: () => {
-                                         render_cnt != this.render_cnt
-                                      }
-                                 })
+                                 obj.text.set({top: 68.5, visible})
+                                         .animate({top: 5}, {duration})
+                                         .thenSet({visible: true})
+                                 obj.circ.set({top: 63.5, visible})
+                                         .animate({top: 0}, {duration})
+                                         .thenSet({visible: true})
                               } else {
                                  let compute = '/keyschedule$compute_next_key'.asBool()
-                                 obj.text.set({visible: false}).animate({top: 5}, {
-                                      duration,
-                                      onComplete: function () {obj.text.set({visible: true, fill: compute ? "black" : "lightgray"})},
-                                      abort: () => {
-                                         render_cnt != this.render_cnt
-                                      }
-                                 })
-                                 obj.circ.set({visible: false}).animate({top: 0}, {
-                                      duration,
-                                      onComplete: function () {obj.circ.set({visible: true})},
-                                      abort: () => {
-                                         render_cnt != this.render_cnt
-                                      }
-                                 })
+                                 obj.text.set({visible: false})
+                                         .wait(duration)
+                                         .thenSet({visible: true, fill: compute ? "black" : "lightgray"})
+                                 obj.circ.set({visible: false})
+                                         .wait(duration)
+                                         .thenSet({visible: true})
                               }
-                              // Animate.
-                              this.last_cyc = this.getCycle()
                            },
             /map
                \viz_js

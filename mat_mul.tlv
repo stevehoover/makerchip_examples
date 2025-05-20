@@ -39,17 +39,6 @@
    
    
    // Visualization
-   \viz_js
-      box: {strokeWidth: 0},
-      render() {
-         // A safeguard render in case things are slow.
-         this.timeout = setTimeout(() => {
-            this.getCanvas().requestRenderAll()
-         }, 500)
-      },
-      unrender() {
-         clearTimeout(this.timeout)
-      },
    /yy[m5_calc(#_size_y - 1):0]
       /xx[m5_calc(#_size_x - 1):0]
          \viz_js
@@ -98,31 +87,19 @@
                objs.times.set({fill: color})
                objs.plus.set({fill: color})
                objs.line.set({stroke: color})
-               objs.a.animate({left: 45}, {
-                  duration: 360,
-                  onChange: () => {this.getCanvas().requestRenderAll()}
-               })
-               objs.b.animate({top: 17}, {
-                  duration: 300,
-                  onChange: () => {this.getCanvas().requestRenderAll()}
-               })
+               objs.a.animate({left: 45}, {duration: 360})
+               objs.b.animate({top: 17}, {duration: 360})
                let $Out = '$Out'
                objs.old_value.set({text: asSignedInt($Out.asInt(), 24).toString(),
                                    top: 74, fill: m5_if_valid(m5_default_color)})
                objs.value.set({text: asSignedInt($Out.step(1).asInt(0), 24).toString(),
                                fill: "transparent"})
-               objs.old_value.animate({top: 48, fill: m5_if_valid("gray")}, {
-                  duration: 360,
-                  onChange: () => {this.getCanvas().requestRenderAll()}
-               })
-               this.timeout = setTimeout(() => {
+               objs.old_value.animate({top: 48, fill: m5_if_valid("gray")}, {duration: 360})
+               // TODO: use .thenSet when it is created.
+               objs.value.wait(300).then(() => {
                   objs.value.set({fill: valid ? (next_valid ? m5_default_color : "#c0ffff") : m5_invalid_color,
                                   fontSize: valid & ! next_valid ? 15 : 12})
-                  //this.getCanvas().requestRenderAll()     // This causes many renders and runs slow.
-               }, 300)
-            },
-            unrender() {
-               clearTimeout(this.timeout)
+               })
             },
 
 \SV

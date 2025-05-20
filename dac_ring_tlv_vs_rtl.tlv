@@ -1,9 +1,10 @@
-\m4_TLV_version 1d: tl-x.org
+\m5_TLV_version 1d: tl-x.org
+\m5
+   use(m5-1.0)
+   var(VIZ, 1)
 \SV
    m4_include_lib(['https://raw.githubusercontent.com/stevehoover/tlv_lib/db48b4c22c4846c900b3fa307e87d9744424d916/fundamentals_lib.tlv'])
-   m4_def(VIZ, 0)
-
-   m4_makerchip_module
+   m5_makerchip_module
 
 
 // An simple ring implementation, as presented at DAC (See https://www.redwoodeda.com/publications)
@@ -48,7 +49,7 @@
                $continue = $valid && ! $exit;
       
       
-      m4+ifelse(['_where'], [''], ,
+      m5+ifelse(['_where'], [''], ,
          \TLV
             // ===
             // VIZ
@@ -70,11 +71,11 @@
                   return {ring}
                },
                where: _where,
-            /port[m4_eval(#_size-1):0]
+            /port[m5_calc(#_size-1):0]
                |ring
                   @1
                      /in
-                        m4+_in
+                        m5+_in
                      \viz_js
                         box: {left: 0, top: 0, width: 40, height: 20, strokeWidth: 0},
                         init() {
@@ -104,15 +105,18 @@
                                  if ('$valid'.asBool() && ! '/upstream$continue'.asBool()) {
                                     // Entering.
                                     trans.set({opacity: 0, top: 0, left: -20})
-                                    trans.animate({left: 0, top: 5, opacity: 1}, { onChange: this.global.canvas.renderAll.bind(this.global.canvas) })
+                                         .animate({left: 0, top: 5, opacity: 1}, {duration: 700})
                                  } else {
                                     // Continuing from ring.
                                     if (this.getIndex("port") == 0) {
-                                       trans.set({opacity: 1, left: 15, top: 20 * #_size - 15})
+                                       trans.set({opacity: 1, left: 0, top: 20 * #_size - 15})
+                                            .animate({left: 20}, {duration: 150})
+                                            .thenAnimate({top: 5}, {duration: 400})
+                                            .thenAnimate({left: 0}, {duration: 150})
                                     } else {
                                        trans.set({opacity: 1, left: 0, top: -15})
+                                            .animate({top: 5, left: 0}, {duration: 700})
                                     }
-                                    trans.animate({top: 5, left: 0}, { onChange: this.global.canvas.renderAll.bind(this.global.canvas) })
                                  }
                               } else {
                                  console.log(`Transaction ${uid} not found.`)
@@ -125,7 +129,7 @@
                               if (trans) {
                                  ret.push(trans)
                                  trans.set({top: 5, left: 0, opacity: 1})
-                                 trans.animate({left: -20, top: 10, opacity: 0}, { onChange: this.global.canvas.renderAll.bind(this.global.canvas) })
+                                 trans.animate({left: -20, top: 10, opacity: 0}, {duration: 700})
                               }
                            }
                            return ret
@@ -138,15 +142,15 @@
 \TLV ring2(/_port, |_in, @_in, |_out, @_out)
    /_port[*]
       // Ring
-      m4+arb2(/_port, |_in, @_in, |continue, @0, |ring, @0, /flit)
+      m5+arb2(/_port, |_in, @_in, |continue, @0, |ring, @0, /flit)
       // Pipeline for ring hop.
-      m4+pipe(ff, 1, /_port, |ring, @0, |continue2, @0, /flit)
+      m5+pipe(ff, 1, /_port, |ring, @0, |continue2, @0, /flit)
       // Fork from off-ramp out or into FIFO
       |continued2
          @0
             $exit = /flit$dest == #port;
             $true = 1'b1;
-      m4+fork(/_port, |continued2, @0, $exit, |_out, @_out, $true, |continue, @0, /flit)
+      m5+fork(/_port, |continued2, @0, $exit, |_out, @_out, $true, |continue, @0, /flit)
 
 
 \TLV
@@ -201,7 +205,7 @@
                // Consume outputs:
                `BOGUS_USE($data $valid)
    // Instantiate Ring
-   m4+ring(/my_ring, 4, m4_ifelse(M4_VIZ, 1, ['['{left: -20, top: -40, width: 40, height: 80}']']), this.getScope("my_ring"),
+   m5+ring(/my_ring, 4, m5_if(m5_VIZ, ['['{left: -20, top: -40, width: 40, height: 80}']']), this.getScope("my_ring"),
       \TLV
          $src[1:0] = #port;
          $uid[31:0] = {$src, *cyc_cnt[29:0]};
