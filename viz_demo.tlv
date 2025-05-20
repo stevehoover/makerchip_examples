@@ -216,7 +216,6 @@
          render() {
             let $temp = '/top/example8$temp'
             for (let i = 0; i > -16; i--) {
-               debugger
                temp = $temp.asInt(0)  // Default to 0 is outside trace.
                this.getObjects()[i].set({height: temp, top: 256 - temp})
                $temp.step(-1)

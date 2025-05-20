@@ -894,5 +894,6 @@ m4_def(
    m4_makerchip_module
 \TLV
    m4+smith_waterman_example(/example,)
+   *passed = cyc_cnt > 80;
 \SV
    endmodule

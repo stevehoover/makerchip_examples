@@ -1,4 +1,4 @@
-\m4_TLV_version 1d: tl-x.org
+\m5_TLV_version 1d: tl-x.org
 \SV
    m4_include_lib(['https://raw.githubusercontent.com/stevehoover/tlv_lib/db48b4c22c4846c900b3fa307e87d9744424d916/fundamentals_lib.tlv'])
    m4_makerchip_module   // (Expanded in Nav-TLV pane.)
@@ -9,7 +9,7 @@
          @1
             $reset = *reset;
             m4_define(['M4_MAZE_NAME'], ['dev'])  // original, dev
-            m4+ifelse(M4_MAZE_NAME, ['original'],
+            m5+ifelse(M4_MAZE_NAME, ['original'],
                \TLV
                   m4_define_hier(M4_YY, 24, 0)
                   m4_define_hier(M4_XX, 38, 0)
@@ -240,11 +240,6 @@
                      return {frog}
                   },
                   render() {
-                     //debugger
-                     // Keep count of the number of renders so we can terminate an animation after another is started.
-                     this.render_cnt = this.render_cnt ? this.render_cnt++ : 1
-                     render_cnt = this.render_cnt
-                     // Determine old and new angles and adjust to make sure frog rotates no more than 180.
                      let old_angle = this.getInitObjects().frog.angle
                      let new_angle = '>>1$dir'.asInt() * 90
                      if (old_angle == 0 && new_angle == 270) {
@@ -252,30 +247,18 @@
                      } else if (old_angle == 270 && new_angle == 0) {
                         old_angle = -90
                      }
-                     this.getInitObjects().frog.set({angle: old_angle})
-                     // Animate
-                     this.getInitObjects().frog.animate(
-                       {angle: new_angle},
-                       {onChange: this.global.canvas.renderAll.bind(this.global.canvas),
-                        onComplete: () => {
-                           if (render_cnt == this.render_cnt) {
-                              // Keep animating. Jump.
-                              this.getInitObjects().frog.animate(
-                                {left: ('$Xx'.asInt() + 1) * 10, top: ('$Yy'.asInt() + 1) * 10},
-                                {onChange: this.global.canvas.renderAll.bind(this.global.canvas),
-                                 duration: '>>1$hop2_ok'.asBool() ? 400 : '>>1$hop1_ok'.asBool() ? 200 : 0
-                                }
-                              )
-                           } else {
-                              console.log("render canceled")
-                           }
-                        }
-                       }
-                     )
+                     this.getInitObjects().frog
+                        .set({angle: old_angle})
+                        .animate(
+                             {angle: new_angle},
+                             {duration: 500})
+                        .thenAnimate(
+                             {left: ('$Xx'.asInt() + 1) * 10, top: ('$Yy'.asInt() + 1) * 10},
+                             {duration: '>>1$hop2_ok'.asBool() ? 400 : '>>1$hop1_ok'.asBool() ? 200 : 0})
                   }
 
 \TLV
-   m4+frog_maze(/maze)
+   m5+frog_maze(/maze)
    
    *passed = *cyc_cnt > 10 && /maze|pipe/frog>>2$done;
    *failed = 1'b0;
