@@ -235,7 +235,7 @@
                    $rd.goTo(cycCnt_value*32)
                    $cmp.goTo(cycCnt_value*32)*/
                    let cycCnt_string = cycCnt_value.toString()
-                   this.getObjects().clock_cycle.set({text: `Clock_Cycle: ${cycCnt_string}`})
+                   this.obj.clock_cycle.set({text: `Clock_Cycle: ${cycCnt_string}`})
                    let rs1_value_32 = ""
                    let buf_value_32 = ""
                    let rd_value_32 = ""
@@ -271,11 +271,11 @@
                       $cmp.step()
                    }
                  
-                   this.getObjects().rs1_value.set({text: `${rs1_value_32}`})
-                   this.getObjects().op_b_value.set({text: `${op_b_value_32}`})
-                   this.getObjects().buf_value.set({text: `${buf_value_32}`})
-                   this.getObjects().rd_value.set({text: `${rd_value_32}`})
-                   this.getObjects().cmp_value.set({text: `${cmp_value_32}`})
+                   this.obj.rs1_value.set({text: `${rs1_value_32}`})
+                   this.obj.op_b_value.set({text: `${op_b_value_32}`})
+                   this.obj.buf_value.set({text: `${buf_value_32}`})
+                   this.obj.rd_value.set({text: `${rd_value_32}`})
+                   this.obj.cmp_value.set({text: `${cmp_value_32}`})
                }
 
 

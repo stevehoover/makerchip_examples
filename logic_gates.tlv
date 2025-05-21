@@ -30,7 +30,7 @@
             return ret
          },
          render() {
-            let objs = this.getObjects()
+            let objs = this.obj
             objs.in0.set({text: '/_top$in0'.asBinaryStr()})
             objs.in1.set({text: '/_top$in1'.asBinaryStr()})
             objs.out.set({text: '$out'.asBinaryStr()})

@@ -132,7 +132,7 @@
                         let inRange = typeof valid !== "undefined"
 
                         let color = inRange ? (valid ? (`rgb(${num},0,${255-num})`) : "lightgray") : "darkgrey"
-                        let obj = this.getObjects()
+                        let obj = this.obj
                         obj.valText.set({fill: valid ? "white" : "gray",
                                          backgroundColor: valid ? color : "lightgray",
                                          text: inRange ? num.toString().padStart(3, " ") : "--"})

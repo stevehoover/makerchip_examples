@@ -454,7 +454,7 @@
                      str += str1 + str2 + str3
                   } while(!done && d <= M4_MAX_DEPTH)
                   
-                  this.getInitObjects().text.setText(str)
+                  this.obj.text.setText(str)
                }
          \viz_alpha
             initEach() {
@@ -579,7 +579,7 @@
                }
                
                // Position circle
-               let circle = this.getInitObjects().circle
+               let circle = this.obj.circle
                this.getCanvas().bringToFront(circle)
                circle.set("left", ('/pe[0]$pix_h'.asInt() + 0.5) * M4_VIZ_CELL_SIZE)
                circle.set("top",  ('/pe[0]$pix_v'.asInt() + 0.5) * M4_VIZ_CELL_SIZE)

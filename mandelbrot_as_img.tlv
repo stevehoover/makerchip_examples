@@ -386,13 +386,13 @@ m4+definitions(['
                     str2 += ` => $Bb (${bSig.asRealFixed(3, NaN)})\n`
                     str += str1 + str2 + str3
                   } while(!done && d <= M4_MAX_DEPTH)
-                  this.getObjects().text.set("text", str)
+                  this.obj.text.set("text", str)
                   // Calculate the screen.
                   // This is a static view reflecting the entire simulation,
                   // so we create it once, and never again.
                   //debugger
                   // Position circle
-                  let circle = this.getObjects().circle
+                  let circle = this.obj.circle
                   //debugger
                   circle.bringToFront()
                   circle.set("left", M4_VIZ_SCREEN_X + ('$PixH'.asInt() + 0.5) * M4_VIZ_CELL_SIZE)

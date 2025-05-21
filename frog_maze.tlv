@@ -207,7 +207,7 @@
                      },
                      render() {
                         this.getBox().set({visible: '$wall'.asBool()})
-                        this.getObjects().arrowhead.set({visible: '$Solved'.asBool() && ! '|pipe$solved'.asBool(),
+                        this.obj.arrowhead.set({visible: '$Solved'.asBool() && ! '|pipe$solved'.asBool(),
                                                         angle: '$Dir'.asInt() * 90})
                      }
             /frog
@@ -240,14 +240,14 @@
                      return {frog}
                   },
                   render() {
-                     let old_angle = this.getInitObjects().frog.angle
+                     let old_angle = this.obj.frog.angle
                      let new_angle = '>>1$dir'.asInt() * 90
                      if (old_angle == 0 && new_angle == 270) {
                         old_angle = 360
                      } else if (old_angle == 270 && new_angle == 0) {
                         old_angle = -90
                      }
-                     this.getInitObjects().frog
+                     this.obj.frog
                         .set({angle: old_angle})
                         .animate(
                              {angle: new_angle},

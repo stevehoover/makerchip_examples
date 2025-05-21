@@ -159,7 +159,7 @@
             // 2)
             let temp = this.sigVal("temp").asInt()
             // 3) 
-            this.getObjects().mercury.set({height: temp, top: 256 - temp})
+            this.obj.mercury.set({height: temp, top: 256 - temp})
          },
          where: {left: 0, top: 20, width: 10, height: 10}
       // Drag the slider and watch the thermometer heat up.
@@ -181,7 +181,7 @@
             mercury: ["Rect", {left: 0, top: 256, width: 20, height: 0, fill: "red", strokeWidth: 0}]},
          render() {
             let temp = '$temp'.asInt()
-            this.getObjects().mercury.set({height: temp, top: 256 - temp})
+            this.obj.mercury.set({height: temp, top: 256 - temp})
          },
          where: {left: 20, top: 20, width: 10, height: 10}
       // Note that \viz_js blocks are like TL-Verilog logic expressions with no outputs.
@@ -217,7 +217,7 @@
             let $temp = '/top/example8$temp'
             for (let i = 0; i > -16; i--) {
                temp = $temp.asInt(0)  // Default to 0 is outside trace.
-               this.getObjects()[i].set({height: temp, top: 256 - temp})
+               this.obj[i].set({height: temp, top: 256 - temp})
                $temp.step(-1)
             }
          },

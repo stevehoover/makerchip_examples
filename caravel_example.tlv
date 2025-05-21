@@ -102,14 +102,14 @@
          },
          render() {
             let i = this.getIndex()
-            this.getObjects().wdata_box.set({
+            this.obj.wdata_box.set({
                fill: this.sigVal("mprj.counter.ready").asBool() ? "orange" : "transparent"})
-            this.getObjects().wdata.set({
+            this.obj.wdata.set({
                 text: this.sigVal("mprj.wdata").asBinaryStr().substring(8 * (3 - i), 8 * (4 - i)),
                 fill: this.sigVal("mprj.valid").asBool() ? "blue" : "gray"})
-            this.getObjects().count_box.set({
+            this.obj.count_box.set({
                fill: ((this.sigVal("mprj.wstrb").asInt() >> this.getIndex()) & 1) ? "#ffd0d0" : "transparent"})
-            this.getObjects().count.set(
+            this.obj.count.set(
                {text: this.sigVal("mprj.count").asBinaryStr().substring(8 * (3 - i), 8 * (4 - i))})
          },
          where: {left: 67, top: 45, width: 15, height: 1}

@@ -78,7 +78,7 @@
                   }
                   return value
                }
-               let objs = this.getObjects()
+               let objs = this.obj
                let valid = '$valid'.asBool()
                let next_valid = '$valid'.step(1).asBool(true)
                objs.a.set({left: 45 - 130, text: asSignedInt('$aa'.asInt(), 8).toString(), fill: m5_if_valid(m5_a_color)})

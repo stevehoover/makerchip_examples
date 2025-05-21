@@ -47,7 +47,7 @@
       },
       render() {
          debugger
-         this.getObjects().code.set({text: '$LockCode'.asBinaryStr().padStart(6, "0")})
+         this.obj.code.set({text: '$LockCode'.asBinaryStr().padStart(6, "0")})
       },
       renderFill() {
          return '$Locked'.asBool() ? "red" : "green"

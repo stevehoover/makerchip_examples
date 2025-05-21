@@ -539,20 +539,20 @@ m4_def(
                      }
                   },
                   render() {
-                     this.getObjects().pe_background.set({
+                     this.obj.pe_background.set({
                           fill: '$valid_fwd'.asBool() ? "blue" :
                                 '$valid_bwd'.asBool() ? "blue" :
                                                         "#505050",
                      })
-                     this.getObjects().letter_t.set({
+                     this.obj.letter_t.set({
                           text: this.getScope("pipe").context.toLetter('$nuc_t'.asInt()),
                           fill: '/nuc_t$is_max'.asBool() ? "red" : ! '/nuc_t$in_a_strand'.asBool() ? "black" : '/nuc_t$exclude'.asBool() ? "darkgray" : '/nuc_t$match'.asBool() ? "orange" : "gray",
                      })
-                     this.getObjects().letter_s.set({
+                     this.obj.letter_s.set({
                           text: this.getScope("pipe").context.toLetter('$nuc_s'.asInt()),
                           fill: ! '/nuc_s$in_strand'.asBool() ? "black" : '/nuc_s$exclude'.asBool() ? "darkgray" : '/nuc_s$match'.asBool() ? "orange" : "gray",
                      })
-                     this.getObjects().scores.set({
+                     this.obj.scores.set({
                           text: `e:${'$score_e'.asInt()}\nf:${'$score_f'.asInt()}\nv:${'$score_v'.asInt()}\ndiag:${'$vdiag'.asInt()}\n${'$back_arrows'.asBinaryStr()}`
                      })
                   },
@@ -683,10 +683,10 @@ m4_def(
                         let started = sigs.backToValue('|pipe$start'.step(), 1)
                         if (! started) {
                            // We haven't started analysis. Show nothing.
-                           this.getObjects().text.set({text: ""})
-                           this.getObjects().back_text.set({text: ""})
-                           this.getObjects().score.set({text: ""})
-                           this.getObjects().max.set({text: ""})
+                           this.obj.text.set({text: ""})
+                           this.obj.back_text.set({text: ""})
+                           this.obj.score.set({text: ""})
+                           this.obj.max.set({text: ""})
                            this.getBox().set({
                                 stroke: "gray",
                                 fill: "transparent",
@@ -750,7 +750,7 @@ m4_def(
                         */
                         
                         // Set backtrack text.
-                        this.getObjects().back_text.set({text: ``})
+                        this.obj.back_text.set({text: ``})
                         
                         // Backtrack signals.
                         let found_max    = sigs.sig("$found_max").asBool()
@@ -783,12 +783,12 @@ m4_def(
                              max_prop ? max_prop_diff : arrow_prop_diff,
                              strand_color ? strand_color : max_shadow ? "gray" : null,
                              strand_color ? backtrack_diff : arrow_prop_diff)
-                        this.getObjects().text.set({
+                        this.obj.text.set({
                              fill: text_color,
                              text: `nuc_t:${this.getScope("pipe").context.toLetter(sigs.sig("$nuc_t").asInt())}\nnuc_s:${this.getScope("pipe").context.toLetter(sigs.sig("$nuc_s").asInt())}\ne:${score_e}\nf:${score_f}\ndiag:${vdiag}\nmax:${max}${is_max ? "*" : ""}`
                         })
-                        this.getObjects().score.set({fill: text_color, text: `${score_v}`})
-                        this.getObjects().max.set({fill: text_color, text: `${max}`, visible: max_prop})
+                        this.obj.score.set({fill: text_color, text: `${score_v}`})
+                        this.obj.max.set({fill: text_color, text: `${max}`, visible: max_prop})
                         this.getBox().set({
                              stroke: stroke_color,
                              fill: cell_color
@@ -816,7 +816,7 @@ m4_def(
                      sigs.backToValue('|pipe$start'.step(), 1)
                      sigs.step(this.getIndex())
                      
-                     this.getObjects().letter_t.set({text: this.getScope("pipe").context.toLetter(sigs.sig("$nuc_t").asInt())})
+                     this.obj.letter_t.set({text: this.getScope("pipe").context.toLetter(sigs.sig("$nuc_t").asInt())})
                   },
                   where: {left: -50, top: 0}
 

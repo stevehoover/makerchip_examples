@@ -155,7 +155,7 @@ m4_define_hier(['M4_YY'], 10, 0)
                         let background = ('$alive'.asBool()) ? "#10D080" : "#204030";
                         let prev_prop = ('>>1$alive'.asBool()) ? {fill: "#008000", opacity: 0.3} : {fill: null, opacity: 0};
                         this.getBox().set("fill", background);
-                        this.getObjects().shadow.set(prev_prop);
+                        this.obj.shadow.set(prev_prop);
                      },
                      layout: "horizontal",
 

@@ -67,7 +67,7 @@
             },
             render() {
                $round = '$round'
-               this.getObjects().round.set({text: `Round: ${$round.v}`, fill: $round.isValid() ? "white" : "gray"})
+               this.obj.round.set({text: `Round: ${$round.v}`, fill: $round.isValid() ? "white" : "gray"})
             },
             where: {left: 0, top: 0, height: 100}
          /subbytes
@@ -87,7 +87,7 @@
                      }
                   },
                   render() {
-                     this.getObjects().text.set({
+                     this.obj.text.set({
                         fill: '|encrypt$not_round0'.asBool() ? "black" : "lightgray"
                      })
                      return [];
@@ -112,7 +112,7 @@
                         return {circ, text}
                      },
                      render() {
-                        this.getObjects().text.set({
+                        this.obj.text.set({
                            text: `${'$word_idx'.asHexStr()}\n${'$sb_out'.asHexStr()}`,
                            fill: '|encrypt$not_round0'.asBool() ? "black" : "lightgray"
                         })
@@ -217,7 +217,7 @@
                            return {circ, text}
                         },
                         render() {
-                           this.getObjects().text.set({
+                           this.obj.text.set({
                               text: '$word_idx'.asHexStr(),
                               fill: '|encrypt$not_round0'.asBool() ? "black" : "lightgray"
                            })
@@ -239,7 +239,7 @@
                            return {circ, text}
                         },
                         render() {
-                           this.getObjects().text.set({
+                           this.obj.text.set({
                               text: '$sb_out'.asHexStr(),
                               fill: '|encrypt$not_round0'.asBool() ? "black" : "lightgray"
                            })
@@ -277,7 +277,7 @@
                            return {circ, text}
                         },
                         render() {
-                           this.getObjects().text.set({
+                           this.obj.text.set({
                               text: '$sb_out'.asHexStr(),
                               fill: '|encrypt$not_round0'.asBool() ? "black" : "lightgray"
                            })
@@ -299,7 +299,7 @@
                            return {circ, text}
                         },
                         render() {
-                           this.getObjects().text.set({
+                           this.obj.text.set({
                               text: '$ssr_out_byte'.asHexStr(),
                               fill: '|encrypt$not_round0'.asBool() ? "black" : "lightgray"
                            })
@@ -323,7 +323,7 @@
                      }
                   },
                   render() {
-                     this.getObjects().text.set({text: '|encrypt$not_round0'.asBool() ? "Shifted\nMixed" : "State In\nMixed",
+                     this.obj.text.set({text: '|encrypt$not_round0'.asBool() ? "Shifted\nMixed" : "State In\nMixed",
                                                  fill: '|encrypt$do_mixcolumn'.asBool() ? "black" : "lightgray"
                      })
                   },
@@ -347,7 +347,7 @@
                         return {circ, text}
                      },
                      render() {
-                        this.getObjects().text.set({
+                        this.obj.text.set({
                            text: `${'$ss'.asHexStr()}\n${'$oo'.asHexStr()}`,
                            fill: '|encrypt$do_mixcolumn'.asBool() ? "black" : "lightgray"
                         })
@@ -368,7 +368,7 @@
                      return {img, label1, label2}
                   },
                   render() {
-                     this.getObjects().label1.set({text: '|encrypt$not_round0'.asBool() ? "Shifted\n($ssr_out)" : "State In\n($state_i)"})
+                     this.obj.label1.set({text: '|encrypt$not_round0'.asBool() ? "Shifted\n($ssr_out)" : "State In\n($state_i)"})
                   },
                   where: {left: 460, top: 425}
                /ax[3:0]
@@ -386,7 +386,7 @@
                            return {circ, text}
                         },
                         render() {
-                           this.getObjects().text.set({
+                           this.obj.text.set({
                               text: '$ss'.asHexStr(),
                               fill: '|encrypt$do_mixcolumn'.asBool() ? "black" : "lightgray"
                            })
@@ -412,7 +412,7 @@
                            return {circ, text}
                         },
                         render() {
-                           this.getObjects().text.set({
+                           this.obj.text.set({
                               text: '$oo'.asHexStr(),
                               fill: '|encrypt$do_mixcolumn'.asBool() ? "black" : "lightgray"
                            })
@@ -460,7 +460,7 @@
                            }
                         },
                         render() {
-                           this.getObjects().text.set({text: '$oo'.asHexStr(), fill: '|encrypt$do_mixcolumn'.asBool() ? "black" : "lightgray"})
+                           this.obj.text.set({text: '$oo'.asHexStr(), fill: '|encrypt$do_mixcolumn'.asBool() ? "black" : "lightgray"})
                         },
                         where: {left: 10, top: 30, width: 10}
                   /aa[3:0]
@@ -481,7 +481,7 @@
                            }
                         },
                         render() {
-                           this.getObjects().text.set({text: '$ss'.asHexStr(), fill: '|encrypt$do_mixcolumn'.asBool() ? "black" : "lightgray"})
+                           this.obj.text.set({text: '$ss'.asHexStr(), fill: '|encrypt$do_mixcolumn'.asBool() ? "black" : "lightgray"})
                         },
                         where: {left: 30, top: 20, width: 10, angle: -90}
                   /cx[3:0]
@@ -504,7 +504,7 @@
                            },
                            render() {
                               let color = {m5_stroke_for_row(cy)}
-                              this.getObjects().text.set({
+                              this.obj.text.set({
                                  text: '/mixcolumn/xx[1]/yy[this.getIndex("cx")]$ss'.asHexStr() + "×" + '$cc'.v.toString(16) + "\n=" + '/mixcolumn/xx[1]/yy[this.getIndex("cy")]/exp[this.getIndex("cx")]$op'.asHexStr(),
                                  fill: '|encrypt$do_mixcolumn'.asBool() ? color.stroke : "lightgray"
                               })
@@ -529,7 +529,7 @@
                      }
                   },
                   render() {
-                     this.getObjects().text.set({text: `${('|encrypt$not_round0'.asBool() ? ('|encrypt$do_mixcolumn'.asBool() ? "Mixed" : "Shifted") : "State In") + "\nKey\nState Out"}`})
+                     this.obj.text.set({text: `${('|encrypt$not_round0'.asBool() ? ('|encrypt$do_mixcolumn'.asBool() ? "Mixed" : "Shifted") : "State In") + "\nKey\nState Out"}`})
                   },
                   where: {left: 30, top: 625}
             /sbox_k[*]
@@ -554,7 +554,7 @@
                         return {circ, text}
                      },
                      render() {
-                        this.getObjects().text.set({
+                        this.obj.text.set({
                            text: `${'|encrypt$state_mc'.asHexStr().substr((15 - (this.getIndex("sbox_k") * 4 + this.getIndex("yy"))) * 2, 2)}\n${'$key_byte'.asHexStr()}\n${'$state_ark_byte'.asHexStr()}`,
                            fill: '|encrypt$valid_blk'.asBool() ? "black" : "lightgray"
                         })
@@ -612,7 +612,7 @@
                         }
                         return ret
                      }
-                     let obj = this.getObjects()
+                     let obj = this.obj
                      
                      let computed = '/keyschedule>>1$compute_next_key'.asBool()
                      obj.key.set({text: computed ? "Key\n($key)" : "Start Key\n($key)"})
@@ -665,7 +665,7 @@
                            },
                            render() {
                               let word = (this.getIndex("row") ? '/word[this.getIndex("word")]$next_word' : '/word[this.getIndex("word")]$term2').v
-                              let obj = this.getObjects()
+                              let obj = this.obj
                               obj.text.set({top: 5, text: ((word >> (this.getIndex() * 8)) & 0xFF).toString(16).padStart(2, "0")})
                               obj.circ.set({top: 0})
                               // Animate the next key becoming the key, only when stepping forward.
@@ -704,7 +704,7 @@
                      return {img, label1, label2, label3}
                   },
                   render() {
-                     this.getObjects().label1.set({text: '|encrypt$not_round0'.asBool() ? ('|encrypt$do_mixcolumn'.asBool() ? "Mixed\n($oo)" : "Shifted\n($ssr_out)") : "State In\n($state_i)"})
+                     this.obj.label1.set({text: '|encrypt$not_round0'.asBool() ? ('|encrypt$do_mixcolumn'.asBool() ? "Mixed\n($oo)" : "Shifted\n($ssr_out)") : "State In\n($state_i)"})
                   },
                   where: {left: 460, top: 630}
                /ax[3:0]
@@ -721,7 +721,7 @@
                            return {circ, text}
                         },
                         render() {
-                           this.getObjects().text.set({
+                           this.obj.text.set({
                               text: '|encrypt$state_mc'.asHexStr().substr((15 - (this.getIndex("ax") * 4 + this.getIndex("ay"))) * 2, 2),
                               fill: '|encrypt$valid_blk'.asBool() ? "black" : "lightgray"
                            })
@@ -743,7 +743,7 @@
                            return {circ, text}
                         },
                         render() {
-                           this.getObjects().text.set({
+                           this.obj.text.set({
                               text: '$state_ark_byte'.asHexStr(),
                               fill: '|encrypt$valid_blk'.asBool() ? "black" : "lightgray"
                            })
@@ -765,7 +765,7 @@
                            return {circ, text}
                         },
                         render() {
-                           this.getObjects().text.set({
+                           this.obj.text.set({
                               text: '$key_byte'.asHexStr(),
                               fill: '|encrypt$valid_blk'.asBool() ? "black" : "lightgray"
                            })
