@@ -1,4 +1,6 @@
-\m4_TLV_version 1d: tl-x.org
+\m5_TLV_version 1d: tl-x.org
+\m5
+   use(m5-1.0)
 \SV
 /*
 BSD 3-Clause License
@@ -35,46 +37,39 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //       The two must be merged and tested.
 m4_include_lib(['https://raw.githubusercontent.com/stevehoover/tlv_lib/db48b4c22c4846c900b3fa307e87d9744424d916/fundamentals_lib.tlv'])
 
-// Model parameters.
-m4_def(
-   SCORE_WIDTH, 20,
-   N_SIZE, 2,
-   ALPHA, 2,
-   BETA, 2,
-   # Score increment along diagonal for matches,
-   DIAG_INC, 3,
-   # Score decrement along diagonal for mismatches,
-   DIAG_DEC, 3,
-   # Special back arrow value indicating that the cell *above* has a max-value (and this cell will not be along backtrack),
-   BACK_BELOW_MAX, 0,
-   # Back-arrow from left,
-   BACK_LEFT, 1,
-   # Back-arrow from above,
-   BACK_ABOVE, 2,
-   # Back-arrow along diagonal,
-   BACK_DIAG, 3)
-m4_define_hier(['M4_PE'], 10)
-// VIZ parameters.
-m4_def(
-   # Show VIZ details (0-present/1-debug),
-   DETAILS_VISIBLE, false,
-   # Opacity of information from the future (nominal value 0.3),
-   FUTURE_OPACITY, 0.3,
-   # Amount to fade the past (nominal value 0.3),
-   PAST_FADE, 0.3)
-// Testbench parameters.
-m4_def(
-   # Seed for random,
-   SEED, 16,
-   # S Genome (Wikipedia: TGTTACGG (8 PEs), Tag-a-Cat: CTAGCATCAT (10 PEs)),
-   S_GENOME, CTAGCATCAT,
-   # T Genome (Wikipedia: GGTTGACT (8 PEs), Tag-a-Cat: TAGACATGCG (10 PEs)),
-   T_GENOME, TAGACATGCG)
-// Computed parameters.
-m4_def(
-   SCORE_RANGE, m4_eval(M4_SCORE_WIDTH-1):0,
-   N_RANGE, m4_eval(M4_N_SIZE-1):0)
+\m5
+  // Model parameters. (TODO: By newer conventions, these should be lower-case.)
+  vars(
+    SCORE_WIDTH, 20,
+    N_SIZE, 2,
+    ALPHA, 2,
+    BETA, 2,
+    DIAG_INC, 3,    /// Score increment along diagonal for matches
+    DIAG_DEC, 3,    /// Score decrement along diagonal for mismatches
+    /// Back arrow encoding:
+    BACK_BELOW_MAX, 0,   /// Special back arrow value indicating that the cell *above* has a max-value (and this cell will not be along backtrack)
+    BACK_LEFT, 1,   /// Back-arrow from left
+    BACK_ABOVE, 2,  /// Back-arrow from above
+    BACK_DIAG, 3)   /// Back-arrow along diagonal,
+  define_hier(PE, 10)
+  // VIZ parameters.
+  vars(
+    DETAILS_VISIBLE, false,   /// Show VIZ details (0-present/1-debug)
+    FUTURE_OPACITY, 0.3,  /// Opacity of information from the future (nominal value 0.3)
+    PAST_FADE, 0.3)   /// Amount to fade the past (nominal value 0.3)
 
+  // Testbench parameters.
+  vars(
+    SEED, 16,   /// Seed for random
+    S_GENOME, CTAGCATCAT,   /// S Genome (Wikipedia: TGTTACGG (8 PEs), Tag-a-Cat: CTAGCATCAT (10 PEs))
+    T_GENOME, TAGACATGCG)   /// T Genome (Wikipedia: GGTTGACT (8 PEs), Tag-a-Cat: TAGACATGCG (10 PEs))
+
+  // Computed parameters.
+  vars(
+    SCORE_RANGE, m5_calc(m5_SCORE_WIDTH-1):0,
+    N_RANGE, m5_calc(m5_N_SIZE-1):0)
+
+\SV
 // The algorithm works in three phases. In each phase, the full matrix is processed, where in
 //   each cycle the PEs are processing an anti-diagonal of the matrix.
 // Phase 1: ➡️ Forward propagate max
@@ -95,8 +90,8 @@ m4_def(
 //             $reset
 //             $start  // Asserts for the computation of [0,0].
 //             /pe[*]
-//                $nucleotide_s[M4_N_RANGE]  // Nucleotide S (/pe[0] gets nucleotide[0])
-//             $nucleotide_t[M4_N_RANGE]  // Nucleotide T, shifted in, starting from index 0.
+//                $nucleotide_s[m5_N_RANGE]  // Nucleotide S (/pe[0] gets nucleotide[0])
+//             $nucleotide_t[m5_N_RANGE]  // Nucleotide T, shifted in, starting from index 0.
 
 \TLV smith_waterman(/_top, /_name)
    /_name
@@ -121,13 +116,13 @@ m4_def(
             //    PE_CNT * 0 + 2: backtrack of top-left
             //    PE_CNT * 0 + 1: no computation (just shifting nucleotide)
             //    PE_CNT * 0 + 0: all done
-            $count_down[M4_PE_INDEX_MAX+3:0] =
+            $count_down[m5_PE_INDEX_MAX+3:0] =
                  $reset              ? 0 :
-                 $start              ? M4_PE_CNT * 6 + 0 :
+                 $start              ? m5_PE_CNT * 6 + 0 :
                  >>1$count_down == 0 ? 0 :
                                        >>1$count_down - 1;
-            $start_again = $count_down == M4_PE_CNT * 4 + 0;
-            $start_back  = $count_down == M4_PE_CNT * 2 + 0;
+            $start_again = $count_down == m5_PE_CNT * 4 + 0;
+            $start_back  = $count_down == m5_PE_CNT * 2 + 0;
             {$max_prop, $arrow_prop, $backtrack, $active} =
                  |pipe$reset  ? 4'b0000 :
                  |pipe$start  ? 4'b1001 :
@@ -140,13 +135,13 @@ m4_def(
             
          @0
             // Capture max after max propagation phase.
-            $max[M4_SCORE_RANGE] =
+            $max[m5_SCORE_RANGE] =
                  ! $active    ? 0 :
-                 $start_again ? /pe[M4_PE_MAX]>>2$max :
+                 $start_again ? /pe[m5_PE_MAX]>>2$max :
                                 $RETAIN;
-            /pe[M4_PE_RANGE]
-               $nuc_s[M4_N_RANGE] = |pipe$start ? $nucleotide_s : $RETAIN;  // capture
-               $nuc_t[M4_N_RANGE] = |pipe$forward_prop ? /left$nuc_t : |pipe$backtrack ? /cyclic_right$nuc_t : $RETAIN;
+            /pe[m5_PE_RANGE]
+               $nuc_s[m5_N_RANGE] = |pipe$start ? $nucleotide_s : $RETAIN;  // capture
+               $nuc_t[m5_N_RANGE] = |pipe$forward_prop ? /left$nuc_t : |pipe$backtrack ? /cyclic_right$nuc_t : $RETAIN;
                $valid_fwd = |pipe$reset ? 1'b0 : /left$valid_fwd;
                //$valid_max_fwd = $valid_fwd && |pipe$max_prop;
                $valid_arrow_fwd = $valid_fwd && |pipe$arrow_prop;
@@ -162,25 +157,25 @@ m4_def(
                             |pipe$start       ? 1'b1 :
                             |pipe$start_again ? 1'b1 :
                             ! >>1$valid_fwd   ? 1'b0 :
-                                                ! |pipe/pe[M4_PE_MAX]>>1$valid_fwd;
-               $nuc_t[M4_N_RANGE] = $valid_fwd ? |pipe$nucleotide_t : |pipe/pe[M4_PE_MAX]>>1$nuc_t;
+                                                ! |pipe/pe[m5_PE_MAX]>>1$valid_fwd;
+               $nuc_t[m5_N_RANGE] = $valid_fwd ? |pipe$nucleotide_t : |pipe/pe[m5_PE_MAX]>>1$nuc_t;
                //$stall = $shift_s; // TODO : implement stall
-               $score_f[M4_SCORE_RANGE] = 0;
-               $score_v[M4_SCORE_RANGE] = 0;
-               $score_e[M4_SCORE_RANGE] = 0;
-               $max[M4_SCORE_RANGE] = 0;
+               $score_f[m5_SCORE_RANGE] = 0;
+               $score_v[m5_SCORE_RANGE] = 0;
+               $score_e[m5_SCORE_RANGE] = 0;
+               $max[m5_SCORE_RANGE] = 0;
                $max_or_shadow = 1'b0;
          @0
-            /pe[M4_PE_RANGE]
+            /pe[m5_PE_RANGE]
                /* verilator lint_save */
                /* verilator lint_off UNSIGNED */
                // update genome
                /left
-                  $ANY = #pe != 0 ? /pe[(#pe + M4_PE_MAX) % M4_PE_CNT]>>1$ANY : |pipe/default$ANY;
+                  $ANY = #pe != 0 ? /pe[(#pe + m5_PE_MAX) % m5_PE_CNT]>>1$ANY : |pipe/default$ANY;
                /above
                   $ANY = /pe>>1$valid_fwd ? /pe>>1$ANY : |pipe/default$ANY;
                /diag
-                  $ANY = ((#pe != 0) && /pe>>1$valid_fwd) ? /pe[(#pe + M4_PE_MAX) % M4_PE_CNT]>>2$ANY :
+                  $ANY = ((#pe != 0) && /pe>>1$valid_fwd) ? /pe[(#pe + m5_PE_MAX) % m5_PE_CNT]>>2$ANY :
                                                             |pipe/default$ANY;
          @1
             \viz_js
@@ -250,24 +245,24 @@ m4_def(
                   return ret
                }
             /output
-               /nuc_s_workaround[M4_PE_RANGE]
+               /nuc_s_workaround[m5_PE_RANGE]
                   $ANY = |pipe/pe[#nuc_s_workaround]/nuc_s$ANY;
-               /nuc_t_workaround[M4_PE_RANGE]
+               /nuc_t_workaround[m5_PE_RANGE]
                   $ANY = |pipe/pe[#nuc_t_workaround]/nuc_t$ANY;
                \viz_js
-                  box: {width: M4_PE_CNT * 2 * 32, height: 300 + M4_PE_CNT * 50, strokeWidth: 0},
+                  box: {width: m5_PE_CNT * 2 * 32, height: 300 + m5_PE_CNT * 50, strokeWidth: 0},
                   render() {
                      // Put all sigs into sig_obj.
                      let sig_obj = {$max: '|pipe$max'}
-                     for (let i = 0; i < M4_PE_CNT; i++) {
+                     for (let i = 0; i < m5_PE_CNT; i++) {
                         sig_obj[`$nuc_s${i}`] = '|pipe/pe[i]$nuc_s'
                         sig_obj[`$match_s${i}`] = '/nuc_s_workaround[i]$match'
                         sig_obj[`$exclude_s${i}`] = '/nuc_s_workaround[i]$exclude'
                         sig_obj[`$in_strand_s${i}`] = '/nuc_s_workaround[i]$in_strand'
-                        sig_obj[`$nuc_t${M4_PE_MAX - i}`] = '|pipe/pe[i]$nuc_t'
-                        sig_obj[`$match_t${M4_PE_MAX - i}`] = '/nuc_t_workaround[i]$match'
-                        sig_obj[`$exclude_t${M4_PE_MAX - i}`] = '/nuc_t_workaround[i]$exclude'
-                        sig_obj[`$is_max_t${M4_PE_MAX - i}`] = '/nuc_t_workaround[i]$is_max'
+                        sig_obj[`$nuc_t${m5_PE_MAX - i}`] = '|pipe/pe[i]$nuc_t'
+                        sig_obj[`$match_t${m5_PE_MAX - i}`] = '/nuc_t_workaround[i]$match'
+                        sig_obj[`$exclude_t${m5_PE_MAX - i}`] = '/nuc_t_workaround[i]$exclude'
+                        sig_obj[`$is_max_t${m5_PE_MAX - i}`] = '/nuc_t_workaround[i]$is_max'
                      }
                      let sigs = this.signalSet(sig_obj)
                      // Step sigs to the first inactive cycle of the next or current inactive period.
@@ -286,7 +281,7 @@ m4_def(
                      let match_t = []
                      let exclude_t = []
                      let is_max_t = []
-                     for (let i = 0; i < M4_PE_CNT; i++) {
+                     for (let i = 0; i < m5_PE_CNT; i++) {
                         nuc_s[i] = this.getScope("pipe").context.toLetter(sig_obj[`$nuc_s${i}`].asInt())
                         match_s[i] = sig_obj[`$match_s${i}`].asBool()
                         exclude_s[i] = sig_obj[`$exclude_s${i}`].asBool()
@@ -300,10 +295,10 @@ m4_def(
                      // Step max->0 through strand, rescoring it to determine when score == 0 and the strand begins.
                      //
                      // Initialize s and t to index the max end of strand.
-                     let s = M4_PE_MAX
+                     let s = m5_PE_MAX
                      let t = 0
                      while (! in_strand_s[s] && s >= 0) {s--}
-                     while (! is_max_t[t] && t <= M4_PE_MAX) {t++}
+                     while (! is_max_t[t] && t <= m5_PE_MAX) {t++}
                      // Walk strand.
                      let score = sig_obj[`$max`].step(-1).asInt(); sig_obj[`$max`].step()
                      let score_delta = null
@@ -315,18 +310,18 @@ m4_def(
                            str_s = nuc_s[s].toLowerCase() + str_s
                            str_t = "-" + str_t
                            s--
-                           score_delta = M4_BETA
+                           score_delta = m5_BETA
                         } else if (exclude_t[t]) {
                            str_t = nuc_t[t].toLowerCase() + str_t
                            str_s = "-" + str_s
                            t--
-                           score_delta = M4_BETA
+                           score_delta = m5_BETA
                         } else {
                            // Diagonal
                
                            // Correct previous BETA to ALPHA
-                           if (score_delta === M4_BETA) {
-                              score -= score_delta - M4_ALPHA
+                           if (score_delta === m5_BETA) {
+                              score -= score_delta - m5_ALPHA
                            }
                            
                            if (match_s[s] != match_t[t]) {
@@ -339,12 +334,12 @@ m4_def(
                               // Match
                               str_s = nuc_s[s] + str_s
                               str_t = nuc_t[t] + str_t
-                              score_delta = -M4_DIAG_INC
+                              score_delta = -m5_DIAG_INC
                            } else {
                               // Mismatching nucleotides (not excluded)
                               str_s = nuc_s[s].toLowerCase() + str_s
                               str_t = nuc_t[s].toLowerCase() + str_t
-                              score_delta = M4_DIAG_DEC
+                              score_delta = m5_DIAG_DEC
                            }
                            s--
                            t--
@@ -368,13 +363,13 @@ m4_def(
          @1
             /pe[*]
                ?$valid_fwd
-                  $vdiag[M4_SCORE_RANGE]   = $nuc_s == $nuc_t ? /diag$score_v + M4_DIAG_INC : decr(/diag$score_v, M4_DIAG_DEC);
-                  $score_f[M4_SCORE_RANGE] = max(decr(/left$score_v,  M4_ALPHA), decr(/left$score_f,  M4_BETA));
-                  $score_e[M4_SCORE_RANGE] = max(decr(/above$score_v, M4_ALPHA), decr(/above$score_e, M4_BETA));
-                  $score_v[M4_SCORE_RANGE] = max(max($score_e, $score_f), $vdiag);
-                  $max[M4_SCORE_RANGE]     = max(max(/above$max, /left$max), $score_v);
-                  //*output_scores[#pe] = >>(M4_PE_CNT - #pe)$max;
-                  //*valid = >>(M4_PE_CNT - #pe)$valid_fwd;
+                  $vdiag[m5_SCORE_RANGE]   = $nuc_s == $nuc_t ? /diag$score_v + m5_DIAG_INC : decr(/diag$score_v, m5_DIAG_DEC);
+                  $score_f[m5_SCORE_RANGE] = max(decr(/left$score_v,  m5_ALPHA), decr(/left$score_f,  m5_BETA));
+                  $score_e[m5_SCORE_RANGE] = max(decr(/above$score_v, m5_ALPHA), decr(/above$score_e, m5_BETA));
+                  $score_v[m5_SCORE_RANGE] = max(max($score_e, $score_f), $vdiag);
+                  $max[m5_SCORE_RANGE]     = max(max(/above$max, /left$max), $score_v);
+                  //*output_scores[#pe] = >>(m5_PE_CNT - #pe)$max;
+                  //*valid = >>(m5_PE_CNT - #pe)$valid_fwd;
                   /* verilator lint_restore */
                ?$valid_arrow_fwd
                   // The max shadow excludes max values to the left or below other max values.
@@ -391,18 +386,18 @@ m4_def(
                             |pipe$start_back ? 1'b1 :
                             ! >>1$valid_bwd  ? 1'b0 :
                                                ! |pipe/pe[0]>>1$valid_bwd;
-               $back_arrow_bwd[1:0] = M4_BACK_DIAG;
+               $back_arrow_bwd[1:0] = m5_BACK_DIAG;
                $in_a_strand = 1'b0;
          @0
             /pe[*]
                /right
-                  $ANY = (#pe != (M4_PE_CNT-1)) ? /pe[(#pe + 1) % M4_PE_CNT]>>1$ANY : |pipe/default$ANY;
+                  $ANY = (#pe != (m5_PE_CNT-1)) ? /pe[(#pe + 1) % m5_PE_CNT]>>1$ANY : |pipe/default$ANY;
                /cyclic_right
-                  $ANY = /pe[(#pe + 1) % M4_PE_CNT]>>1$ANY;
+                  $ANY = /pe[(#pe + 1) % m5_PE_CNT]>>1$ANY;
                /below
                   $ANY = /pe>>1$valid_bwd ? /pe>>1$ANY : |pipe/default$ANY;
                /back_diag
-                  $ANY = ((#pe != M4_PE_MAX) && /pe>>1$valid_bwd) ? /pe[(#pe + 1) % M4_PE_CNT]>>2$ANY :
+                  $ANY = ((#pe != m5_PE_MAX) && /pe>>1$valid_bwd) ? /pe[(#pe + 1) % m5_PE_CNT]>>2$ANY :
                                                                     |pipe/default$ANY;
                // Is this PE computing for backtracking.
                $valid_bwd = ! |pipe$active ? 1'b0 : /right$valid_bwd;
@@ -411,9 +406,9 @@ m4_def(
                ?$valid_arrow_fwd
                   // TODO: This comparison is redundant with the max comparison. Not clear how good a job synthesis will do with this.
                   $back_arrow_fwd[1:0] =
-                       $score_v == $vdiag   ? 2'd['']M4_BACK_DIAG :
-                       $score_v == $score_f ? 2'd['']M4_BACK_LEFT :
-                       $score_v == $score_e ? 2'd['']M4_BACK_ABOVE :
+                       $score_v == $vdiag   ? 2'd['']m5_BACK_DIAG :
+                       $score_v == $score_f ? 2'd['']m5_BACK_LEFT :
+                       $score_v == $score_e ? 2'd['']m5_BACK_ABOVE :
                                               2'bXX;  // Shouldn't happen.
                // Vector of all 2-bit back-arrows in the column as well as max value tags of BACK_BELOW_MAX on
                // entries below max values. One extra entry may hold BACK_BELOW_MAX values off the bottom.
@@ -421,26 +416,26 @@ m4_def(
                // backtracking and [3:2] is above that in the matrix, etc.
                $back_arrow_for_history[1:0] =
                     >>1$valid_arrow_fwd && >>1$is_max
-                                        ? 2'd['']M4_BACK_BELOW_MAX :
+                                        ? 2'd['']m5_BACK_BELOW_MAX :
                     $valid_arrow_fwd    ? $back_arrow_fwd :
-                    >>1$valid_arrow_fwd ? 2'd['']M4_BACK_DIAG :   // (not M4_BACK_BELOW_MAX)
+                    >>1$valid_arrow_fwd ? 2'd['']m5_BACK_DIAG :   // (not m5_BACK_BELOW_MAX)
                                           2'bXX;
-               $back_arrows[2 * M4_PE_CNT + 1 : 0] =
-                    |pipe$reset         ? {M4_PE_CNT{2'b00}} :
+               $back_arrows[2 * m5_PE_CNT + 1 : 0] =
+                    |pipe$reset         ? {m5_PE_CNT{2'b00}} :
                     $valid_arrow_fwd ||
-                    >>1$valid_arrow_fwd ? {>>1$back_arrows[2 * M4_PE_CNT - 1 : 0], $back_arrow_for_history} :
-                    $valid_bwd          ? {2'bXX, >>1$back_arrows[2 * M4_PE_CNT + 1 : 2]} :
+                    >>1$valid_arrow_fwd ? {>>1$back_arrows[2 * m5_PE_CNT - 1 : 0], $back_arrow_for_history} :
+                    $valid_bwd          ? {2'bXX, >>1$back_arrows[2 * m5_PE_CNT + 1 : 2]} :
                                           $RETAIN;
                $back_arrow_bwd[1:0] = $back_arrows[1:0];
                
                // Backtracking calculation.
                ?$valid_bwd
-                  $found_max = >>1$back_arrow_bwd == M4_BACK_BELOW_MAX;
-                  $from_back_diag = /back_diag$in_a_strand && /back_diag$back_arrow_bwd == M4_BACK_DIAG;
+                  $found_max = >>1$back_arrow_bwd == m5_BACK_BELOW_MAX;
+                  $from_back_diag = /back_diag$in_a_strand && /back_diag$back_arrow_bwd == m5_BACK_DIAG;
                   $from_right  = ! $from_back_diag && (
-                                    /right$in_a_strand     && /right$back_arrow_bwd     == M4_BACK_LEFT);
+                                    /right$in_a_strand     && /right$back_arrow_bwd     == m5_BACK_LEFT);
                   $from_below  = ! ($from_back_diag || $from_right) && (
-                                    /below$in_a_strand     && /below$back_arrow_bwd     == M4_BACK_ABOVE);
+                                    /below$in_a_strand     && /below$back_arrow_bwd     == m5_BACK_ABOVE);
                   $from_somewhere = $from_back_diag || $from_right || $from_below;
                   $in_a_strand = $from_somewhere || $found_max;
                
@@ -459,7 +454,7 @@ m4_def(
                      $match = 1'b0;
                   /in_a_strand
                      $in_strand = 1'b1;
-                     $exclude = /pe$back_arrow_bwd == M4_BACK_LEFT;
+                     $exclude = /pe$back_arrow_bwd == m5_BACK_LEFT;
                      $match = /pe/nuc_t$match;
                   $ANY =
                        ! |pipe$active
@@ -478,7 +473,7 @@ m4_def(
                   // Assert (sticky) for the final cell processing this nucleotide in its first strand.
                   // This is used to mask off strands to the left of the first encountered, so resulting
                   // output nucleotide data reflects the left-most strand for the nucleotide.
-                  $already_in_a_strand = /pe[(#pe + 1) % M4_PE_CNT]/nuc_t>>1$in_a_strand;
+                  $already_in_a_strand = /pe[(#pe + 1) % m5_PE_CNT]/nuc_t>>1$in_a_strand;
                   $in_a_strand =
                        ! |pipe$active
                        // Retain while inactive.
@@ -496,7 +491,7 @@ m4_def(
                   /in_rightmost_strand
                      $is_max = /pe$found_max;
                      $match = /pe$nuc_s == /pe$nuc_t;
-                     $exclude = /pe$back_arrow_bwd == M4_BACK_ABOVE;
+                     $exclude = /pe$back_arrow_bwd == m5_BACK_ABOVE;
                   $ANY =
                        ! |pipe$active
                        // Retain while inactive.
@@ -508,15 +503,15 @@ m4_def(
                        /pe$valid_bwd && /pe$in_rightmost_strand
                             ? /in_rightmost_strand$ANY :
                        // Retain
-                              /pe[(#pe + 1) % M4_PE_CNT]/nuc_t>>1$ANY;
+                              /pe[(#pe + 1) % m5_PE_CNT]/nuc_t>>1$ANY;
          
          // ===
          // VIZ
          // ===
          @1
-            /pe[M4_PE_RANGE]
+            /pe[m5_PE_RANGE]
                \viz_js
-                  box: {left: 0, top: -100, width: 50, height: 100 + M4_PE_CNT * 50, strokeWidth: 0},
+                  box: {left: 0, top: -100, width: 50, height: 100 + m5_PE_CNT * 50, strokeWidth: 0},
                   layout: "horizontal",
                   init() {
                      return {
@@ -534,7 +529,7 @@ m4_def(
                         scores: new fabric.Text("", {
                              left: 0, top: -46, fontSize: 3,
                              fill: "white",
-                             visible: M4_DETAILS_VISIBLE,
+                             visible: m5_DETAILS_VISIBLE,
                         }),
                      }
                   },
@@ -557,7 +552,7 @@ m4_def(
                      })
                   },
                   where: {top: -100}
-               /vert[M4_PE_RANGE]
+               /vert[m5_PE_RANGE]
                   \viz_js
                      box: {width: 50, height: 50, stroke: "black"},
                      layout: "vertical",
@@ -587,16 +582,16 @@ m4_def(
                         this.cellColor = function(color1, cycle1, color2, cycle2) {
                            color1 = new fabric.Color(color1)
                            if (cycle1 > 0) {  // future
-                              color1.setAlpha(M4_FUTURE_OPACITY)
+                              color1.setAlpha(m5_FUTURE_OPACITY)
                            } else if (cycle1 < 0) {  // past
-                              this.overlayWith(color1, [160, 160, 160, M4_PAST_FADE])
+                              this.overlayWith(color1, [160, 160, 160, m5_PAST_FADE])
                            }
                            if (color2) {
                               color2 = new fabric.Color(color2)
                               if (cycle2 > 0) {  // future
-                                 color2.setAlpha(M4_FUTURE_OPACITY)
+                                 color2.setAlpha(m5_FUTURE_OPACITY)
                               } else if (cycle2 < 0) {  // past
-                                 this.overlayWith(color2, [160, 160, 160, M4_PAST_FADE])
+                                 this.overlayWith(color2, [160, 160, 160, m5_PAST_FADE])
                               }
                               this.overlayWith(color1, color2.getSource())
                            }
@@ -624,12 +619,12 @@ m4_def(
                            text: new fabric.Text("", {
                                 left: 2, top: 2.5,
                                 fontSize: 4,
-                                visible: M4_DETAILS_VISIBLE,
+                                visible: m5_DETAILS_VISIBLE,
                            }),
                            back_text: new fabric.Text("", {
                                 left: 25, top: 2.5,
                                 fontSize: 4,
-                                visible: M4_DETAILS_VISIBLE,
+                                visible: m5_DETAILS_VISIBLE,
                            }),
                            score: new fabric.Text("", {
                                 left: 25, top: 27,
@@ -712,7 +707,7 @@ m4_def(
                         
                         // Step to arrow_prop phase.
                         
-                        sigs.step(2 * M4_PE_CNT)
+                        sigs.step(2 * m5_PE_CNT)
                         let max_shadow = sigs.sig("$max_shadow").asBool()
                         
                         let arrow_prop_diff = sigs.sig("$vdiag").getCycle() - this.getCycle()
@@ -720,9 +715,9 @@ m4_def(
                         // Draw arrows.
                         let ret = []
                         let arrow_diff = max_prop ? max_prop_diff : arrow_prop_diff
-                        this.makeArrow(ret, vdiag,   score_v, back_arrow == M4_BACK_DIAG,  arrow_diff, 0,  0,  25, 135)
-                        this.makeArrow(ret, score_e, score_v, back_arrow == M4_BACK_ABOVE, arrow_diff, 25, 0,  20, 180)
-                        this.makeArrow(ret, score_f, score_v, back_arrow == M4_BACK_LEFT,  arrow_diff, 0,  25, 20, 90)
+                        this.makeArrow(ret, vdiag,   score_v, back_arrow == m5_BACK_DIAG,  arrow_diff, 0,  0,  25, 135)
+                        this.makeArrow(ret, score_e, score_v, back_arrow == m5_BACK_ABOVE, arrow_diff, 25, 0,  20, 180)
+                        this.makeArrow(ret, score_f, score_v, back_arrow == m5_BACK_LEFT,  arrow_diff, 0,  25, 20, 90)
                         
                         
                         //
@@ -732,7 +727,7 @@ m4_def(
                         // Step to backtracking cycle.
                         
                         sigs.forwardToValue(sigs.sig("$valid_bwd"), 1)
-                        sigs.step(M4_PE_MAX - this.getIndex())
+                        sigs.step(m5_PE_MAX - this.getIndex())
                         let backtrack_diff = sigs.sig("$vdiag").getCycle() - this.getCycle()
                         let back_arrow_bwd = sigs.sig("$back_arrow_bwd").asInt()
                         let match = sigs.sig("$match").asBool()
@@ -775,7 +770,7 @@ m4_def(
                              !in_rightmost_strand ? "#404060" :
                              found_max ? (match ? "red" : "#AF5050") :
                              !match ? "gray" :
-                             score_v == M4_DIAG_INC ? "yellow" :
+                             score_v == m5_DIAG_INC ? "yellow" :
                                     "orange"
                         let blend_value = max_prop ? max : score_v
                         let cell_color = this.cellColor(
@@ -797,7 +792,7 @@ m4_def(
                         return ret
                      },
                      where: {left: 0, top: 0, scale: 1}
-            /vert_label[M4_PE_RANGE]
+            /vert_label[m5_PE_RANGE]
                \viz_js
                   box: {left: 0, top: 0, width: 50, height: 50, strokeWidth: 0},
                   layout: "vertical",
@@ -831,11 +826,11 @@ m4_def(
             return ch == "A" ? 0 : ch == "C" ? 1 : ch == "T" ? 2 : 3;
          endfunction
          // Max score.
-         function logic [M4_SCORE_RANGE] max (logic [M4_SCORE_RANGE] a, logic [M4_SCORE_RANGE] b);
+         function logic [m5_SCORE_RANGE] max (logic [m5_SCORE_RANGE] a, logic [m5_SCORE_RANGE] b);
             return (a > b) ? a : b;
          endfunction
          // Decrement, saturating at 0 to avoid wrap.
-         function logic [M4_SCORE_RANGE] decr (logic [M4_SCORE_RANGE] val, logic [M4_SCORE_RANGE] dec);
+         function logic [m5_SCORE_RANGE] decr (logic [m5_SCORE_RANGE] val, logic [m5_SCORE_RANGE] dec);
             return (dec > val) ? 0 : val - dec;
          endfunction
       /sw
@@ -845,39 +840,39 @@ m4_def(
                $start = *cyc_cnt == 10;  // Asserts for the computation of [0,0].
             @0
                /tb
-                  m4+ifelse(1, 1,
+                  m5+ifelse(1, 1,
                      \TLV
                         // Fixed sequences.
-                        $genome_s[8 * M4_PE_CNT - 1 : 0] = "M4_S_GENOME";
-                        $genome_t[8 * M4_PE_CNT - 1 : 0] = "M4_T_GENOME";
-                        /pe[M4_PE_RANGE]
-                           $nuc_s_char[7:0] = /tb$genome_s[((M4_PE_MAX - #pe) + 1) * 8 - 1 : (M4_PE_MAX - #pe) * 8];
-                           $nuc_t_char[7:0] = /tb$genome_t[((M4_PE_MAX - #pe) + 1) * 8 - 1 : (M4_PE_MAX - #pe) * 8];
-                           $nuc_s[M4_PE_RANGE] = nuc($nuc_s_char);
-                           $nuc_t[M4_PE_RANGE] = nuc($nuc_t_char);
+                        $genome_s[8 * m5_PE_CNT - 1 : 0] = "m5_S_GENOME";
+                        $genome_t[8 * m5_PE_CNT - 1 : 0] = "m5_T_GENOME";
+                        /pe[m5_PE_RANGE]
+                           $nuc_s_char[7:0] = /tb$genome_s[((m5_PE_MAX - #pe) + 1) * 8 - 1 : (m5_PE_MAX - #pe) * 8];
+                           $nuc_t_char[7:0] = /tb$genome_t[((m5_PE_MAX - #pe) + 1) * 8 - 1 : (m5_PE_MAX - #pe) * 8];
+                           $nuc_s[m5_PE_RANGE] = nuc($nuc_s_char);
+                           $nuc_t[m5_PE_RANGE] = nuc($nuc_t_char);
                      , 1, 1,
                      \TLV
                         // Random sequences.
-                        /pe[M4_PE_RANGE]
-                           m4_rand($rand0, M4_N_SIZE - 1, 0, pe + M4_SEED)
-                           m4_rand($rand1, M4_N_SIZE - 1, 0, pe + M4_SEED)
-                           m4_rand($rand2, M4_N_SIZE - 1, 0, pe + M4_SEED)
-                           m4_rand($rand3, M4_N_SIZE - 1, 0, pe + M4_SEED)
-                           $nuc_t[M4_N_SIZE-1:0] = $rand0 | ($rand1 & 2'b01);
-                           $nuc_s[M4_N_SIZE-1:0] = $rand2 | ($rand1 & 2'b01);
+                        /pe[m5_PE_RANGE]
+                           m4_rand($rand0, m5_N_SIZE - 1, 0, pe + m5_SEED)
+                           m4_rand($rand1, m5_N_SIZE - 1, 0, pe + m5_SEED)
+                           m4_rand($rand2, m5_N_SIZE - 1, 0, pe + m5_SEED)
+                           m4_rand($rand3, m5_N_SIZE - 1, 0, pe + m5_SEED)
+                           $nuc_t[m5_N_SIZE-1:0] = $rand0 | ($rand1 & 2'b01);
+                           $nuc_s[m5_N_SIZE-1:0] = $rand2 | ($rand1 & 2'b01);
                      ,
                      \TLV
                         // (Unassigned) random sequences.
-                        /pe[M4_PE_RANGE]
-                           `BOGUS_USE($nuc_s[M4_PE_RANGE] $nuc_t[M4_PE_RANGE])
+                        /pe[m5_PE_RANGE]
+                           `BOGUS_USE($nuc_s[m5_PE_RANGE] $nuc_t[m5_PE_RANGE])
                      )
-                  /pe[M4_PE_RANGE]
+                  /pe[m5_PE_RANGE]
                      $shifted_nuc_t[7:0] =
                           // reset
                           |pipe$reset ? $nuc_t :
                           // cyclic left shift
                           |pipe/pe[0]>>1$valid_fwd
-                                      ? /pe[(#pe + 1) % M4_PE_CNT]>>1$shifted_nuc_t :
+                                      ? /pe[(#pe + 1) % m5_PE_CNT]>>1$shifted_nuc_t :
                           // retain
                                     $RETAIN;
 
@@ -885,15 +880,15 @@ m4_def(
       /sw
          |pipe
             @0
-               /pe[M4_PE_RANGE]
-                  $nucleotide_s[M4_N_RANGE] = |pipe/tb/pe$nuc_s;
-               $nucleotide_t[M4_N_RANGE] = /tb/pe[0]$shifted_nuc_t;
-      m4+smith_waterman(/_top, /sw, $reset)
+               /pe[m5_PE_RANGE]
+                  $nucleotide_s[m5_N_RANGE] = |pipe/tb/pe$nuc_s;
+               $nucleotide_t[m5_N_RANGE] = /tb/pe[0]$shifted_nuc_t;
+      m5+smith_waterman(/_top, /sw, $reset)
 
 \SV
-   m4_makerchip_module
+   m5_makerchip_module
 \TLV
-   m4+smith_waterman_example(/example,)
+   m5+smith_waterman_example(/example,)
    *passed = cyc_cnt > 80;
 \SV
    endmodule

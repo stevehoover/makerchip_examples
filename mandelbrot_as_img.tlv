@@ -1,31 +1,33 @@
-\m4_TLV_version 1d: tl-x.org
-m4+definitions(['
-   // Parameters:
-   m4_define(M4_MAX_DEPTH, 40)
-   m4_def(MAX_H, 40,
-          MAX_V, 40)
+\m5_TLV_version 1d: tl-x.org
+\m5
+   use(m5-1.0)
+   
+   // Parameters: (TODO: These should, by newer convention, be lower-case.)
+   var(MAX_DEPTH, 40)
+   vars(MAX_H, 40,
+        MAX_V, 40)
    // Full size.
-   //m4_define(M4_MIN_X, -2.0)
-   //m4_define(M4_MIN_Y, -2.0)
-   //m4_define(M4_MAX_X, 2.0)
-   //m4_define(M4_MAX_Y, 2.0)
+   //var(MIN_X, -2.0)
+   //var(MIN_Y, -2.0)
+   //var(MAX_X, 2.0)
+   //var(MAX_Y, 2.0)
    // Good place, 20x.  
-   m4_def(MIN_X, -1.3,
-          MIN_Y, -0.4,
-          MAX_X, -1.2,
-          MAX_Y, -0.3)
+   vars(MIN_X, -1.3,
+        MIN_Y, -0.4,
+        MAX_X, -1.2,
+        MAX_Y, -0.3)
    
    // Viz parameters.
-   m4_def(VIZ_CELL_SIZE, 10,
-          VIZ_FONT_SIZE, 5,
-          VIZ_LINE_SIZE, 15)
+   vars(VIZ_CELL_SIZE, 10,
+        VIZ_FONT_SIZE, 5,
+        VIZ_LINE_SIZE, 15)
    // Layout
-   m4_def(VIZ_SCREEN_X, 0,
-          VIZ_SCREEN_Y, 0)
+   vars(VIZ_SCREEN_X, 0,
+        VIZ_SCREEN_Y, 0)
    // Text box position
-   m4_def(VIZ_TEXT_AREA_WIDTH, M4_VIZ_FONT_SIZE * 55,
-          VIZ_TEXT_X, M4_VIZ_SCREEN_X - M4_VIZ_TEXT_AREA_WIDTH,
-          VIZ_TEXT_Y, M4_VIZ_SCREEN_Y)
+   vars(VIZ_TEXT_AREA_WIDTH, m5_VIZ_FONT_SIZE * 55)
+   vars(VIZ_TEXT_X, m5_VIZ_SCREEN_X - m5_VIZ_TEXT_AREA_WIDTH,
+        VIZ_TEXT_Y, m5_VIZ_SCREEN_Y)
    // Coloring mode:
    // Each color component can be one of:
    //   {mode: "depth"}: least-significan-digit of depth
@@ -42,14 +44,14 @@ m4+definitions(['
    //                     by #'s (any length array).
    //   "##": A fixed value (2 hex digits)
    // Mandelbrot uses "depth" and "depth2", like: ["depth","depth2", #]
-   // /* Mandelbrot: */ m4_define(M4_COLOR_MODE, ['{mode: "depth"}, {mode: "Abs", dim: "B"}, {mode: "Abs", dim: "A"}'])
-   // /* Smoothed: */ m4_define(M4_COLOR_MODE, ['{mode: "Smooth", pattern: [255, 255, 0, 0, 255, 255, 0, 0]}, {mode: "Smooth", pattern: [0, 255, 255, 255, 255, 0, 0, 0]}, {mode: "Smooth", pattern: [0, 0, 0, 255, 255, 255, 255, 0]}'])
-   // /* Bubbly */ m4_define(M4_COLOR_MODE, ['{mode: "depth"}, {mode: "Exp", val: "doneA", neg: "Black"}, {mode: "Frac", val: "doneA"}'])
-   //m4_define(M4_COLOR_MODE, ['{mode: "Smooth", pattern: [0, 50, 50, 0]}, {mode: "Smooth", pattern: [0, 0, 50, 50]}, {mode: "Frac", val: "AB"}'])
-   // /* Smoothed w/ AB exp blend */ m4_define(M4_COLOR_MODE, ['{mode: "Smooth", pattern: [0, 155, 155, 0]}, {mode: "Smooth", pattern: [0, 0, 155, 155]}, {mode: "Value", val: "blendAB", neg: "Zero", saturate: true}'])
-   /* Electrified */ m4_def(COLOR_MODE, ['{mode: "Smooth", pattern: [0, 155, 155, 0]}, {mode: "Smooth", pattern: [0, 0, 155, 155]}, {mode: "Frac", val: "blendAB", neg: "Abs", saturate: true}'])
-   m4_def(FIXED_DEPTH, 0)
-'])
+   // /* Mandelbrot: */ var(COLOR_MODE, ['{mode: "depth"}, {mode: "Abs", dim: "B"}, {mode: "Abs", dim: "A"}'])
+   // /* Smoothed: */ var(COLOR_MODE, ['{mode: "Smooth", pattern: [255, 255, 0, 0, 255, 255, 0, 0]}, {mode: "Smooth", pattern: [0, 255, 255, 255, 255, 0, 0, 0]}, {mode: "Smooth", pattern: [0, 0, 0, 255, 255, 255, 255, 0]}'])
+   // /* Bubbly */ var(COLOR_MODE, ['{mode: "depth"}, {mode: "Exp", val: "doneA", neg: "Black"}, {mode: "Frac", val: "doneA"}'])
+   //var(COLOR_MODE, ['{mode: "Smooth", pattern: [0, 50, 50, 0]}, {mode: "Smooth", pattern: [0, 0, 50, 50]}, {mode: "Frac", val: "AB"}'])
+   // /* Smoothed w/ AB exp blend */ var(COLOR_MODE, ['{mode: "Smooth", pattern: [0, 155, 155, 0]}, {mode: "Smooth", pattern: [0, 0, 155, 155]}, {mode: "Value", val: "blendAB", neg: "Zero", saturate: true}'])
+   / Electrified:
+   var(COLOR_MODE, ['{mode: "Smooth", pattern: [0, 155, 155, 0]}, {mode: "Smooth", pattern: [0, 0, 155, 155]}, {mode: "Frac", val: "blendAB", neg: "Abs", saturate: true}'])
+   var(FIXED_DEPTH, 0)
 // Params:
 //   _out_prefix: ['*'] or ['$'] to prefix passed/failed output signals in |pipe@0.
 \TLV mandelbrot(/_top, _out_prefix, _where)
@@ -71,13 +73,13 @@ m4+definitions(['
             // The view, given by upper-left corner coords and pixel x & y size.
             // (Currently, constant, but will enable changes (fly-through).)
             **real $MinX;
-            $MinX <= M4_MIN_X;
+            $MinX <= m5_MIN_X;
             **real $MinY;
-            $MinY <= M4_MIN_Y;
+            $MinY <= m5_MIN_Y;
             **real $PixX;
-            $PixX <= (M4_MAX_X - M4_MIN_X) / M4_MAX_H;
+            $PixX <= (m5_MAX_X - m5_MIN_X) / m5_MAX_H;
             **real $PixY;
-            $PixY <= (M4_MAX_Y - M4_MIN_Y) / M4_MAX_V;
+            $PixY <= (m5_MAX_Y - m5_MIN_Y) / m5_MAX_V;
 
 
             //
@@ -86,17 +88,17 @@ m4+definitions(['
 
             // Cycle over pixels (vertical (outermost) and horizontal) and depth (innermost).
             // When each wraps, increment the next.
-            $wrap_h = $PixH == M4_MAX_H;
-            $wrap_v = $PixV == M4_MAX_V;
-            $Depth[\$clog2(M4_MAX_DEPTH+1)-1:0] <=
+            $wrap_h = $PixH == m5_MAX_H;
+            $wrap_v = $PixV == m5_MAX_V;
+            $Depth[\$clog2(m5_MAX_DEPTH+1)-1:0] <=
                $reset || $done_pix ? '0 : $Depth + 1;
-            $PixH[\$clog2(M4_MAX_H+1)-1:0] <=
+            $PixH[\$clog2(m5_MAX_H+1)-1:0] <=
                $reset ?
                   '0 :
                   $done_pix ?
                      $wrap_h ? '0 : $PixH + 1 :
                      $RETAIN;
-            $PixV[\$clog2(M4_MAX_V+1)-1:0] <=
+            $PixV[\$clog2(m5_MAX_V+1)-1:0] <=
                $reset ?
                   '0 :
                   ($done_pix && $wrap_h) ?
@@ -146,8 +148,8 @@ m4+definitions(['
             //   b <= 2*a*b + y
             //   diverged <= a*a + b*b >= 2.0*2.0
             // }
-            $done_pix = (!1'b['']M4_FIXED_DEPTH && ($init ? 1'b0 : $Aa * $Aa + $Bb * $Bb >= (2.0 * 2.0))) || 
-                        ($Depth == M4_MAX_DEPTH);
+            $done_pix = (!1'b['']m5_FIXED_DEPTH && ($init ? 1'b0 : $Aa * $Aa + $Bb * $Bb >= (2.0 * 2.0))) || 
+                        ($Depth == m5_MAX_DEPTH);
             $not_done = ! $done_pix;
             ?$not_done
                **real $Aa;
@@ -156,30 +158,28 @@ m4+definitions(['
                **real $Bb;
                $Bb <= $init ? $yy :
                               2.0 * $Aa * $Bb + $yy;
-               $color_index[\$clog2(M4_MAX_DEPTH+1)-1:0] = $Depth;
+               $color_index[\$clog2(m5_MAX_DEPTH+1)-1:0] = $Depth;
 
             // For viz:
-            /**/
             $xx_vec[63:0] = \$realtobits($xx);
             $yy_vec[63:0] = \$realtobits($yy);
             $aa_vec[63:0] = \$realtobits($Aa);
             $bb_vec[63:0] = \$realtobits($Bb);
-            /**/
 
             \viz_js
                box: {
-                  left: M4_VIZ_TEXT_X,
-                  top: M4_VIZ_SCREEN_Y,
-                  width: M4_VIZ_TEXT_AREA_WIDTH + M4_VIZ_CELL_SIZE * (M4_MAX_H + 1),
-                  height: M4_VIZ_CELL_SIZE * (M4_MAX_V + 1),
+                  left: m5_VIZ_TEXT_X,
+                  top: m5_VIZ_SCREEN_Y,
+                  width: m5_VIZ_TEXT_AREA_WIDTH + m5_VIZ_CELL_SIZE * (m5_MAX_H + 1),
+                  height: m5_VIZ_CELL_SIZE * (m5_MAX_V + 1),
                   //stroke: "green",
                   //strokeWidth: 10
                },
                init() {
                   let text = new fabric.Text("", {
-                        left: M4_VIZ_TEXT_X,
-                        top: M4_VIZ_TEXT_Y,
-                        fontSize: M4_VIZ_FONT_SIZE,
+                        left: m5_VIZ_TEXT_X,
+                        top: m5_VIZ_TEXT_Y,
+                        fontSize: m5_VIZ_FONT_SIZE,
                         fontFamily: "monospace"
                      })
                   //debugger
@@ -188,9 +188,9 @@ m4+definitions(['
                      left: 0,
                      originY: "center",
                      top: 0,
-                     radius: M4_VIZ_CELL_SIZE / 2 * 1.5,
+                     radius: m5_VIZ_CELL_SIZE / 2 * 1.5,
                      stroke: "red",
-                     strokeWidth: M4_VIZ_CELL_SIZE / 10,
+                     strokeWidth: m5_VIZ_CELL_SIZE / 5,
                      fill: "rgba(128,128,128,0)"
                   })
 
@@ -201,13 +201,13 @@ m4+definitions(['
 
                onTraceData() {
                   // Create the screen image.
-                  let colorMode = [M4_COLOR_MODE]
-                  let screen = new (this.getGlobal().Grid)(window, this, M4_MAX_H + 1, M4_MAX_V + 1,
-                       {left: M4_VIZ_SCREEN_X, top: M4_VIZ_SCREEN_Y,
-                        scaleX: M4_VIZ_CELL_SIZE,
-                        scaleY: M4_VIZ_CELL_SIZE,
-                        width: M4_MAX_H + 1,
-                        height: M4_MAX_V + 1})
+                  let colorMode = [m5_COLOR_MODE]
+                  let screen = new (this.getGlobal().Grid)(window, this, m5_MAX_H + 1, m5_MAX_V + 1,
+                       {left: m5_VIZ_SCREEN_X, top: m5_VIZ_SCREEN_Y,
+                        scaleX: m5_VIZ_CELL_SIZE,
+                        scaleY: m5_VIZ_CELL_SIZE,
+                        width: m5_MAX_H + 1,
+                        height: m5_MAX_V + 1})
 
                   // Get signals (not setting time, yet).
                   let $PixH = '$PixH'
@@ -267,9 +267,9 @@ m4+definitions(['
                            } else if (mode.mode === "depth2") {
                               color += (Math.floor(colorIndex / 4) % 10) + "0"
                            } else if (mode.mode === "Smooth") {
-                              if (colorIndex == M4_MAX_DEPTH - 1) {
+                              if (colorIndex == m5_MAX_DEPTH - 1) {
                                  color += "00"
-                              } else if (colorIndex >= M4_MAX_DEPTH) {
+                              } else if (colorIndex >= m5_MAX_DEPTH) {
                                  console.log("Oops")
                                  debugger
                               } else {
@@ -385,7 +385,7 @@ m4+definitions(['
                     str1 += ` => $Aa (${aSig.asRealFixed(3, NaN)})\n`
                     str2 += ` => $Bb (${bSig.asRealFixed(3, NaN)})\n`
                     str += str1 + str2 + str3
-                  } while(!done && d <= M4_MAX_DEPTH)
+                  } while(!done && d <= m5_MAX_DEPTH)
                   this.obj.text.set("text", str)
                   // Calculate the screen.
                   // This is a static view reflecting the entire simulation,
@@ -395,8 +395,8 @@ m4+definitions(['
                   let circle = this.obj.circle
                   //debugger
                   circle.bringToFront()
-                  circle.set("left", M4_VIZ_SCREEN_X + ('$PixH'.asInt() + 0.5) * M4_VIZ_CELL_SIZE)
-                  circle.set("top",  M4_VIZ_SCREEN_Y + ('$PixV'.asInt() + 0.5) * M4_VIZ_CELL_SIZE)
+                  circle.set("left", m5_VIZ_SCREEN_X + ('$PixH'.asInt() + 0.5) * m5_VIZ_CELL_SIZE)
+                  circle.set("top",  m5_VIZ_SCREEN_Y + ('$PixV'.asInt() + 0.5) * m5_VIZ_CELL_SIZE)
                   return ret
                }
          @1
@@ -410,12 +410,12 @@ m4+definitions(['
    // Mandelbrot Set Calculation
    // ==========================
 
-   m4_makerchip_module
+   m5_makerchip_module
       // To relax Verilator compiler checking:
       /* verilator lint_off UNOPTFLAT */
       /* verilator lint_on WIDTH */
       /* verilator lint_off REALCVT */  // !!! SandPiper DEBUGSIGS BUG.
 \TLV
-   m4+mandelbrot(/mandelbrot, *,)
+   m5+mandelbrot(/mandelbrot, *,)
 \SV
    endmodule

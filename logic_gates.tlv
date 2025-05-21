@@ -1,4 +1,4 @@
-\m4_TLV_version 1d: tl-x.org
+\m5_TLV_version 1d: tl-x.org
 
 
 // A logic gate in its own scope with its own \viz_js.
@@ -45,12 +45,12 @@
          where: {_where}
       |example
          @0
-            m4+gate(|example, /and,  AND,  0, 0,  , &&, ['https:/']['/upload.wikimedia.org/wikipedia/commons/6/64/AND_ANSI.svg'])
-            m4+gate(|example, /nand, NAND, 1, 0, ~, &&, ['https:/']['/upload.wikimedia.org/wikipedia/commons/f/f2/NAND_ANSI.svg'])
-            m4+gate(|example, /or,   OR,   0, 1,  , ||, ['https:/']['/upload.wikimedia.org/wikipedia/commons/b/b5/OR_ANSI.svg'])
-            m4+gate(|example, /nor,  NOR,  1, 1, ~, ||, ['https:/']['/upload.wikimedia.org/wikipedia/commons/6/6c/NOR_ANSI.svg'])
-            m4+gate(|example, /xor,  XOR,  0, 2,  , ^,  ['https:/']['/upload.wikimedia.org/wikipedia/commons/0/01/XOR_ANSI.svg'])
-            m4+gate(|example, /xnor, XNOR, 1, 2, ~, ^,  ['https:/']['/upload.wikimedia.org/wikipedia/commons/d/d6/XNOR_ANSI.svg'])
+            m5+gate(|example, /and,  AND,  0, 0,  , &&, ['https:/']['/upload.wikimedia.org/wikipedia/commons/6/64/AND_ANSI.svg'])
+            m5+gate(|example, /nand, NAND, 1, 0, ~, &&, ['https:/']['/upload.wikimedia.org/wikipedia/commons/f/f2/NAND_ANSI.svg'])
+            m5+gate(|example, /or,   OR,   0, 1,  , ||, ['https:/']['/upload.wikimedia.org/wikipedia/commons/b/b5/OR_ANSI.svg'])
+            m5+gate(|example, /nor,  NOR,  1, 1, ~, ||, ['https:/']['/upload.wikimedia.org/wikipedia/commons/6/6c/NOR_ANSI.svg'])
+            m5+gate(|example, /xor,  XOR,  0, 2,  , ^,  ['https:/']['/upload.wikimedia.org/wikipedia/commons/0/01/XOR_ANSI.svg'])
+            m5+gate(|example, /xnor, XNOR, 1, 2, ~, ^,  ['https:/']['/upload.wikimedia.org/wikipedia/commons/d/d6/XNOR_ANSI.svg'])
 
             // reset signal from instantiation of m4_makerchip_module above
             $reset = *reset;
@@ -76,9 +76,9 @@
                },
 
 \SV
-   m4_makerchip_module
+   m5_makerchip_module
 \TLV
-   m4+gates(/gates, )   
+   m5+gates(/gates, )   
          
    // Assert these to end simulation (before Makerchip cycle limit).
    *passed = *cyc_cnt > 40;      // Simulation ends after 40 cycles

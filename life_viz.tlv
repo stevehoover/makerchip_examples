@@ -1,4 +1,6 @@
-\m4_TLV_version 1d: tl-x.org
+\m5_TLV_version 1d: tl-x.org
+\m5
+   use(m5-1.0)
 \SV
 
 // --------------------------------------------------------------------
@@ -20,14 +22,14 @@
 // --------------------------------------------------------------------
 
 
-m4_makerchip_module
+m5_makerchip_module
 
 // -------------------------
 // Parameters
 
 // Board size
-m4_define_hier(['M4_XX'], 10, 0)
-m4_define_hier(['M4_YY'], 10, 0)
+m5_define_hier(XX, 10, 0)
+m5_define_hier(YY, 10, 0)
 
 /* verilator lint_off UNOPTFLAT */  // To silence Verilator warnings.
 
@@ -36,13 +38,13 @@ m4_define_hier(['M4_YY'], 10, 0)
 \TLV snowflake_init()
    |default
       @1
-         /M4_YY_HIER
-            /M4_XX_HIER
+         /m5_YY_HIER
+            /m5_YY_HIER
                // -----------
                // Am I alive?
                \SV_plus
-                  localparam mirrored_x = (#xx >= (M4_XX_CNT / 2)) ? (M4_XX_MAX - #xx) \: #xx;
-                  localparam mirrored_y = (#yy >= (M4_YY_CNT / 2)) ? (M4_YY_MAX - #yy) \: #yy;
+                  localparam mirrored_x = (#xx >= (m5_XX_CNT / 2)) ? (m5_XX_MAX - #xx) \: #xx;
+                  localparam mirrored_y = (#yy >= (m5_YY_CNT / 2)) ? (m5_YY_MAX - #yy) \: #yy;
                   localparam swap = mirrored_x > mirrored_y;
                   localparam ind_x = swap ? mirrored_y : mirrored_x;
                   localparam ind_y = swap ? mirrored_x : mirrored_y;
@@ -63,21 +65,21 @@ m4_define_hier(['M4_YY'], 10, 0)
 
          @1
             $reset = *reset;
-            /M4_YY_HIER
-               /M4_XX_HIER
+            /m5_YY_HIER
+               /m5_XX_HIER
                   // Cell logic
 
                   // -----------
                   // Population count ($cnt) of 3x3 square (with edge logic).
 
                   // Sum left + me + right.
-                  $row_cnt[1:0] = {1'b0, (/xx[(xx + M4_XX_CNT-1) % M4_XX_CNT]>>1$alive & (xx > 0))} +
+                  $row_cnt[1:0] = {1'b0, (/xx[(xx + m5_XX_CNT-1) % m5_XX_CNT]>>1$alive & (xx > 0))} +
                                   {1'b0, >>1$alive} +
-                                  {1'b0, (/xx[(xx + 1) % M4_XX_CNT]>>1$alive & (xx < M4_XX_CNT-1))};
+                                  {1'b0, (/xx[(xx + 1) % m5_XX_CNT]>>1$alive & (xx < m5_XX_CNT-1))};
                   // Sum three $row_cnt's: above + mine + below.
-                  $cnt[3:0] = {2'b00, (/yy[(yy + M4_YY_CNT-1) % M4_YY_CNT]/xx$row_cnt & {2{(yy > 0)}})} +
+                  $cnt[3:0] = {2'b00, (/yy[(yy + m5_YY_CNT-1) % m5_YY_CNT]/xx$row_cnt & {2{(yy > 0)}})} +
                               {2'b00, $row_cnt[1:0]} +
-                              {2'b00, (/yy[(yy + 1) % M4_YY_CNT]/xx$row_cnt & {2{(yy < M4_YY_CNT-1)}})};
+                              {2'b00, (/yy[(yy + 1) % m5_YY_CNT]/xx$row_cnt & {2{(yy < m5_YY_CNT-1)}})};
 
 
                   // ----------
@@ -104,15 +106,15 @@ m4_define_hier(['M4_YY'], 10, 0)
          // Accumulate right-to-left, then bottom-to-top through >yy[0].
          /tb
             @2
-               /M4_YY_HIER
-                  /M4_XX_HIER
-                     $right_alive_accum[10:0] = (xx < M4_XX_MAX) ? /xx[xx + 1]$horiz_alive_accum : 11'b0;
+               /m5_YY_HIER
+                  /m5_XX_HIER
+                     $right_alive_accum[10:0] = (xx < m5_XX_MAX) ? /xx[xx + 1]$horiz_alive_accum : 11'b0;
                      $horiz_alive_accum[10:0] = $right_alive_accum + {10'b0, |default/yy/xx$alive};
-                  $below_alive_accum[21:0] = (yy < M4_YY_MAX) ? /yy[yy + 1]$vert_alive_accum : 22'b0;
+                  $below_alive_accum[21:0] = (yy < m5_YY_MAX) ? /yy[yy + 1]$vert_alive_accum : 22'b0;
                   $vert_alive_accum[21:0] = $below_alive_accum + {11'b0, /xx[0]$horiz_alive_accum};
                $alive_cnt[21:0] = /yy[0]$vert_alive_accum;
-               $above_min_start = $alive_cnt > (M4_XX_CNT * M4_YY_CNT) >> 2;  // 1/4
-               $below_max_stop  = $alive_cnt < (M4_XX_CNT * M4_YY_CNT) >> 4;  // 1/16
+               $above_min_start = $alive_cnt > (m5_XX_CNT * m5_YY_CNT) >> 2;  // 1/4
+               $below_max_stop  = $alive_cnt < (m5_XX_CNT * m5_YY_CNT) >> 4;  // 1/16
                $start_ok = |default$reset ? 1'b0 : (>>1$start_ok || $above_min_start);
                $stop_cnt[7:0] = |default$reset  ? 8'b0 :
                                 $below_max_stop ? >>1$stop_cnt + 8'b1 :
@@ -124,18 +126,18 @@ m4_define_hier(['M4_YY'], 10, 0)
          // VIZ
          // ===
          @1
-            /M4_YY_HIER
+            /yy[*]
                \viz_js
                   all: {
                      box: {
-                        width: M4_XX_CNT * 20 + 20,
-                        height: M4_YY_CNT * 20 + 20,
+                        width: m5_XX_CNT * 20 + 20,
+                        height: m5_YY_CNT * 20 + 20,
                         fill: "#505050",
                         strokeWidth: 0
                      }
                   },
                   where0: {left: 10, top: 10}
-               /M4_XX_HIER
+               /xx[*]
                   \viz_js
                      box: {width: 20, height: 20,
                            fill: "lightgray",
@@ -165,8 +167,8 @@ m4_define_hier(['M4_YY'], 10, 0)
       /board_x[0:0]  // E.g., [2:0] for 3 boards across.
          \viz_js
             layout: "horizontal"
-         //m4+snowflake_init()   // Uncomment to enable "snowflake" symmetry.
-         m4+life(/life, )
+         //m5+snowflake_init()   // Uncomment to enable "snowflake" symmetry.
+         m5+life(/life, )
    |tb
       @2
          // Determine passed by looking at top boards only.

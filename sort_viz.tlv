@@ -1,45 +1,46 @@
-\m4_TLV_version 1d: tl-x.org
-\SV
+\m5_TLV_version 1d: tl-x.org
+\m5
+   use(m5-1.0)
 \TLV sort_example(/_top, _where)
    /_top
       // To relax Verilator compiler checking:
       /* verilator lint_save */
       /* verilator lint_off MULTIDRIVEN */
-      m4_define(m4_n, 8)
-      m4_define(m4_half, m4_eval(m4_n/2))
+      m5_var(n, 8)
+      m5_var(half, m5_calc(m5_n/2))
       $reset = *reset;
 
       /tb
          // Random $valid w/ 1/2 probability.
          m4_rand($rand_valid, 0, 0)
          $valid = (& $rand_valid) && ! /_top$reset;
-         /pos[m4_eval(m4_n-1):0]
+         /pos[m5_calc(m5_n-1):0]
             m4_rand($num, 7, 0, pos)
-            //$num[7:0] = (m4_n - 1 - #pos) * 32;  // Reverse order.
-      /level[m4_eval(m4_n-1):0]
+            //$num[7:0] = (m5_n - 1 - #pos) * 32;  // Reverse order.
+      /level[m5_calc(m5_n-1):0]
          |pipe
             // Stage $valid.
             @1
                $valid = (#level == 0) ? /_top/tb<>0$valid :
-                                        /level[(#level-1) % m4_n]|pipe>>1$valid;
+                                        /level[(#level-1) % m5_n]|pipe>>1$valid;
                ?$valid
                   // Compare pairs each stage.
                   // (For odd stages, /pair[0] is for the wrap-around comparison; /pair[1] is (1,2); etc.)
-                  /pair[m4_half-1:0]
-                     $upper_num[7:0] = |pipe/pos[((#pair << 1) + !(#level % 2)       ) % m4_n]$in_num;
-                     $lower_num[7:0] = |pipe/pos[((#pair << 1) -  (#level % 2) + m4_n) % m4_n]$in_num;
+                  /pair[m5_half-1:0]
+                     $upper_num[7:0] = |pipe/pos[((#pair << 1) + !(#level % 2)       ) % m5_n]$in_num;
+                     $lower_num[7:0] = |pipe/pos[((#pair << 1) -  (#level % 2) + m5_n) % m5_n]$in_num;
                      $swap = ((#level % 2) && (#pair == 0)) ^ // Reverse comparison for wrap-around case. 
                              ($upper_num < $lower_num);
-                  /pos[m4_eval(m4_n-1):0]
+                  /pos[m5_calc(m5_n-1):0]
                      // Pull $num from previous stage as $in_num.
                      $in_num[7:0] = (#level == 0) ? /_top/tb/pos<>0$num :
-                                                    /level[(#level - 1) % m4_n]|pipe/pos[#pos]>>1$num;
+                                                    /level[(#level - 1) % m5_n]|pipe/pos[#pos]>>1$num;
                      // Does this number get swapped.
-                     $swap = |pipe/pair[((#pos >> 1) + ((#pos % 2) & (#level % 2))) % m4_n]$swap;
+                     $swap = |pipe/pair[((#pos >> 1) + ((#pos % 2) & (#level % 2))) % m5_n]$swap;
                      $num[7:0] =
                          ! $swap ? $in_num :
                                    // Swap with pos+1 if pos[0] == level[0], else -1.
-                                   /pos[(#pos + (((#pos % 2) == (#level % 2)) ? 1 \: -1)) % m4_n]$in_num;
+                                   /pos[(#pos + (((#pos % 2) == (#level % 2)) ? 1 \: -1)) % m5_n]$in_num;
 
 
 
@@ -68,14 +69,14 @@
                      })}
                },
                where: {left: 0, top: -38}
-      /level[m4_eval(m4_n-1):0]
+      /level[*]
          \viz_js
             box: {strokeWidth: 0},
             layout: {left: M4_COL_WIDTH},
             where: {left: 0, top: 0}
          |pipe
             @1
-               /pos[m4_eval(m4_n-1):0]
+               /pos[*]
                   \viz_js
                      // 0,0: left center of value rect.
                      box: {left: 0, top: -M4_ROW_HEIGHT, width: M4_COL_WIDTH, height: 2 * M4_ROW_HEIGHT, strokeWidth: 0},
@@ -88,7 +89,7 @@
                         if (level == 0 && pos == 0) {
                            ret.highlight = new fabric.Rect({
                               width: M4_COL_WIDTH,
-                              height: M4_ROW_HEIGHT * m4_n,
+                              height: M4_ROW_HEIGHT * m5_n,
                               left: 0,
                               top: -M4_ROW_HEIGHT / 2,
                               fill: "rgb(0, 255, 150)"})
