@@ -1,7 +1,9 @@
-\m4_TLV_version 1d: tl-x.org
+\m5_TLV_version 1d: tl-x.org
+\m5
+   use(m5-1.0)
+   var(VIZ, 1)
 \SV
-   m4_include_lib(['https://raw.githubusercontent.com/stevehoover/tlv_lib/db48b4c22c4846c900b3fa307e87d9744424d916/fundamentals_lib.tlv'])
-   m4_makerchip_module
+   m4_include_lib(['https://raw.githubusercontent.com/TL-X-org/tlv_lib/3543cfd9d7ef9ae3b1e5750614583959a672084d/fundamentals_lib.tlv'])
 
 
 // An simple ring implementation, as presented at DAC (See https://www.redwoodeda.com/publications)
@@ -45,7 +47,7 @@
                $continue = $valid && ! $exit;
       
       
-      m4+ifelse(['_where'], [''], ,
+      m5+ifelse(['_where'], [''], ,
          \TLV
             // ===
             // VIZ
@@ -82,11 +84,11 @@
                   return {ring}
                },
                where: _where,
-            /port[m4_eval(#_size-1):0]
+            /port[m5_calc(#_size-1):0]
                |ring
                   @1
                      /in
-                        m4+_in
+                        m5+_in
                      \viz_js
                         box: {left: -10, top: -10, width: 40, height: 20, strokeWidth: 0},
                         init() {
@@ -147,17 +149,19 @@
 \TLV ring2(/_port, |_in, @_in, |_out, @_out)
    /_port[*]
       // Ring
-      m4+arb2(/_port, |_in, @_in, |continue, @0, |ring, @0, /flit)
+      m5+arb2(/_port, |_in, @_in, |continue, @0, |ring, @0, /flit)
       // Pipeline for ring hop.
-      m4+pipe(ff, 1, /_port, |ring, @0, |continue2, @0, /flit)
+      m5+pipe(ff, 1, /_port, |ring, @0, |continue2, @0, /flit)
       // Fork from off-ramp out or into FIFO
       |continued2
          @0
             $exit = /flit$dest == #port;
             $true = 1'b1;
-      m4+fork(/_port, |continued2, @0, $exit, |_out, @_out, $true, |continue, @0, /flit)
+      m5+fork(/_port, |continued2, @0, $exit, |_out, @_out, $true, |continue, @0, /flit)
 
 
+\SV
+   m5_makerchip_module
 \TLV
    
    // =========
@@ -186,7 +190,7 @@
                // Consume outputs:
                `BOGUS_USE($data $valid)
    // Instantiate Ring
-   m4+ring(/my_ring, 4, ['{left: -20, top: -40, width: 40, height: 80}'],
+   m5+ring(/my_ring, 4, ['{left: -20, top: -40, width: 40, height: 80}'],
       \TLV
          $src[1:0] = #port;
          $uid[31:0] = {$src, *cyc_cnt[29:0]};
@@ -251,7 +255,7 @@
                // Consume outputs:
                `BOGUS_USE($hour $valid)
    // Instantiate Ring
-   m4+ring(/my_other_ring, 6, ['{left: 40, top: -20, width: 40, height: 30, angle: -90}'],
+   m5+ring(/my_other_ring, 6, ['{left: 40, top: -20, width: 40, height: 30, angle: -90}'],
       \TLV
          $src[2:0] = #port;
          $uid[31:0] = {$src, *cyc_cnt[28:0]};
@@ -308,6 +312,6 @@
    // Assert these to end simulation (before Makerchip cycle limit).
    *passed = *cyc_cnt > 40;
    *failed = 1'b0;
-         
+
 \SV
    endmodule

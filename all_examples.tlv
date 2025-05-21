@@ -1,7 +1,7 @@
 \m4_TLV_version 1d -p verilog --bestsv --noline: tl-x.org
 \SV
    m4_include_lib(['https://raw.githubusercontent.com/os-fpga/Virtual-FPGA-Lab/3760a43f58573fbcf7b7893f13c8fa01da6260fc/tlv_lib/fpga_includes.tlv'])                   
-m4+lab()
+   m5_lab()
 
 
 // === Your FPGA logic here ===
@@ -14,7 +14,7 @@ m4+lab()
    *sseg_segment_n[6:0] = 7'b1 << *cyc_cnt[2:0];
    *sseg_decimal_point_n = *cyc_cnt[2:0] == 3'b111;
    //------------------------------------------
-   m4_def(examples, ['['https://raw.githubusercontent.com/stevehoover/makerchip_examples/44557dbd6527de0c4c5ff60835bff37939cb24dd']'])
+   m4_def(examples, ['['https://raw.githubusercontent.com/stevehoover/makerchip_examples/009362c0160514f8858315b9b94970eaab5a2307']'])
    m4_include_lib(m4_examples/frog_maze.tlv)
    m4_include_lib(m4_examples/ring_viz.tlv)
    m4_include_lib(m4_examples/life_viz.tlv)
@@ -22,7 +22,7 @@ m4+lab()
    m4_include_lib(m4_examples/mandelbrot_as_img.tlv)
    m4_include_lib(m4_examples/smith_waterman.tlv)
    m4_include_lib(m4_examples/sort_viz.tlv)
-   m4_include_lib(['https://raw.githubusercontent.com/stevehoover/warp-v/24a8e10f72ebf9e2092ee85bf4cf7e917d89555a/warp-v.tlv'])
+   m4_include_lib(['https://raw.githubusercontent.com/stevehoover/warp-v/bc6c485d12a26407c8000608bc9dd90748333d1d/warp-v.tlv'])
    \viz_js
       box: {strokeWidth: 0, height: 300, width: 300}
    m4+gates(/gates, ['left:30, top:20, width:70, height:70'])
