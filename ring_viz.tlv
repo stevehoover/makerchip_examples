@@ -1,17 +1,21 @@
-\m4_TLV_version 1d: tl-x.org
-\SV
+\m5_TLV_version 1d: tl-x.org
+\m5
+   use(m5-1.0)
 
 \TLV ring_example(/_top, _where)
-   m4_def(top_scope, ['this.getScope("']m4_strip_prefix(/_top)['")'])
+   m5_var(top_scope, ['this.getScope("']m4_strip_prefix(/_top)['")'])
    /_top
       // Include fifo and ring components from a git repo.
       m4_include_url(['https://raw.githubusercontent.com/stevehoover/tlv_flow_lib/c48ad6c12e21f6fb49d77e7a633387264660d401/pipeflow_lib.tlv'])
 
-      m4_define_hier(M4_RING_STOP, 4, 0)
-      m4_define_hier(M4_FIFO_ENTRY, 6)
-      m4_define(M4_NUM_PACKETS_WIDTH, 16)
+      m5_define_hier(RING_STOP, 4, 0)
+      // Using legacy M4-based pipeflow_lib.
+      m4_define(['M4_RING_STOP_INDEX_RANGE'], m5_RING_STOP_INDEX_MAX:m5_RING_STOP_INDEX_MIN)
+      m4_define(['M4_RING_STOP_CNT'], m5_RING_STOP_CNT)
+      m5_define_hier(FIFO_ENTRY, 6)
+      m5_var(NUM_PACKETS_WIDTH, 16)
       \SV_plus
-         parameter NUM_PACKETS_WIDTH = M4_NUM_PACKETS_WIDTH;
+         parameter NUM_PACKETS_WIDTH = m5_NUM_PACKETS_WIDTH;
 
       /* verilator lint_save */
       /* verilator lint_off MULTIDRIVEN */
@@ -23,7 +27,7 @@
       // *********************
 
       // Hierarchy
-      /M4_RING_STOP_HIER
+      /m5_RING_STOP_HIER
 
       // Reset
       $reset = *reset;
@@ -44,11 +48,11 @@
                      $ANY = /_top/tb/ring_stop|send/trans_out<>0$ANY;
 
          // FIFOs
-         m4+flop_fifo_v2(/ring_stop, |inpipe, @1, |fifo_out, @0, 6, /trans)
+         m5+flop_fifo_v2(/ring_stop, |inpipe, @1, |fifo_out, @0, 6, /trans)
 
          |fifo_out
             @0
-               $dest[M4_RING_STOP_INDEX_RANGE] = /trans$dest;
+               $dest[m5_RING_STOP_INDEX_RANGE] = /trans$dest;
 
          // Outputs
          |outpipe
@@ -62,7 +66,7 @@
                      // [+] $parity_error = $parity != ^ {$data, $dest};
 
       // Instantiate the ring.
-      m4+simple_ring_v2(/ring_stop, |fifo_out, @0, |outpipe, @0, $reset, |rg, /trans)
+      m5+simple_ring_v2(/ring_stop, |fifo_out, @0, |outpipe, @0, $reset, |rg, /trans)
 
       // End of DUT
       // ==========
@@ -113,9 +117,9 @@
          where: {_where}
 
 
-      /M4_RING_STOP_HIER
+      /m5_RING_STOP_HIER
          \viz_js
-            box: {width: M4_FIFO_ENTRY_CNT * 15 + 10, height: 50, strokeWidth: 0},
+            box: {width: m5_FIFO_ENTRY_CNT * 15 + 10, height: 50, strokeWidth: 0},
             where: {left: -5, top: -5}
          |inpipe
             @1
@@ -123,13 +127,13 @@
                   box: {strokeWidth: 0},
                   init() {
                      this.getColor = () => {
-                        return "#00" + (255 - Math.floor((this.getIndex("ring_stop") / M4_RING_STOP_CNT) * 256)).toString(16) + "00"
+                        return "#00" + (255 - Math.floor((this.getIndex("ring_stop") / m5_RING_STOP_CNT) * 256)).toString(16) + "00"
                      }
                      
                      // FIFO outer box.
                      let stop = this.getScope("ring_stop").index
                      let fifoBox = new fabric.Rect({
-                        width: M4_FIFO_ENTRY_CNT * 15 + 10,
+                        width: m5_FIFO_ENTRY_CNT * 15 + 10,
                         height: 20,
                         fill: "lightgray",
                         stroke: this.getColor(),
@@ -158,8 +162,8 @@
                            let data     = $data    .goTo($accepted.getCycle()).asInt()
                            let cnt      = $cnt     .goTo($accepted.getCycle()).asInt()
                            // TODO: Use global function.
-                           let senderColor = (255 - Math.floor((sender / M4_RING_STOP_CNT) * 256)).toString(16)
-                           let destColor   = (255 - Math.floor((dest   / M4_RING_STOP_CNT) * 256)).toString(16)
+                           let senderColor = (255 - Math.floor((sender / m5_RING_STOP_CNT) * 256)).toString(16)
+                           let destColor   = (255 - Math.floor((dest   / m5_RING_STOP_CNT) * 256)).toString(16)
                            let transRect = new fabric.Rect({
                               width: 10,
                               height: 10,
@@ -183,11 +187,11 @@
                                height: 10,
                                visible: false}
                            )
-                           m4_top_scope.context.setTrans(uid, transObj)
+                           m5_top_scope.context.setTrans(uid, transObj)
                          }
                      }
                   }
-               /entry[M4_FIFO_ENTRY_RANGE]
+               /entry[m5_FIFO_ENTRY_RANGE]
                   \viz_js
                      box: {strokeWidth: 0},
                      render() {
@@ -196,7 +200,7 @@
                         //       With the current API, leaf processing is first, so its hard
                         //       to pass info from ancestors.
                         let head_ptr = -1
-                        for (var i = 0; i < M4_FIFO_ENTRY_CNT; i++) {
+                        for (var i = 0; i < m5_FIFO_ENTRY_CNT; i++) {
                            if ('/entry[i]>>1$is_head'.step(1).asBool()) {  // '/entry[i]$is_head', but can't access @1 (will be fixed).
                               head_ptr = i
                            }
@@ -204,11 +208,11 @@
                         
                         if ('$valid'.asBool()) {
                            let uid = '/trans$uid'.asInt()
-                           let trans = m4_top_scope.context.getTrans(uid)
+                           let trans = m5_top_scope.context.getTrans(uid)
                            if (typeof(trans) !== "undefined") {
                               trans.set({visible: true})
                               // Set position.
-                              let pos = M4_FIFO_ENTRY_MAX - ((this.getIndex() + M4_FIFO_ENTRY_CNT - head_ptr) % M4_FIFO_ENTRY_CNT)
+                              let pos = m5_FIFO_ENTRY_MAX - ((this.getIndex() + m5_FIFO_ENTRY_CNT - head_ptr) % m5_FIFO_ENTRY_CNT)
                               if (!trans.wasVisible) {
                                  trans.set({top: this.getIndex("ring_stop") * 50 + 10,
                                             left: pos * 15 - 10,
@@ -227,7 +231,7 @@
                   render() {
                      if ('$accepted'.asBool()) {
                         let uid = '/trans$uid'.asInt()
-                        let trans = m4_top_scope.context.getTrans(uid)
+                        let trans = m5_top_scope.context.getTrans(uid)
                         if (typeof(trans) !== "undefined") {
                            trans.set({visible: true})
                            // Set position.
@@ -250,7 +254,7 @@
                   render() {
                      if ('$valid'.asBool()) {
                         let uid = '/trans$uid'.asInt()
-                        let trans = m4_top_scope.context.getTrans(uid)
+                        let trans = m5_top_scope.context.getTrans(uid)
                         if (typeof(trans) !== "undefined") {
                            trans.set({visible: true})
                            // To position.
@@ -271,7 +275,7 @@
                   render() {
                      if ('$accepted'.asBool()) {
                         let uid = '/trans$uid'.asInt()
-                        let trans = m4_top_scope.context.getTrans(uid)
+                        let trans = m5_top_scope.context.getTrans(uid)
                         if (typeof(trans) !== "undefined") {
                            // Set position and fade.
                            trans.set({visible: true})
@@ -302,7 +306,7 @@
                   always_ff @(posedge clk) begin
                      \$display("Cycle: %0d", $CycCount);
                   end
-         /M4_RING_STOP_HIER
+         /m5_RING_STOP_HIER
             // STIMULUS
             |send
                @0
@@ -314,12 +318,12 @@
                   ?$valid_in
                      /gen_trans
                         $response = 1'b0;
-                        $sender[M4_RING_STOP_INDEX_RANGE] = ring_stop;
-                        m4_rand($dest_tmp, M4_RING_STOP_INDEX_MAX, 0, ring_stop)
-                        $dest[M4_RING_STOP_INDEX_RANGE] = $dest_tmp % M4_RING_STOP_CNT;
+                        $sender[m5_RING_STOP_INDEX_RANGE] = ring_stop;
+                        m4_rand($dest_tmp, m5_RING_STOP_INDEX_MAX, 0, ring_stop)
+                        $dest[m5_RING_STOP_INDEX_RANGE] = $dest_tmp % m5_RING_STOP_CNT;
                         m4_rand($data, 7, 0, ring_stop);
                         $cnt[31:0] = |send$Cnt;
-                        $uid[M4_RING_STOP_INDEX_MAX+32:0] = {$sender, $cnt};
+                        $uid[m5_RING_STOP_INDEX_MAX+32:0] = {$sender, $cnt};
                   $accepted = $valid_in || /ring_stop|receive<>0$request;
                   ?$accepted
                      /trans_out
@@ -350,20 +354,20 @@
                      /trans
                         $response = |receive$request;
                         $ANY = /_top/ring_stop|outpipe/trans>>1$ANY;
-                        $dest[M4_RING_STOP_INDEX_RANGE] = |receive<>0$request ? $sender : $dest;
+                        $dest[m5_RING_STOP_INDEX_RANGE] = |receive<>0$request ? $sender : $dest;
          |pass
             @0
                $reset = /_top>>1$reset;
-               $packets[M4_RING_STOP_CNT * NUM_PACKETS_WIDTH - 1:0] = /tb/ring_stop[*]|receive<>0$NumPackets;
+               $packets[m5_RING_STOP_CNT * NUM_PACKETS_WIDTH - 1:0] = /tb/ring_stop[*]|receive<>0$NumPackets;
                $passed = !$reset && ($packets == '0) && (/tb|count<>0$CycCount > 6);
       
       /* verilator lint_restore */
 
 \SV
-   m4_makerchip_module
+   m5_makerchip_module
 
 \TLV
-   m4+ring_example(/ring, )
+   m5+ring_example(/ring, )
    *passed = /ring/tb|pass<>0$passed;
 \SV
 endmodule
