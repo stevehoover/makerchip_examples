@@ -85,7 +85,7 @@ m5_define_hier(YY, 10, 0)
                   // ----------
                   // Init state
 
-                  //m4_rand($init_alive, 0, 0, (yy * xx) ^ ((3 * xx) + yy))
+                  m4_rand($init_alive, 0, 0, (yy * xx) ^ ((3 * xx) + yy))
 
 
                   // -----------
