@@ -78,37 +78,41 @@
       // *******
 
       \viz_js
-         box: {strokeWidth: 2, top: -25, left: -30, width: 215, height: 210, fill: "white"},
-         init() {
-            this.transObj = {} // A map of transaction fabric objects, indexed by $uid.
-            this.setTrans = (uid, obj) => {
-               if (typeof(this.transObj[uid]) !== "undefined") {
+         lib: {
+            setTrans: function (uid, obj) {
+               let data = '/_top'.data
+               if (typeof(data.transObj[uid]) !== "undefined") {
                   console.log(`Adding duplicate trans #${uid.toString(16)}`)
                   debugger
                }
-               this.transObj[uid] = obj
+               data.transObj[uid] = obj
                //console.log(`Added trans #${uid.toString(16)}`)
                //debugger
-            }
-            this.getTrans = (uid) => {
-               let ret = this.transObj[uid]
+            },
+            getTrans: function (uid) {
+               let data = '/_top'.data
+               let ret = data.transObj[uid]
                if (typeof(ret) === "undefined") {
                   console.log(`Failed to find trans #${uid.toString(16)}`)
                   debugger
                }
-               return this.transObj[uid]
+               return data.transObj[uid]
             }
-            //console.log(`top init: ${this.scopes}`)
+         },
+         box: {strokeWidth: 2, top: -25, left: -30, width: 215, height: 210, fill: "white"},
+         init() {
+            let data = '/_top'.data
+            data.transObj = {} // A map of transaction fabric objects, indexed by $uid.
             return {}
          },
          onTraceData() {
             // Add all transactions to this top level.
-            return {objects: this.transObj}
+            return {objects: '/_top'.data.transObj}
          },
          unrender() {
             // Make every transaction invisible (and other render methods will make them visible again.
-            for (const uid in this.transObj) {
-               const trans = this.transObj[uid]
+            for (const uid in '/_top'.data.transObj) {
+               const trans = '/_top'.data.transObj[uid]
                trans.set({opacity: 1})
                trans.wasVisible = trans.visible
                trans.set({visible: false})
@@ -131,7 +135,7 @@
                      }
                      
                      // FIFO outer box.
-                     let stop = this.getScope("ring_stop").index
+                     let stop = this.getIndex("ring_stop")
                      let fifoBox = new fabric.Rect({
                         width: m5_FIFO_ENTRY_CNT * 15 + 10,
                         height: 20,
@@ -187,7 +191,7 @@
                                height: 10,
                                visible: false}
                            )
-                           m5_top_scope.context.setTrans(uid, transObj)
+                           '/_top'.lib.setTrans(uid, transObj)
                          }
                      }
                   }
@@ -208,7 +212,7 @@
                         
                         if ('$valid'.asBool()) {
                            let uid = '/trans$uid'.asInt()
-                           let trans = m5_top_scope.context.getTrans(uid)
+                           let trans = '/_top'.lib.getTrans(uid)
                            if (typeof(trans) !== "undefined") {
                               trans.set({visible: true})
                               // Set position.
@@ -231,7 +235,7 @@
                   render() {
                      if ('$accepted'.asBool()) {
                         let uid = '/trans$uid'.asInt()
-                        let trans = m5_top_scope.context.getTrans(uid)
+                        let trans = '/_top'.lib.getTrans(uid)
                         if (typeof(trans) !== "undefined") {
                            trans.set({visible: true})
                            // Set position.
@@ -254,7 +258,7 @@
                   render() {
                      if ('$valid'.asBool()) {
                         let uid = '/trans$uid'.asInt()
-                        let trans = m5_top_scope.context.getTrans(uid)
+                        let trans = '/_top'.lib.getTrans(uid)
                         if (typeof(trans) !== "undefined") {
                            trans.set({visible: true})
                            // To position.
@@ -275,7 +279,7 @@
                   render() {
                      if ('$accepted'.asBool()) {
                         let uid = '/trans$uid'.asInt()
-                        let trans = m5_top_scope.context.getTrans(uid)
+                        let trans = '/_top'.lib.getTrans(uid)
                         if (typeof(trans) !== "undefined") {
                            // Set position and fade.
                            trans.set({visible: true})

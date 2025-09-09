@@ -26,8 +26,8 @@
               $default[7:0];
    
    /consts
-      $eight[7:0] = 16'd8;
-      $five[4:0]  = 7'b101;
+      $eight[15:0] = 16'd8;
+      $five[7:0]  = 7'b101;
       $nine[31:0] = 9;
       $ones[7:2]  = '1;
    

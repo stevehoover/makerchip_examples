@@ -53,9 +53,19 @@
 
          // Initialize a shift register visualization
          // Returns an object with all the visual elements
+         // name: base name for the register (used in object keys)
+         // label: optional label text to display above the register
+         // left, top: position of the top-left corner of the register
+         // bitWidth, bitHeight: dimensions of each bit rectangle (default 8x8)
+         // spacing: space between bits (default 1)
+         // maxBitsPerRow: maximum bits to display per row (default 32)
+         // showLabel: whether to show the label (default true)
+         // labelSize: font size for the label (default 5)
          // lsb: the bit position of the LSB of this register (default 0)
-         // Bits are always displayed MSB on left, LSB on right
-         initShiftRegister: function(name, {left = 0, top = 0, bitWidth = 8, bitHeight = 8, spacing = 1, maxBitsPerRow = 8, showLabel = true, labelSize = 5, lsb = 0, width, transparencyMask = null, ignoreBits = []}) {
+         // width: the total width of the register in bits (required)
+         // transparencyMask: optional bitmask to control bit transparency
+         // ignoreBits: array of bit positions to ignore (default: [])
+         initShiftRegister: function(name, {label, left = 0, top = 0, bitWidth = 8, bitHeight = 8, spacing = 1, maxBitsPerRow = 32, showLabel = true, labelSize = 5, lsb = 0, width, transparencyMask = null, ignoreBits = []}) {
              let ret = {};
 
              if (width === undefined) {
@@ -64,8 +74,8 @@
 
              // Create label if requested
              if (showLabel) {
-                 ret[`${name}_label`] = new fabric.Text(`${name}[${width-1}:0]:`, {
-                     fontSize: labelSize, left: left, top: top - labelSize - 3
+                 ret[`${name}_label`] = new fabric.Text(label ? label : name, {
+                     fontSize: labelSize, left: left, top: top - labelSize - 4
                  });
              }
 
@@ -108,7 +118,7 @@
                  // Add bit index labels showing actual bit position
                  ret[`${name}_bit_label_${p}`] = new fabric.Text(actualBitPosition.toString(), {
                      fontSize: Math.min(bitWidth * 0.4, 4), left: left + col * (bitWidth + spacing) + bitWidth/2,
-                     top: top + row * (bitHeight + spacing) - 4.5, textAlign: "center", originX: "center",
+                     top: top + row * (bitHeight + spacing) - 2, originY: "center", originX: "center",
                      fill: "gray", opacity: 0.5
                  });
                  
@@ -162,81 +172,6 @@
                  objContainer[`${name}_value`].set("text", hexStr);
              }
          },
-
-         // Initialize a collection of shift registers with connections
-         initShiftRegisterArray: function(signalArray, {left = 0, top = 0, verticalSpacing = 15, ...regOptions} = {}) {
-            let ret = {};
-            let currentTop = top;
-            
-            signalArray.forEach((sigVal, index) => {
-               let regObjs = '/top'.lib.initShiftRegister(sigVal, {
-                  left: left,
-                  top: currentTop,
-                  ...regOptions
-               });
-               
-               // Merge into return object
-               Object.assign(ret, regObjs);
-               
-               // Calculate height for next register
-               let width = sigVal.signal.width;
-               let rows = Math.ceil(width / (regOptions.maxBitsPerRow || 8));
-               let bitHeight = regOptions.bitHeight || 8;
-               let spacing = regOptions.spacing || 1;
-               currentTop += rows * (bitHeight + spacing) + verticalSpacing;
-            });
-            
-            return ret;
-         },
-         
-         // Create an arrow showing data flow between registers
-         initDataFlowArrow: function(fromName, fromBit, toName, toBit, objRefs, {color = "gray", style = "solid"} = {}) {
-            // Find the positions of the source and destination bits
-            let fromObj = objRefs[`${fromName}_bit_${fromBit}`];
-            let toObj = objRefs[`${toName}_bit_${toBit}`];
-            
-            if (!fromObj || !toObj) return null;
-            
-            let fromX = fromObj.left + fromObj.width/2;
-            let fromY = fromObj.top + fromObj.height;
-            let toX = toObj.left + toObj.width/2;
-            let toY = toObj.top;
-            
-            // Create a path with an arrow
-            let path = `M ${fromX} ${fromY} L ${toX} ${toY}`;
-            
-            return new fabric.Path(path, {
-               stroke: color,
-               strokeWidth: 1,
-               strokeDashArray: style === "dashed" ? [2, 2] : [],
-               selectable: false
-            });
-         },
-         
-         // Animate a bit moving through a shift register
-         animateShift: function(sigVal, objRefs, {direction = "right", duration = 200} = {}) {
-            let width = sigVal.signal.width;
-            let name = sigVal.signal.notFullName;
-            let value = sigVal.asInt(0);
-            
-            // This would need fabric.js animation support
-            // For now, just highlight the shifting pattern
-            for (let i = 0; i < width; i++) {
-               let bitObj = objRefs[`${name}_bit_${i}`];
-               if (bitObj) {
-                  // Temporarily brighten bits that are shifting
-                  if (direction === "right" && i < width - 1) {
-                     let nextBitVal = (value >> (i + 1)) & 1;
-                     if (nextBitVal) {
-                        bitObj.set("fill", "lightblue");
-                        setTimeout(() => {
-                           bitObj.set("fill", (value >> i) & 1 ? "black" : "white");
-                        }, duration);
-                     }
-                  }
-               }
-            }
-         }
       }
    /servant_top
       \viz_js
@@ -257,16 +192,30 @@
                   box: {width: 900, height: 550, strokeWidth: 1},
                   where: {left: 50, top: 50, width: 900, height: 550},
                   lib: {
-                      // ... existing functions ...
+                      // Define 8 phases as an object: 6 single-cycle + 2 multi-cycle (all lowercase names)
+                      phases: {
+                         fetch1:     {name: "fetch1", color: "#4FC3F7", is_multi: false},
+                         fetch2:     {name: "fetch2", color: "#4FC3F7", is_multi: false},
+                         decode:     {name: "decode", color: "#B39DDB", is_multi: false},
+                         setup:      {name: "setup", color: "#9C27B0", is_multi: false},
+                         init:       {name: "init", color: "#FFD54F", is_multi: true},
+                         writeback:  {name: "writeback", color: "#FF7043", is_multi: false},
+                         pc_update:  {name: "pc_update", color: "#FFA726", is_multi: false},
+                         execute:    {name: "execute", color: "#81C784", is_multi: true}
+                      },
 
                       getLifecycleColor: function(phase) {
                           switch(phase) {
-                              case "FETCH": return "#4FC3F7";      // Light blue
-                              case "DECODE": return "#B39DDB";      // Light purple
-                              case "INIT": return "#FFD54F";       // Yellow  
-                              case "EXECUTE": return "#81C784";    // Green
-                              case "IDLE": return "#BDBDBD";       // Gray
-                              default: return "#FF5722";           // Red for error
+                              case "FETCH1": return "#4FC3F7";       // Light blue
+                              case "FETCH2": return "#4FC3F7";       // Light blue  
+                              case "DECODE": return "#B39DDB";       // Light purple
+                              case "SETUP": return "#9C27B0";        // Purple
+                              case "INIT": return "#FFD54F";         // Yellow  
+                              case "WRITEBACK": return "#FF7043";    // Orange
+                              case "PC_UPDATE": return "#FFA726";    // Amber
+                              case "EXECUTE": return "#81C784";      // Green
+                              case "IDLE": return "#BDBDBD";         // Gray
+                              default: return "#FF5722";             // Red for error
                           }
                       },
 
@@ -278,9 +227,265 @@
                           return history.slice(0, maxCount).map(instr => 
                               `${instr.asm} (${instr.cycles_executing}cy)`
                           ).join(", ");
-                      }
+                      },
+                      history_depth: 8, // Number of cycles to look back for history
+
+                      // Categorization of instruction types, including:
+                      //    immLabel: Describe immediate fields (shown/hidden dynamically in immdec render)
+                      //    fieldPositions: Map immediate field names to their bit positions in the final immediate value
+                      instrTypes: {
+                            i: {immLabel: "I-type: imm[31:0] = {21{imm[31]}, imm[30:25], imm[24:20]}",
+                                fieldPositions: {
+                                    imm31: 11,        // instr[31] → imm[11]
+                                    imm30_25: 10,     // instr[30:25] → imm[10:5]
+                                    imm24_20: 4       // instr[24:20] → imm[4:0]
+                                }
+                            },
+                            s: {immLabel: "S-type: imm[31:0] = {21{imm[31]}, imm[30:25], imm[11:7]}",
+                                fieldPositions: {
+                                    imm31: 11,        // instr[31] → imm[11]
+                                    imm30_25: 10,     // instr[30:25] → imm[10:5]
+                                    imm11_7: 4        // instr[11:7] → imm[4:0]
+                                }
+                            },
+                            b: {immLabel: "B-type: imm[31:0] = {20{imm[31]}, imm[7], imm[30:25], imm[11:8], 1''b0}",
+                                fieldPositions: {
+                                    imm31: 12,        // instr[31] → imm[12]
+                                    // instr[7] → imm[11] (not included here, handled specially)
+                                    imm30_25: 10,     // instr[30:25] → imm[10:5]
+                                    imm11_7: 4        // instr[11:8] → imm[4:1] (only 4 bits used, see comment)
+                                    // Note: imm[0] is always 0 (not mapped to any field)
+                                }
+                            },
+                            u: {immLabel: "U-type: imm[31:0] = {imm[31], imm[30:25], imm[24:20], imm[19:12], 12''b0}",
+                                fieldPositions: {
+                                    imm31: 31,        // instr[31] → imm[31]
+                                    imm30_25: 30,     // instr[30:25] → imm[30:25]
+                                    imm24_20: 24,     // instr[24:20] → imm[24:20]
+                                    imm19_12: 19      // instr[19:12] → imm[19:12]
+                                    // imm[11:0] = 0 (not mapped)
+                                }
+                            },
+                            j: {immLabel: "J-type: imm[31:0] = {11{imm[31]}, imm[19:12], imm[20], imm[30:25], imm[24:21], 1''b0}",
+                                fieldPositions: {
+                                    imm31: 20,       // instr[31] → imm[20]
+                                    imm19_12: 19,    // instr[19:12] → imm[19:12]
+                                    // instr[20] → imm[11] (not included here, handled specially)
+                                    imm30_25: 10,    // instr[30:25] → imm[10:5]
+                                    imm24_20: 4      // instr[24:21] → imm[4:1] (only 4 bits used, see comment)
+                                    // imm[0] is always 0 (not mapped)
+                                }
+                            },
+                            r: {immLabel: "R-type: no immediate value",
+                                fieldPositions: {}
+                            },
+                            f: {immLabel: "F-type: no immediate value",
+                                fieldPositions: {}
+                            },
+                            unknown: {immLabel: "Unknown instruction type, no immediate fields defined",
+                                      fieldPositions: {}
+                            },
+                      },
+                      // Characterize immediate fields (shift registers).
+                      // Centralized definition of all immediate fields for refactoring
+                      immFields: {
+                          imm31:     {label: "31",     lsb: 31, msb: 31, width: 1,  top: 0, color: "#FFB300", field: "imm31", args: {}},
+                          imm30_25:  {label: "30:25",  lsb: 25, msb: 30, width: 6,  top: 0, color: "#F4511E", field: "imm30_25", args: {}},
+                          imm24_20:  {label: "24:20",  lsb: 20, msb: 24, width: 5,  top: 0, color: "#43A047", field: "imm24_20", args: {}},
+                          imm19_12:  {label: "19:12",  lsb: 12, msb: 19, width: 8,  top: 0, color: "#1E88E5", field: "imm19_12", args: {ignoreBits: [0]}},
+                          imm11_7:   {label: "11:7",   lsb: 7,  msb: 11, width: 5,  top: 0, color: "#8E24AA", field: "imm11_7", args: {}},
+                          imm6_0:    {label: "6:0",    lsb: 0,  msb: 6,  width: 7,  top: 0, color: "#757575", field: "imm6_0", args: {}},
+                          // For refactoring: add any additional properties needed for layout, mapping, or visualization here.
+                          // Example: x position, y position, ignoreBits, etc.
+                          // Example: x: 0, y: 0, ignoreBits: []
+                      },
+
+                        // Input/Output arrows indicating buffers loaded to/from external dest/source in parallel.
+                        // Args:
+                        //   ret: object to populate with arrow and label
+                        //   name: base name for arrow/label keys
+                        //   top: vertical position of arrow
+                        //   pointLeft: whether arrow points left (true) or right (false)
+                        //   color: color of arrow and label
+                        //   label: text label to display near arrow
+                        initLoadArrow: function(ret, name, top, leftSide, pointLeft, color, label) {
+                            let left = leftSide ? -50 : 443;
+                            ret[name + "_arrow"] = new fabric.Path(`M ${left} ${top} L ${left + 45} ${top} M ${left + 37.5} ${top - 4.5} L ${left + 45} ${top} L ${left + 37.5} ${top + 4.5}`, {
+                                stroke: color, fill: "", strokeWidth: 4, opacity: 0.3, angle: pointLeft ? 0 : 180, originX: "center", originY: "center"
+                            });
+
+                            ret[name + "_arrow_label"] = new fabric.Text(label, {
+                                fontSize: 9, top: top + 5, left: left - 0,
+                                fill: color
+                            });
+                        },
+
+                        // For flow connections.
+                        initDataFlowConnection: function(name, desc, srcLeft, srcTop, destLeft, destTop) {
+                            return {
+                                [`${name}_line`]: new fabric.Line([srcLeft, srcTop, destLeft, destTop], {
+                                    stroke: "#BDBDBD", strokeWidth: 1, opacity: 0.3
+                                }),
+                            };
+                        },
+
+                        renderDataFlowConnection: function(lineObj, active) {
+                            let color = active ? "#4CAF50" : "#BDBDBD";
+                            let width = active ? 2 : 1;
+                            let opacity = active ? 1.0 : 0.3;
+                        
+                            // Update line
+                            lineObj.set({
+                                stroke: color, strokeWidth: width, opacity: opacity,
+                            });
+                        },
+                        
+                        // ===== CONNECTION ENDPOINT DEFINITIONS =====
+
+                        // Endpoints
+                        connectionPoints: function() {
+                            // Constants characterizing endpoint positions
+                            let scale = 1/3;  // Scale of sub-viz
+                            let bit_width = 13 * scale;
+                            let bit0_right = 10 * scale + 32 * bit_width;
+                            let bit31_left = 10 * scale;
+                            let pc_top = 65;
+                            let imm_top = 105;
+                            let rs1_top = 167;
+                            let rs2_top = 177;
+                            let buf1_top = 207;
+                            let buf2_top = 232;
+                            let aluAB_top = 196; let aluA_left = 180; let aluB_left = 210;
+                            let aluOut_top = 230; let aluOut_left = 200;
+
+                            return {
+                                // Register File (left side) - using rs1/rs2 tops
+                                rf_rs1_out: {x: bit0_right, y: rs1_top},
+                                rf_rs2_out: {x: bit0_right, y: rs2_top}, 
+                                
+                                // Immediate Decoder - using imm_top
+                                immdec_out: {x: bit31_left, y: rs1_top},
+                                
+                                // ALU - using your ALU coordinate constants
+                                alu_a_in: {x: aluA_left, y: aluAB_top},
+                                alu_b_in: {x: aluB_left, y: aluAB_top},
+                                alu_result_out: {x: aluOut_left, y: aluOut_top},
+                                
+                                // BUFREG1 - using buf1_top
+                                bufreg1_in: {x: bit31_left, y: buf1_top},
+                                bufreg1_out: {x: bit0_right, y: buf1_top},
+                                
+                                // BUFREG2 - using buf2_top  
+                                bufreg2_in: {x: bit31_left, y: buf2_top},
+                                bufreg2_out: {x: bit0_right, y: buf2_top},
+                                
+                                // Control - using pc_top
+                                ctrl_pc_in: {x: bit31_left, y: pc_top}, // Offset right for ctrl module
+                                ctrl_pc_out: {x: bit0_right, y: pc_top},
+                                ctrl_rf_out: {x: bit31_left + 90, y: pc_top + 10}, // PC+4 to RF for JAL/JALR
+                                
+                                // CSR (right side)
+                                csr_rf_out: {x: bit0_right + 100, y: (rs1_top + rs2_top) / 2},
+                                
+                                // Memory Interface (right side - wire endpoints)
+                                mem_addr_in: {x: bit0_right + 150, y: buf1_top + 20},
+                                mem_data_in: {x: bit0_right + 150, y: buf2_top + 20},
+                                mem_data_out: {x: bit0_right + 180, y: buf2_top + 20},
+                                
+                                // Immediate Decoder Mux Points (using imm_top for field selection)
+                                immdec_mux_imm31: {x: bit0_right - bit_width * 31.5, y: imm_top},
+                                immdec_mux_imm30_25: {x: bit0_right - bit_width * 25.5, y: imm_top},
+                                immdec_mux_imm24_20: {x: bit0_right - bit_width * 20.5, y: imm_top},
+                                immdec_mux_imm19_12: {x: bit0_right - bit_width * 12.5, y: imm_top},
+                                immdec_mux_imm11_7: {x: bit0_right - bit_width * 7.5, y: imm_top},
+
+                                // CTRL arithmetic inputs
+                                ctrl_zero_gen: {x: bit31_left + 150, y: pc_top + 50},
+                                ctrl_const4: {x: bit31_left + 180, y: pc_top + 50},
+                                ctrl_a_in: {x: bit31_left + 200, y: pc_top + 50},
+                                ctrl_b_in: {x: bit31_left + 220, y: pc_top + 50},
+
+                                // RD register
+                                rd_write_in: {x: bit31_left, y: rs1_top + 60},
+                                rd_to_rd: {x: bit0_right, y: rs1_top + 60},
+                            };
+                        },
+
+                        // ===== CONNECTION DEFINITIONS =====
+                        connections: {
+                            // ALU Input Connections
+                            rs1_to_alu_a: {from: "rf_rs1_out", to: "alu_a_in", desc: "RS1→ALU_A"},
+                            rs2_to_alu_b: {from: "rf_rs2_out", to: "alu_b_in", desc: "RS2→ALU_B"},
+                            imm_to_alu_b: {from: "immdec_out", to: "alu_b_in", desc: "IMM→ALU_B"},
+                            bufreg2_to_alu_b: {from: "bufreg2_out", to: "alu_b_in", desc: "BUF2→ALU_B"},
+                            
+                            // Register File to Buffer Connections
+                            rs1_to_bufreg1: {from: "rf_rs1_out", to: "bufreg1_in", desc: "RS1→BUF1"},
+                            rs2_to_bufreg2: {from: "rf_rs2_out", to: "bufreg2_in", desc: "RS2→BUF2"},
+                            
+                            // Immediate to Buffer Connections
+                            imm_to_bufreg1: {from: "immdec_out", to: "bufreg1_in", desc: "IMM→BUF1"},
+                            
+                            // Buffer Output Connections
+                            bufreg1_to_mem_addr: {from: "bufreg1_out", to: "mem_addr_in", desc: "BUF1→ADDR"},
+                            bufreg1_to_pc: {from: "bufreg1_out", to: "ctrl_pc_in", desc: "BUF1→PC"},
+                            bufreg2_to_mem_data: {from: "bufreg2_out", to: "mem_data_in", desc: "BUF2→DATA"},
+                            
+                            // Memory Connections
+                            mem_to_bufreg2: {from: "mem_data_out", to: "bufreg2_in", desc: "MEM→BUF2"},
+                            // ===== IMMEDIATE DECODER MUX CONNECTIONS =====
+                            imm31_to_mux: {from: "immdec_mux_imm31", to: "immdec_out", desc: "IMM31"},
+                            imm30_25_to_mux: {from: "immdec_mux_imm30_25", to: "immdec_out", desc: "IMM30:25"},
+                            imm24_20_to_mux: {from: "immdec_mux_imm24_20", to: "immdec_out", desc: "IMM24:20"},
+                            imm19_12_to_mux: {from: "immdec_mux_imm19_12", to: "immdec_out", desc: "IMM19:12"},
+                            imm11_7_to_mux: {from: "immdec_mux_imm11_7", to: "immdec_out", desc: "IMM11:7"},
+
+                            // CTRL arithmetic inputs
+                            pc_to_ctrl_a: {from: "ctrl_pc_out", to: "ctrl_a_in", desc: "PC→CTRL_A"},
+                            zero_to_ctrl_a: {from: "ctrl_zero_gen", to: "ctrl_a_in", desc: "0→CTRL_A"},
+                            imm_to_ctrl_b: {from: "immdec_out", to: "ctrl_b_in", desc: "IMM→CTRL_B"},
+                            const4_to_ctrl_b: {from: "ctrl_const4", to: "ctrl_b_in", desc: "4→CTRL_B"},
+
+                            // RD connections (replace the old rf_write_in connections)
+                            alu_to_rd: {from: "alu_result_out", to: "rd_write_in", desc: "ALU→RD"},
+                            bufreg2_to_rd: {from: "bufreg2_out", to: "rd_write_in", desc: "BUF2→RD"}, 
+                            csr_to_rd: {from: "csr_rf_out", to: "rd_write_in", desc: "CSR→RD"},
+                            ctrl_to_rd: {from: "ctrl_rf_out", to: "rd_write_in", desc: "CTRL→RD"},
+                        },
+                        
+                        // ===== HELPER FUNCTIONS =====
+                        initAllConnections: function() {
+                            let ret = {};
+                            let connections = this.connections;
+                            let points = this.connectionPoints();
+                            
+                            Object.keys(connections).forEach(connId => {
+                                let conn = connections[connId];
+                                let fromPt = points[conn.from];
+                                let toPt = points[conn.to];
+
+                                if (!fromPt || !toPt) {
+                                    console.warn(`Connection ${connId} has invalid endpoints (${conn ? conn.from : 'undefined'}→${conn ? conn.to : 'undefined'})`);
+                                    return;
+                                }
+                                
+                                Object.assign(ret, this.initDataFlowConnection(
+                                    connId, conn.desc, fromPt.x, fromPt.y, toPt.x, toPt.y
+                                ));
+                            });
+                            
+                            return ret;
+                        },
+                        
+                        renderAllConnections: function(objContainer, activeConnections) {
+                            Object.keys(this.connections).forEach(connId => {
+                            let active = activeConnections[connId] || false;
+                            this.renderDataFlowConnection(objContainer[`${connId}_line`], active);
+                            });
+                        }
                   },
                   init() {
+                     let ret = {};
                      // Initialize decoder as null, will be set when import completes
                      this.decoder = null;
                      this.instruction = null;
@@ -297,6 +502,51 @@
                         console.error("Failed to load decoder:", err);
                         this.Decoder = null;
                      });
+
+                    // Initialize all connections
+                    Object.assign(ret, '/cpu'.lib.initAllConnections());
+                    
+                    
+                    // ===== DEBUG: ENDPOINT LABELS =====
+                    // Set to false to disable in production
+                    let DEBUG_ENDPOINTS = true;
+                    
+                    if (DEBUG_ENDPOINTS) {
+                        let points = '/cpu'.lib.connectionPoints();
+                        
+                        Object.keys(points).forEach(pointId => {
+                            let point = points[pointId];
+                            
+                            // Create a small circle marker at each endpoint
+                            ret[`debug_${pointId}_marker`] = new fabric.Circle({
+                                radius: 3,
+                                left: point.x,
+                                top: point.y,
+                                fill: "red",
+                                stroke: "black",
+                                strokeWidth: 1,
+                                opacity: 0.8,
+                                originX: "center",
+                                originY: "center",
+                                selectable: false
+                            });
+                            
+                            // Create a text label for each endpoint
+                            ret[`debug_${pointId}_label`] = new fabric.Text(pointId, {
+                                fontSize: 6,
+                                left: point.x + 5,  // Offset slightly to avoid overlap
+                                top: point.y - 8,
+                                fill: "red",
+                                fontWeight: "bold",
+                                opacity: 0.9,
+                                selectable: false,
+                                backgroundColor: "white"  // White background for readability
+                            });
+                        });
+                        
+                    }
+                    
+                    return ret;
                   },
                   preRender() {
                       // Initialize the data object that children can access
@@ -331,7 +581,9 @@
                           }
                       }
 
-                      // ===== GET CURRENT INSTRUCTION =====
+                      // ===== GET CURRENT INSTRUCTION AND HISTORY =====
+
+                      let history_depth = '/cpu'.lib.history_depth;
 
                       // Expose these:
                       data.instruction = 0;
@@ -339,41 +591,76 @@
                       data.instruction_asm = "---";
                       data.instruction_format = "---";
                       data.i_wb_rdt = this.svSigRef(cpu+"decode.i_wb_rdt");
-
+                      data.total_cycles_completed = 0;
+                      
+                      // Initialize history
+                      data.instruction_history = [];
+                      let current = true;  // Flag to indicate if we are looking at the current instruction
                       try {
                           // Find when i_wb_en was last asserted (instruction load cycle)
                           let sig_obj = {
                               i_wb_en: this.svSigRef(cpu+"immdec.i_wb_en"),
-                              i_wb_rdt: data.i_wb_rdt
+                              i_wb_rdt: this.svSigRef(cpu+"decode.i_wb_rdt")
                           };
 
                           let sigs = this.signalSet(sig_obj);
 
                           // Look for when i_wb_en was last asserted
-                          for (let steps = 1; steps <= 70; steps++) {
+                          for (let step = 0; step <= 70 * history_depth; step++) {
+                              // Step back.
                               sigs.step(-1);
+                              if (current) {
+                                data.i_wb_rdt.step(-1);
+                              }
+
                               let wb_en = sigs.sig("i_wb_en").asBool(false);
 
                               if (wb_en) {
                                   // Found when instruction was loaded
+                                  // Update history.
                                   let i_wb_rdt_partial = sigs.sig("i_wb_rdt").asInt(0);
-                                  data.instruction = (i_wb_rdt_partial << 2) | 0x3;
-                                  data.instruction_valid = true;
-                                  break;
+                                  // Try to decode the instruction if we have the decoder available (loaded asynchronously)
+                                  let instruction = {
+                                      asInt: (i_wb_rdt_partial << 2) | 0x3,
+                                      asm: "LOADING DISASSEMBLER...",
+                                      format: "?"
+                                  };
+                                  if (this.Decoder) {
+                                      try {
+                                          let instruction_obj = new this.Decoder(instruction.asInt.toString(2).padStart(32, "0"), {});
+                                          instruction.asm = instruction_obj.asm || "DECODED";
+                                          instruction.format = instruction_obj.fmt || "?";
+                                      } catch(e) {
+                                          // Leave defaults.
+                                      }
+                                  }
+                                  data.instruction_history.push(instruction);
+                                  if (data.instruction_history.length > history_depth) {
+                                      // Filled the history. All done.
+                                      break;
+                                  }
+                                  if (current) {
+                                    if (this.svSigRef(cpu+"state.o_ibus_cyc").asBool(true)) {
+                                        // Show no instruction during FETCH.
+                                        data.instruction = 0;
+                                        data.instruction_asm = "---";
+                                        data.instruction_format = "---";
+                                        data.instruction_valid = false;
+                                        data.total_cycles_completed = 0;
+                                    } else {
+                                        // Current instruction.
+                                        data.instruction = instruction.asInt;
+                                        data.instruction_asm = instruction.asm;
+                                        data.instruction_format = instruction.format;
+                                        data.instruction_valid = true;
+                                       data.total_cycles_completed = step;
+                                    }
+
+                                     current = false; // Done with the current instruction
+                                  }
                               }
                           }
 
-                          // Try to decode the instruction if we have the decoder available
-                          if (data.instruction_valid && this.Decoder) {
-                              try {
-                                  let instruction_obj = new this.Decoder(data.instruction.toString(2).padStart(32, "0"), {});
-                                  data.instruction_asm = instruction_obj.asm || "DECODED";
-                                  data.instruction_format = instruction_obj.fmt || "?";
-                              } catch(e) {
-                                  data.instruction_asm = "INVALID";
-                                  data.instruction_format = "?";
-                              }
-                          }
 
                       } catch(e) {
                           // Keep defaults
@@ -387,23 +674,25 @@
                           data.init = this.svSigRef(cpu+"state.o_init").asBool(false);
                           data.wb_en = this.svSigRef(cpu+"immdec.i_wb_en").asBool(false);
 
-                          // Determine execution phase
-                          if (data.wb_en) {
-                              data.phase = "LOAD";
-                          } else if (data.cnt_en) {
-                              data.phase = "EXECUTE";
-                          } else if (data.cnt_done) {
-                              data.phase = "DONE";
-                          } else {
-                              data.phase = "IDLE";
-                          }
+                          // Get additional signals for new 8-phase lifecycle phases
+                          data.ibus_cyc = this.svSigRef(cpu+"state.o_ibus_cyc").asBool(false);
+                          data.ibus_ack = this.svSigRef(cpu+"state.i_ibus_ack").asBool(false);
+                          data.rf_rreq = this.svSigRef(cpu+"state.o_rf_rreq").asBool(false);
+                          data.rf_ready = this.svSigRef(cpu+"state.i_rf_ready").asBool(false);
+                          data.init_done = this.svSigRef(cpu+"state.init_done").asBool(false);
+                          data.o_ctrl_jump = this.svSigRef(cpu+"state.o_ctrl_jump").asBool(false);
 
                       } catch(e) {
                           data.cnt_en = false;
                           data.cnt_done = false;
                           data.init = false;
                           data.wb_en = false;
-                          data.phase = "UNKNOWN";
+                          data.ibus_cyc = false;
+                          data.ibus_ack = false;
+                          data.rf_rreq = false;
+                          data.rf_ready = false;
+                          data.init_done = false;
+                          data.o_ctrl_jump = false;
                       }
 
                       // ===== GET ACTIVE UNITS FROM DECODE =====
@@ -456,152 +745,114 @@
 
                       // ===== INSTRUCTION TYPE ANALYSIS =====
 
-                      try {
-                          if (data.instruction_valid) {
-                              let instr = data.instruction;
-                              let opcode = (instr >> 2) & 0x1F; // bits [6:2]
+                      let types = ["UNKNOWN", "unknown"]; // Default to unknown type
+                      if (data.instruction_valid) {
+                          let instr = data.instruction;
+                          let opcode = (instr >> 2) & 0x1F; // bits [6:2]
 
-                              // Determine instruction type based on opcode
-                              if (opcode == 0x0D) data.instruction_type = "LUI";
-                              else if (opcode == 0x05) data.instruction_type = "AUIPC";
-                              else if (opcode == 0x1B) data.instruction_type = "JAL";
-                              else if (opcode == 0x19) data.instruction_type = "JALR";
-                              else if (opcode == 0x18) data.instruction_type = "BRANCH";
-                              else if (opcode == 0x00) data.instruction_type = "LOAD";
-                              else if (opcode == 0x08) data.instruction_type = "STORE";
-                              else if (opcode == 0x04) data.instruction_type = "OP-IMM";
-                              else if (opcode == 0x0C) data.instruction_type = "OP";
-                              else if (opcode == 0x03) data.instruction_type = "FENCE";
-                              else if (opcode == 0x1C) data.instruction_type = "SYSTEM";
-                              else data.instruction_type = "UNKNOWN";
-                          } else {
-                              data.instruction_type = "NONE";
-                          }
-                      } catch(e) {
-                          data.instruction_type = "ERROR";
+                          // Determine opcode type and instruction type based on opcode
+                          types = (opcode == 0x0D) ? ["LUI", "u"] :
+                                  (opcode == 0x05) ? ["AUIPC", "u"] :
+                                  (opcode == 0x1B) ? ["JAL", "j"] :
+                                  (opcode == 0x19) ? ["JALR", "i"] :
+                                  (opcode == 0x18) ? ["BRANCH", "b"] :
+                                  (opcode == 0x00) ? ["LOAD", "i"] :
+                                  (opcode == 0x08) ? ["STORE", "s"] :
+                                  (opcode == 0x04) ? ["OP-IMM", "i"] :
+                                  (opcode == 0x0C) ? ["OP", "r"] :
+                                  (opcode == 0x03) ? ["FENCE", "f"] :
+                                  (opcode == 0x1C) ? ["SYSTEM", "f"] :
+                                                     ["UNKNOWN", "unknown"];
                       }
+                      // Expose.
+                      data.opcodeType = types[0];
+                      data.instrType = types[1];
 
-                      // ===== NEW: ENHANCED INSTRUCTION LIFECYCLE ANALYSIS =====
+                      // ===== NEW: ENHANCED INSTRUCTION LIFECYCLE ANALYSIS (8-PHASE MODEL) =====
 
                       try {
                           // Determine if this is a two-stage operation
                           data.is_two_stage = data.active_units.two_stage || 
-                                            ["LOAD", "STORE", "BRANCH", "JAL", "JALR"].includes(data.instruction_type) ||
-                                            data.instruction_type === "SYSTEM"; // shifts and SLT are also two-stage
+                                            ["LOAD", "STORE", "BRANCH", "JAL", "JALR"].includes(data.opcodeType) ||
+                                            data.opcodeType === "SYSTEM"; // shifts and SLT are also two-stage
 
-                           // Enhanced lifecycle phase determination - corrected DECODE logic
+                           // Enhanced lifecycle phase determination with new 8-phase model
                            data.lifecycle_phase = "UNKNOWN";
-                           data.cycle_in_phase = 0;
-                           data.stage_number = 0;
 
                            try {
-                               let ibus_ack = this.svSigRef(cpu+"state.i_ibus_ack").asBool(false);
-                               let rf_rreq = this.svSigRef(cpu+"state.o_rf_rreq").asBool(false);
-                               let rf_ready = this.svSigRef(cpu+"state.i_rf_ready").asBool(false);
-                               let ibus_cyc = this.svSigRef(cpu+"state.o_ibus_cyc").asBool(false);
-                               let branch_op = this.svSigRef(cpu+"decode.o_branch_op").asBool(false);
-
                                // Get previous cycle state using signalSet for transitions
                                let prev_cnt_done = false;
                                let prev_init = false;
+                               let prev_ibus_cyc = false;
                                let prev_ibus_ack = false;
                                let prev_rf_rreq = false;
+                               let prev_rf_ready = false;
 
                                try {
                                    let sig_obj = {
                                        cnt_done: this.svSigRef(cpu+"state.o_cnt_done"),
                                        init: this.svSigRef(cpu+"state.o_init"),
+                                       ibus_cyc: this.svSigRef(cpu+"state.o_ibus_cyc"),
                                        ibus_ack: this.svSigRef(cpu+"state.i_ibus_ack"),
-                                       rf_rreq: this.svSigRef(cpu+"state.o_rf_rreq")
+                                       rf_rreq: this.svSigRef(cpu+"state.o_rf_rreq"),
+                                       rf_ready: this.svSigRef(cpu+"state.i_rf_ready")
                                    };
                                    let sigs = this.signalSet(sig_obj);
                                    sigs.step(-1);  // Go back 1 cycle
                                    prev_cnt_done = sigs.sig("cnt_done").asBool(false);
                                    prev_init = sigs.sig("init").asBool(false);
+                                   prev_ibus_cyc = sigs.sig("ibus_cyc").asBool(false);
                                    prev_ibus_ack = sigs.sig("ibus_ack").asBool(false);
                                    prev_rf_rreq = sigs.sig("rf_rreq").asBool(false);
+                                   prev_rf_ready = sigs.sig("rf_ready").asBool(false);
                                } catch(e) {
                                    // If we can't look back, just use defaults
                                }
 
-                               // RTL-accurate phase detection
+                               // 8-Phase RTL-accurate phase detection
+                               // Based on SERV state machine and signal transitions
 
-                               // 1. EXECUTE phase - cnt_en=1 and init=0
-                               debugger;
-                               if (data.cnt_en && !data.init) {
-                                   if (data.is_two_stage) {
-                                       data.lifecycle_phase = "EXECUTE";
-                                       data.stage_number = 2;
-                                   } else {
-                                       data.lifecycle_phase = "EXECUTE";
-                                       data.stage_number = 1;
-                                   }
-                                   data.cycle_in_phase = data.current_bit;
+                               // Debug current state
+                               console.log(`=== PHASE DETECTION DEBUG ===`);
+                               console.log(`ibus_cyc=${data.ibus_cyc}, ibus_ack=${data.ibus_ack}, rf_rreq=${data.rf_rreq}, rf_ready=${data.rf_ready}`);
+                               console.log(`cnt_en=${data.cnt_en}, init=${data.init}, cnt_done=${data.cnt_done}, init_done=${data.init_done}`);
+                               console.log(`prev_rf_rreq=${prev_rf_rreq}`);
 
-                               // 2. INIT phase - cnt_en=1 and init=1 (two-stage only)
-                               } else if (data.init && data.cnt_en) {
-                                   data.lifecycle_phase = "INIT";
-                                   data.cycle_in_phase = data.current_bit;
-                                   data.stage_number = 1;
+                               // Priority order is critical - check most specific conditions first
 
-                               // 3. FETCH phase - ibus transaction active
-                               } else if (data.wb_en || ibus_cyc) {
-                                   data.lifecycle_phase = "FETCH";
-                                   data.cycle_in_phase = 0;
+                               // 5&8. INIT & EXECUTE
+                               if (data.cnt_en) {
+                                   data.lifecycle_phase = data.init ? "INIT" : "EXECUTE";
 
-                               // 4. DECODE phase - correct logic based on RTL
-                               } else if (ibus_ack || rf_rreq || prev_ibus_ack || 
-                                          (prev_rf_rreq && rf_ready) ||
-                                          (!data.cnt_en && data.instruction_valid && !prev_cnt_done && !prev_init)) {
-                                   data.lifecycle_phase = "DECODE";
-                                   data.cycle_in_phase = 0;
+                               // 6&7. WRITEBACK & PC_UPDATE
+                               } else if (data.init_done) {
+                                   data.lifecycle_phase = data.rf_ready ? "PC_UPDATE" : "WRITEBACK";
+                               
+                               // 1&2. FETCH1&2
+                               } else if (data.ibus_cyc) {
+                                   data.lifecycle_phase = data.ibus_ack ? "FETCH2" : "FETCH1";
+                               
+                               // 3&4. DECODE & SETUP
+                               } else if (true) {
+                                   data.lifecycle_phase = data.rf_ready ? "SETUP" : "DECODE";
 
-                               // 5. BRANCH_DECODE - special case for branches between INIT and EXECUTE  
-                               } else if (prev_init && !data.init && !data.cnt_en && branch_op && data.instruction_valid) {
-                                   data.lifecycle_phase = "BRANCH_DECODE";
-                                   data.cycle_in_phase = 0;
-
-                               // 6. INTER_INSTR - gap between instructions
-                               } else if (prev_cnt_done && !ibus_cyc && !data.cnt_en && !rf_rreq && !data.instruction_valid) {
-                                   data.lifecycle_phase = "INTER_INSTR";
-                                   data.cycle_in_phase = 0;
-
-                               // 7. Default to IDLE
+                               // Default to IDLE
                                } else {
                                    data.lifecycle_phase = "IDLE";
-                                   data.cycle_in_phase = 0;
                                }
+
+                               console.log(`=== PHASE RESULT: ${data.lifecycle_phase} ===`);
 
                            } catch(e) {
                                console.warn("Error in phase detection:", e);
                                data.lifecycle_phase = "IDLE";
-                               data.cycle_in_phase = 0;
                            }
 
-                           // Debug the decode detection
-                           if (data.lifecycle_phase === "DECODE") {
-                               console.log(`=== DECODE: ibus_ack=${ibus_ack}, rf_rreq=${rf_rreq}, prev_ibus_ack=${prev_ibus_ack}, rf_ready=${rf_ready} ===`);
-                           }
-                       } catch(e) {
-                          console.warn("Error in lifecycle analysis:", e);
-                          data.lifecycle_phase = "ERROR";
-                          data.is_two_stage = false;
-                       }
-                        // Add this section to your preRender() function after the lifecycle analysis:
-
-                        // Calculate total instruction cycles and progress
+                        // Calculate total instruction cycles and progress for 8-phase model
                         if (data.is_two_stage) {
-                            data.total_instruction_cycles = 64; // 32 + 32
-                            if (data.lifecycle_phase === "INIT") {
-                                data.total_cycles_completed = data.cycle_in_phase;
-                            } else if (data.lifecycle_phase === "EXECUTE") {
-                                data.total_cycles_completed = 32 + data.cycle_in_phase;
-                            } else {
-                                data.total_cycles_completed = 64;
-                            }
+                            data.total_instruction_cycles = 70; // FETCH1(1) + FETCH2(1) + DECODE(1) + SETUP(1) + INIT(32) + WRITEBACK(1) + PC_UPDATE(1) + EXECUTE(32)
                         } else {
-                            data.total_instruction_cycles = 32;
-                            data.total_cycles_completed = data.cycle_in_phase;
+                            data.total_instruction_cycles = 36; // FETCH1(1) + FETCH2(1) + DECODE(1) + SETUP(1) + EXECUTE(32)
                         }
 
                         // Calculate progress percentage
@@ -609,85 +860,34 @@
 
                         // Determine which components should be active in current phase
                         data.active_in_phase = {
-                            fetch: data.lifecycle_phase === "FETCH",
-                            decode: data.lifecycle_phase === "FETCH" || data.lifecycle_phase === "DECODE",
+                            fetch: data.lifecycle_phase === "FETCH1" || data.lifecycle_phase === "FETCH2",
+                            decode: data.lifecycle_phase === "DECODE",
                             immdec: data.lifecycle_phase === "INIT" || data.lifecycle_phase === "EXECUTE",
                             rf_read: data.lifecycle_phase === "INIT" || data.lifecycle_phase === "EXECUTE",
                             alu: data.lifecycle_phase === "EXECUTE" && data.active_units.alu,
                             bufreg: data.lifecycle_phase === "INIT" && data.active_units.bufreg,
-                            bufreg2: data.active_units.mem || data.instruction_type.includes("SHIFT"),
+                            bufreg2: data.active_units.mem || data.opcodeType.includes("SHIFT"),
                             mem_if: data.lifecycle_phase === "EXECUTE" && data.active_units.mem,
-                            ctrl: data.lifecycle_phase === "EXECUTE" && data.active_units.ctrl,
+                            ctrl: (data.lifecycle_phase === "EXECUTE" && data.active_units.ctrl) || data.lifecycle_phase === "PC_UPDATE",
                             csr: data.active_units.csr,
-                            rf_write: data.lifecycle_phase === "EXECUTE"
+                            rf_write: data.lifecycle_phase === "EXECUTE" || data.lifecycle_phase === "WRITEBACK"
                         };
 
-                      // ===== NEW: INSTRUCTION HISTORY TRACKING =====
-
-                      try {
-                          // Initialize history if it doesn't exist
-                          if (!this.instruction_history) {
-                              this.instruction_history = [];
-                          }
-
-                          // Add new instruction to history when we start fetching
-                          if (data.lifecycle_phase === "FETCH" && data.instruction_valid) {
-                              // Check if this is a new instruction (not the same as the most recent)
-                              let isNewInstruction = this.instruction_history.length === 0 ||
-                                                   this.instruction_history[0].instruction !== data.instruction;
-
-                              if (isNewInstruction) {
-                                  this.instruction_history.unshift({
-                                      instruction: data.instruction,
-                                      asm: data.instruction_asm,
-                                      type: data.instruction_type,
-                                      format: data.instruction_format,
-                                      is_two_stage: data.is_two_stage,
-                                      fetch_cycle: this.current_cycle || 0,
-                                      completed: false,
-                                      cycles_executing: 0
-                                  });
-
-                                  // Keep only last 8 instructions
-                                  if (this.instruction_history.length > 8) {
-                                      this.instruction_history.pop();
-                                  }
-                              }
-                          }
-
-                          // Update cycle counts for executing instructions
-                          if (this.instruction_history.length > 0) {
-                              let currentInstr = this.instruction_history[0];
-                              if (!currentInstr.completed) {
-                                  if (data.lifecycle_phase === "DONE") {
-                                      currentInstr.completed = true;
-                                      currentInstr.total_cycles = currentInstr.cycles_executing;
-                                  } else if (data.lifecycle_phase !== "IDLE") {
-                                      currentInstr.cycles_executing++;
-                                  }
-                              }
-                          }
-
-                          // Expose history to other components
-                          data.instruction_history = this.instruction_history;
-
                       } catch(e) {
-                          console.warn("Error in instruction history tracking:", e);
-                          data.instruction_history = [];
+                          console.warn("Error in lifecycle analysis:", e);
+                          data.lifecycle_phase = "ERROR";
+                          data.is_two_stage = false;
                       }
 
-                      // ===== NEW: BUS ACTIVITY TRACKING =====
+
+                      // ===== BUS ACTIVITY TRACKING =====
 
                       try {
-                          // Track instruction bus activity
-                          let ibus_cyc = this.svSigRef(cpu+"state.o_ibus_cyc").asBool(false);
-                          let ibus_ack = this.svSigRef(cpu+"state.i_ibus_ack").asBool(false);
-
                           data.bus_activity = {
-                              ibus_cyc: ibus_cyc,
-                              ibus_ack: ibus_ack,
-                              ibus_active: ibus_cyc && !ibus_ack,
-                              fetch_in_progress: ibus_cyc
+                              ibus_cyc: data.ibus_cyc,
+                              ibus_ack: data.ibus_ack,
+                              ibus_active: data.ibus_cyc && !data.ibus_ack,
+                              fetch_in_progress: data.ibus_cyc
                           };
 
                           // Track data bus activity if memory operation
@@ -707,7 +907,6 @@
                           }
 
                       } catch(e) {
-                          debugger;
                           data.bus_activity = {
                               ibus_cyc: false,
                               ibus_ack: false,
@@ -716,231 +915,294 @@
                           };
                       }
 
-                      // ===== SUMMARY DEBUG OUTPUT (ENHANCED) =====
+                      // ===== SUMMARY DEBUG OUTPUT (8-PHASE MODEL) =====
 
-                      console.log("=== CPU CENTRAL DATA (ENHANCED) ===");
-                      console.log(`Lifecycle: ${data.lifecycle_phase} (Stage ${data.stage_number})`);
-                      console.log(`Bit: ${data.current_bit}/31, Cycle in phase: ${data.cycle_in_phase}`);
+                      console.log("=== CPU CENTRAL DATA (8-PHASE MODEL) ===");
+                      console.log(`Lifecycle: ${data.lifecycle_phase}`);
+                      console.log(`Signals: ibus_cyc=${data.ibus_cyc}, ibus_ack=${data.ibus_ack}, rf_rreq=${data.rf_rreq}, rf_ready=${data.rf_ready}`);
+                      console.log(`Control: cnt_en=${data.cnt_en}, init=${data.init}, cnt_done=${data.cnt_done}, init_done=${data.init_done}`);
+                      console.log(`Bit: ${data.current_bit}/31, Cycle in phase: ${data.current_bit}`);
                       console.log(`Progress: ${(data.instruction_progress * 100).toFixed(1)}% (${data.total_cycles_completed}/${data.total_instruction_cycles})`);
-                      console.log(`Instruction: 0x${data.instruction.toString(16).padStart(8, "0")} (${data.instruction_type})`);
+                      console.log(`Instruction: 0x${data.instruction.toString(16).padStart(8, "0")} (${data.opcodeType})`);
                       console.log(`ASM: ${data.instruction_asm} [${data.is_two_stage ? "2-STAGE" : "1-STAGE"}]`);
                       console.log(`Active units:`, data.active_units);
                       console.log(`Bus activity:`, data.bus_activity);
 
-                      if (data.instruction_history.length > 0) {
+                      if (data.instruction_history && data.instruction_history.length > 0) {
                           console.log(`Recent instructions: ${data.instruction_history.slice(0, 3).map(i => i.asm).join(", ")}`);
                       }
                   },
+                  render() {
+                                            
+                        // Get all signal values
+                        let cpu = "top.servant_sim.dut.cpu.cpu.";
+                        let cnt_en = this.svSigRef(cpu+"state.o_cnt_en").asBool(false);
+                        let op_b_sel = this.svSigRef(cpu+"bufreg2.i_op_b_sel").asBool(false);
+                        let rd_alu_en = this.svSigRef(cpu+"decode.o_rd_alu_en").asBool(false);
+                        let init = this.svSigRef(cpu+"state.o_init").asBool(false);
+                        let dbus_en = this.svSigRef(cpu+"decode.o_dbus_en").asBool(false);
+                        let dbus_we = this.svSigRef(cpu+"o_dbus_we").asBool(false);
+                        let dbus_ack = this.svSigRef(cpu+"i_dbus_ack").asBool(false);
+                        let bufreg_rs1_en = this.svSigRef(cpu+"decode.o_bufreg_rs1_en").asBool(false);
+                        let bufreg_imm_en = this.svSigRef(cpu+"decode.o_bufreg_imm_en").asBool(false);
+                        let branch_op = this.svSigRef(cpu+"decode.o_branch_op").asBool(false);
+                        let jal_or_jalr = this.svSigRef(cpu+"decode.o_ctrl_jal_or_jalr").asBool(false);
+                        let rd_mem_en = this.svSigRef(cpu+"decode.o_rd_mem_en").asBool(false);
+                        let csr_en = this.svSigRef(cpu+"decode.o_csr_en").asBool(false);
+                        let rd_csr_en = this.svSigRef(cpu+"decode.o_rd_csr_en").asBool(false);
+                        let shift_op = this.svSigRef(cpu+"decode.o_shift_op").asBool(false);
+                        let immdec_en = this.svSigRef(cpu+"immdec.i_immdec_en").asInt(0);
+                        let i_ctrl = this.svSigRef(cpu+"immdec.i_ctrl").asInt(0);
+                        // Get CTRL-specific signals
+                        /*
+                        let ctrl_pc_en = this.svSigRef(cpu+"state.o_ctrl_pc_en").asBool(false);
+                        let ctrl_jump = this.svSigRef(cpu+"state.o_ctrl_jump").asBool(false);
+                        let utype = this.svSigRef(cpu+"decode.o_ctrl_utype").asBool(false);
+                        let pc_rel = this.svSigRef(cpu+"decode.o_ctrl_pc_rel").asBool(false);
+                        let trap = this.svSigRef(cpu+"state.o_ctrl_trap").asBool(false);
+                        let mret = this.svSigRef(cpu+"decode.o_ctrl_mret").asBool(false);
+                        */
+
+                        // Evaluate all connection conditions
+                        let activeConnections = {
+                            // ALU Input Connections
+                            rs1_to_alu_a: cnt_en,
+                            rs2_to_alu_b: cnt_en && op_b_sel,
+                            imm_to_alu_b: cnt_en && !op_b_sel,
+                            bufreg2_to_alu_b: cnt_en && shift_op,
+                            
+                            // PC to CTRL operand A (for PC+4, PC+immediate, AUIPC)
+                            pc_to_ctrl_a: ctrl_pc_en && (jal_or_jalr || branch_op || !utype),
+                            
+                            // Zero to CTRL operand A (for LUI instructions)
+                            zero_to_ctrl_a: ctrl_pc_en && utype && (cpuData.opcodeType === "LUI"),
+                            
+                            // Immediate to CTRL operand B (for PC+immediate, AUIPC, LUI)
+                            imm_to_ctrl_b: ctrl_pc_en && (branch_op || jal_or_jalr || utype),
+                            
+                            // Constant 4 to CTRL operand B (for PC+4 increment)
+                            const4_to_ctrl_b: ctrl_pc_en && !(branch_op || jal_or_jalr || utype),
+
+                            // ALU Output Connections
+                            alu_to_rd: cnt_en && rd_alu_en,
+                            
+                            // Register File to Buffer Connections
+                            rs1_to_bufreg1: init && bufreg_rs1_en,
+                            rs2_to_bufreg2: init && dbus_en && dbus_we,
+                            
+                            // Immediate to Buffer Connections
+                            imm_to_bufreg1: init && bufreg_imm_en,
+                            
+                            // Buffer Output Connections
+                            bufreg1_to_mem_addr: dbus_en,
+                            bufreg1_to_pc: branch_op || jal_or_jalr,
+                            bufreg2_to_mem_data: dbus_en && dbus_we,
+                            
+                            // Memory Connections
+                            mem_to_bufreg2: dbus_ack && !dbus_we,
+                            bufreg2_to_rd: rd_mem_en,
+                            
+                            // CSR and Control Connections
+                            csr_to_rd: csr_en && rd_csr_en,
+                            ctrl_to_rd: jal_or_jalr,
+                            
+                            // RD register to actual RF write
+                            rd_to_register_file: cnt_en && (rd_alu_en || rd_mem_en || rd_csr_en) || 
+                                    (ctrl_pc_en && (jal_or_jalr || utype)),
+                            
+                            // Immediate Decoder Mux Connections
+                            imm31_to_mux: (immdec_en & 0x8) && (i_ctrl & 0x8),
+                            imm30_25_to_mux: (immdec_en & 0x8) !== 0,
+                            imm24_20_to_mux: (immdec_en & 0x4) !== 0,
+                            imm19_12_to_mux: (immdec_en & 0x2) !== 0,
+                            imm11_7_to_mux: (immdec_en & 0x1) !== 0
+                        };
+                        
+                        // Render all connections
+                        '/cpu'.lib.renderAllConnections(this.obj, activeConnections);
+
+                  }
                   
                // SERV core main modules arranged in logical data flow order
-   
+
+               /history
+                  \viz_js
+                     box: {width: 150, height: 110, top: -110, strokeWidth: 1},
+                     where: {left: 0, top: -150, width: 150, height: 110},
+                     init() {
+                        this.history_depth = '/cpu'.lib.history_depth;
+                        let ret = {};
+                        ret.title = new fabric.Text("Instruction History", {fontSize: 12, fontWeight: "bold", top: -(15 + this.history_depth * 10), left: 150 / 2, originY: "center", originX: "center"});
+                        for(let i = 0; i < this.history_depth; i++) {
+                            ret[`inst_${i}`] = new fabric.Text("", {fontSize: 8, fontWeight: i ? "normal" : "bold", top: -(12 + i * 10), left: 25});
+                        }
+                        return ret;
+                     },
+                     render() {
+                        // Update history text dynamically
+                        let history = '/cpu'.data.instruction_history;
+                        for(let i = 0; i < this.history_depth; i++) {
+                           if(history[i]) {
+                              this.obj[`inst_${i}`].set("text", history[i].asm);
+                           } else {
+                              this.obj[`inst_${i}`].set("text", "");
+                           }
+                        }
+                     }
                /lifecycle  // Global instruction lifecycle visualization
                   \viz_js
-                     box: {width: 850, height: 120, strokeWidth: 1},
+                     box: {width: 685, height: 120, strokeWidth: 1},
                      where: {left: 0, top: -30, width: 150, height: 30},
                      init() {
                         let ret = {};
 
                         // ===== MAIN TITLE =====
-                        ret.title = new fabric.Text("SERV Instruction Lifecycle", {fontSize: 14, fontWeight: "bold", top: -20, left: 425, textAlign: "center", originX: "center", selectable: false});
+                        ret.title = new fabric.Text("SERV Instruction Lifecycle", {fontSize: 14, fontWeight: "bold", top: -20, left: 25 + 635 / 2, originY: "center", originX: "center"});
 
                         // ===== LIFECYCLE PHASE VISUALIZATION =====
 
                         // Background timeline
-                        ret.timeline_bg = new fabric.Rect({width: 800, height: 50, top: 10, left: 25, fill: "#f5f5f5", stroke: "#333", strokeWidth: 2, selectable: false});
+                        ret.timeline_bg = new fabric.Rect({width: 635, height: 50, top: 10, left: 25, fill: "#f5f5f5", stroke: "#333", strokeWidth: 2});
 
-                        // Define 8 phases: 6 single-cycle + 2 multi-cycle
-                        let phases = [
-                           {name: "FETCH1", color: "#4FC3F7", width: 60, is_multi: false},     // 1 cycle
-                           {name: "FETCH2", color: "#4FC3F7", width: 60, is_multi: false},     // 1 cycle  
-                           {name: "DECODE", color: "#B39DDB", width: 60, is_multi: false},     // 1 cycle
-                           {name: "SETUP", color: "#9C27B0", width: 60, is_multi: false},     // 1 cycle
-                           {name: "INIT", color: "#FFD54F", width: 120, is_multi: true},      // 32 cycles
-                           {name: "WRITEBACK", color: "#FF7043", width: 60, is_multi: false}, // 1 cycle
-                           {name: "PC_UPDATE", color: "#FFA726", width: 60, is_multi: false}, // 1 cycle
-                           {name: "EXECUTE", color: "#81C784", width: 120, is_multi: true},   // 32 cycles
-                        ];
+                        // Define 8 phases as an object: 6 single-cycle + 2 multi-cycle (all lowercase names)
+                        let phases = '/cpu'.lib.phases;
 
-                        // Create phase boxes with calculated positions
+                        // Create phase boxes with calculated positions and
+                        // store positions in phases object.
                         let currentLeft = 25;
-                        phases.forEach((phase, i) => {
-                           ret[`${phase.name.toLowerCase()}_phase`] = new fabric.Rect({width: phase.width, height: 50, top: 10, left: currentLeft, fill: phase.color, stroke: "#333", strokeWidth: 1, opacity: 0.3, selectable: false});
-                           ret[`${phase.name.toLowerCase()}_label`] = new fabric.Text(phase.name, {fontSize: phase.is_multi ? 10 : 8, fontWeight: "bold", top: 30, left: currentLeft + phase.width/2, textAlign: "center", originX: "center", fill: "#333", selectable: false});
-                           currentLeft += phase.width + 5; // Add 5px spacing between phases
+                        Object.keys(phases).forEach((key) => {
+                           let phase = phases[key];
+                           let phaseWidth = phase.is_multi ? 120 : 60;
+                           ret[`${phase.name}_phase`] = new fabric.Rect({width: phaseWidth, height: 50, top: 10, left: currentLeft, fill: phase.color, stroke: "#333", strokeWidth: 1, opacity: 0.3});
+                           
+                           // Use smaller font for longer names to fit in narrow boxes
+                           let fontSize = phase.is_multi ? 18 : (phase.name.length > 7 ? 12 : 16);
+                           ret[`${phase.name}_label`] = new fabric.Text(phase.name, {fontSize: fontSize, fontWeight: "bold", top: 35, left: currentLeft + phaseWidth/2, originX: "center", originY: "center", fill: "#333"});
+                           phases[key].left = currentLeft;
+                           currentLeft += phaseWidth;
+                           phases[key].right = currentLeft;
+                           currentLeft += 5; // Add 5px spacing between phases
                         });
                         
                         // Current phase indicator (animated arrow)
-                        ret.phase_pointer = new fabric.Triangle({width: 20, height: 15, top: 65, left: 100, fill: "#FF5722", stroke: "#333", strokeWidth: 1, angle: 180, selectable: false});
+                        ret.phase_pointer = new fabric.Triangle({width: 20, height: 15, top: 65, left: 100, fill: "#FF5722", stroke: "#333", strokeWidth: 1, angle: 180});
 
                         // Progress bar within current multi-cycle phase (only shown for INIT/EXECUTE)
-                        ret.progress_bar = new fabric.Rect({width: 0, height: 8, top: 15, left: 25, fill: "rgba(255, 87, 34, 0.8)", selectable: false});
+                        ret.progress_bar = new fabric.Rect({width: 0, height: 8, top: 15, left: 25, fill: "rgba(255, 87, 34, 0.8)"});
 
                         // ===== INSTRUCTION INFORMATION =====
 
                         // Current instruction box
-                        ret.current_instr_bg = new fabric.Rect({width: 780, height: 25, top: 75, left: 35, fill: "#fff", stroke: "#666", strokeWidth: 1, selectable: false});
-                        ret.current_instr_label = new fabric.Text("Current:", {fontSize: 8, fontWeight: "bold", top: 78, left: 40, selectable: false});
-                        ret.current_instr_text = new fabric.Text("No instruction", {fontSize: 10, fontFamily: "monospace", top: 85, left: 85, selectable: false});
-                        ret.stage_indicator = new fabric.Text("1-STAGE", {fontSize: 8, fontWeight: "bold", top: 78, left: 650, fill: "#666", selectable: false});
-                        ret.progress_text = new fabric.Text("0%", {fontSize: 10, fontWeight: "bold", top: 82, left: 720, fill: "#FF5722", selectable: false});
+                        ret.current_instr_bg = new fabric.Rect({width: 615, height: 25, top: 75, left: 35, fill: "#fff", stroke: "#666", strokeWidth: 1});
+                        ret.current_instr_label = new fabric.Text("Current:", {fontSize: 8, fontWeight: "bold", top: 78, left: 40});
+                        ret.current_instr_text = new fabric.Text("No instruction", {fontSize: 10, fontFamily: "monospace", top: 85, left: 85});
+                        ret.stage_indicator = new fabric.Text("1-STAGE", {fontSize: 8, fontWeight: "bold", top: 78, left: 550, fill: "#666"});
+                        ret.progress_text = new fabric.Text("0%", {fontSize: 10, fontWeight: "bold", top: 82, left: 620, fill: "#FF5722"});
 
-                        // ===== BUS ACTIVITY INDICATORS =====
+                        // ===== STATUS/BUS ACTIVITY INDICATORS =====
 
-                        ret.bus_label = new fabric.Text("Bus:", {fontSize: 8, top: 95, left: 40, selectable: false});
-                        ret.ibus_indicator = new fabric.Circle({radius: 4, left: 70, top: 97, fill: "#ccc", stroke: "#333", strokeWidth: 1, selectable: false});
-                        ret.ibus_label = new fabric.Text("IBUS", {fontSize: 6, top: 105, left: 70, textAlign: "center", originX: "center", selectable: false});
-                        ret.dbus_indicator = new fabric.Circle({radius: 4, left: 100, top: 97, fill: "#ccc", stroke: "#333", strokeWidth: 1, selectable: false});
-                        ret.dbus_label = new fabric.Text("DBUS", {fontSize: 6, top: 105, left: 100, textAlign: "center", originX: "center", selectable: false});
+                        ret.status_indicators_label = new fabric.Text("Status:", {fontSize: 8, fontWeight: "bold", top: 70, left: 25});
+                        ret.rf_write_indicator = new fabric.Circle({radius: 5, left: 70, top: 72, originY: "center", originX: "center", fill: "#4CAF50", stroke: "#333", strokeWidth: 1, opacity: 0.3});
+                        ret.rf_write_label = new fabric.Text("RF Write", {fontSize: 6, top: 82, left: 70, originY: "center", originX: "center"});
+                        ret.pc_update_indicator = new fabric.Circle({radius: 5, left: 140, top: 72, originY: "center", originX: "center", fill: "#FF9800", stroke: "#333", strokeWidth: 1, opacity: 0.3});
+                        ret.pc_update_labelx = new fabric.Text("PC Update", {fontSize: 6, top: 82, left: 140, originY: "center", originX: "center"});
+
+                        ret.bus_label = new fabric.Text("Bus:", {fontSize: 8, top: 95, left: 40});
+                        ret.ibus_indicator = new fabric.Circle({radius: 5, left: 70, top: 97, originY: "center", originX: "center", fill: "#ccc", stroke: "#333", strokeWidth: 1});
+                        ret.ibus_label = new fabric.Text("IBUS", {fontSize: 6, top: 105, left: 70, originY: "center", originX: "center"});
+                        ret.dbus_indicator = new fabric.Circle({radius: 5, left: 100, top: 97, originY: "center", originX: "center", fill: "#ccc", stroke: "#333", strokeWidth: 1});
+                        ret.dbus_label = new fabric.Text("DBUS", {fontSize: 6, top: 105, left: 100, originY: "center", originX: "center"});
 
                         // ===== INSTRUCTION HISTORY =====
 
-                        ret.history_label = new fabric.Text("Recent:", {fontSize: 8, top: 95, left: 140, selectable: false});
-                        ret.history_text = new fabric.Text("", {fontSize: 8, fontFamily: "monospace", top: 95, left: 180, selectable: false});
+                        ret.history_label = new fabric.Text("Recent:", {fontSize: 8, top: 95, left: 140});
+                        ret.history_text = new fabric.Text("", {fontSize: 8, fontFamily: "monospace", top: 95, left: 180});
 
                         // ===== CYCLE COUNTER =====
 
-                        ret.cycle_label = new fabric.Text("Cycle:", {fontSize: 8, top: 95, left: 650, selectable: false});
-                        ret.cycle_text = new fabric.Text("0/32", {fontSize: 10, fontWeight: "bold", fontFamily: "monospace", top: 93, left: 685, fill: "#666", selectable: false});
-                        ret.bit_text = new fabric.Text("Bit: 0", {fontSize: 8, top: 105, left: 685, fontFamily: "monospace", fill: "#666", selectable: false});
-
-                        ret.status_indicators_label = new fabric.Text("Status:", {fontSize: 8, fontWeight: "bold", top: 70, left: 25, selectable: false});
-                        ret.rf_write_indicator = new fabric.Circle({radius: 5, left: 70, top: 72, fill: "#4CAF50", stroke: "#333", strokeWidth: 1, opacity: 0.3, selectable: false});
-                        ret.rf_write_label = new fabric.Text("RF Write", {fontSize: 6, top: 82, left: 70, textAlign: "center", originX: "center", selectable: false});
-                        ret.pc_update_indicator = new fabric.Circle({radius: 5, left: 140, top: 72, fill: "#FF9800", stroke: "#333", strokeWidth: 1, opacity: 0.3, selectable: false});
-                        ret.pc_update_label = new fabric.Text("PC Update", {fontSize: 6, top: 82, left: 140, textAlign: "center", originX: "center", selectable: false});
+                        ret.cycle_label = new fabric.Text("Cycle:", {fontSize: 8, top: 95, left: 550});
+                        ret.cycle_text = new fabric.Text("0/32", {fontSize: 10, fontWeight: "bold", fontFamily: "monospace", top: 93, left: 585, fill: "#666"});
+                        ret.bit_text = new fabric.Text("Bit: 0", {fontSize: 8, top: 105, left: 585, fontFamily: "monospace", fill: "#666"});
 
                         return ret;
                      },
                      render() {
                         // Get centralized data from CPU
-                        debugger;
                         let cpuData = '/cpu'.data;
+                        let cpuLib = '/cpu'.lib;
                         cpu = "top.servant_sim.dut.cpu.cpu.";
-                        console.log(`2-stage: ${cpuData.is_two_stage}`);
 
-                        console.log("=== LIFECYCLE RENDER ===");
+                        console.log("=== LIFECYCLE RENDER (8-PHASE) ===");
                         console.log(`Phase: ${cpuData.lifecycle_phase}, Progress: ${(cpuData.instruction_progress * 100).toFixed(1)}%`);
 
                         // ===== UPDATE PHASE HIGHLIGHTING =====
 
-                        let phases = ["fetch", "decode", "init", "execute"];
+                        // Phase highlighting and pointer/progress positions
+                        let phases = Object.keys(cpuLib.phases);
                         phases.forEach(phase => {
                            let isActive = cpuData.lifecycle_phase.toLowerCase() === phase;
                            let phaseObj = this.obj[`${phase}_phase`];
                            let labelObj = this.obj[`${phase}_label`];
 
                            if (phaseObj && labelObj) {
-                              phaseObj.set({
-                                 opacity: isActive ? 1.0 : 0.3,
-                                 strokeWidth: isActive ? 3 : 1
-                              });
-
-                              labelObj.set({
-                                 fontWeight: isActive ? "bold" : "normal",
-                                 fill: isActive ? "#000" : "#666"
-                              });
+                              phaseObj.set({opacity: isActive ? 1.0 : 0.3, strokeWidth: isActive ? 3 : 1});
+                              labelObj.set({fontWeight: isActive ? "bold" : "normal", fill: isActive ? "#000" : "#666"});
                            }
                         });
 
-                        // ===== UPDATE PHASE POINTER AND PROGRESS BAR =====
+                        // ===== UPDATE PHASE POINTER =====
 
-                        let phasePositions = {
-                            "fetch": 75,       // center of fetch phase
-                            "decode": 195,     // center of decode phase
-                            "init": 305,       // center of init phase  
-                            "execute": 415,    // center of execute phase
-                        };
-
+                        // Use center of phase box for pointer position
                         let currentPhase = cpuData.lifecycle_phase.toLowerCase();
-                        let pointerPosition = phasePositions[currentPhase] || 105;
+                        let pointerPosition = 105; // default
+                        if (cpuLib.phases[currentPhase]) {
+                           let phase = cpuLib.phases[currentPhase];
+                           pointerPosition = phase.left + (phase.right - phase.left) / 2;
+                        }
+                        this.obj.phase_pointer.set({left: pointerPosition, fill: '/cpu'.lib.getLifecycleColor(cpuData.lifecycle_phase)});
 
-                        this.obj.phase_pointer.set({
-                           left: pointerPosition,
-                           fill: '/cpu'.lib.getLifecycleColor(cpuData.lifecycle_phase)
-                        });
+                        // ===== UPDATE PROGRESS BAR =====
 
-                        // Progress bar shows progress within current phase
                         let progressWidth = 0;
                         let progressLeft = 25;
+                        let showProgressBar = false;
 
-                        if (currentPhase === "fetch") {
-                           progressLeft = 25;
-                           // Show realistic fetch progress based on actual bus state
-                           if (cpuData.bus_activity && cpuData.bus_activity.ibus_cyc) {
-                              debugger;
-                              if (cpuData.bus_activity.ibus_ack) {
-                                 // Bus transaction completing this cycle
-                                 progressWidth = 160; // Full width - fetch complete
-                              } else {
-                                 // Bus transaction active, waiting for ack
-                                 progressWidth = 80;  // Half width - request sent, waiting
-                              }
-                           } else {
-                              // No bus activity - either starting or idle
-                              progressWidth = 20;  // Minimal progress - just starting
-                           }
-                        } else if (currentPhase === "decode") {
-                            progressLeft = 145;
-                            progressWidth = 100 * 0.7; // Show decode as mostly complete quickly
-                        } else if (currentPhase === "init") {
-                           progressLeft = 185;
-                           progressWidth = 160 * ((cpuData.cycle_in_phase + 1) / 32.0);
-                        } else if (currentPhase === "execute") {
-                           progressLeft = 345;
-                           progressWidth = 160 * ((cpuData.cycle_in_phase + 1) / 32.0);
+                        // Position progress bars
+                        const phase = cpuLib.phases[currentPhase];
+                        if (phase && phase.is_multi) {
+                           progressLeft = phase.left;
+                           progressWidth = (phase.right - phase.left) * ((cpuData.current_bit + 1) / 32.0);
+                           showProgressBar = true;
                         }
 
                         this.obj.progress_bar.set({
                            left: progressLeft,
                            width: Math.max(0, progressWidth),
-                           opacity: (currentPhase !== "idle") ? 0.8 : 0.3
+                           opacity: showProgressBar ? 0.8 : 0.0
                         });
+
+                        // Only show progress bar for multi-cycle phases (INIT and EXECUTE)
+                        if (currentPhase === "init" || currentPhase === "execute") {
+                           progressLeft = cpuLib.phases[currentPhase].left; // Phase start position
+                           progressWidth = 120 * ((cpuData.current_bit + 1) / 32.0);
+                           showProgressBar = true;
+                        }
+
+                        this.obj.progress_bar.set({
+                           left: progressLeft,
+                           width: Math.max(0, progressWidth),
+                           opacity: showProgressBar ? 0.8 : 0.0
+                        });
+
+                        // ===== UPDATE STATUS/BUS INDICATORS =====
 
                         // RF Write active during EXECUTE when writing results
                         let rf_writing = (cpuData.lifecycle_phase === "EXECUTE" && cpuData.active_units.rf);
-                        this.obj.rf_write_indicator.set({
-                           opacity: rf_writing ? 1.0 : 0.3,
-                           fill: rf_writing ? "#4CAF50" : "#C8E6C9"
-                        });
+                        this.obj.rf_write_indicator.set({opacity: rf_writing ? 1.0 : 0.3, fill: rf_writing ? "#4CAF50" : "#C8E6C9"});
 
-                        // PC Update active at end of EXECUTE or when ctrl_pc_en is active
-                        let pc_updating = (cpuData.lifecycle_phase === "EXECUTE" && cpuData.cycle_in_phase > 28) || 
-                                          this.svSigRef(cpu+"state.o_ctrl_pc_en").asBool(false);
-                        this.obj.pc_update_indicator.set({
-                           opacity: pc_updating ? 1.0 : 0.3,
-                           fill: pc_updating ? "#FF9800" : "#FFCC80"
-                        });
-
-                        // ===== UPDATE INSTRUCTION INFORMATION =====
-
-                        if (cpuData.instruction_valid) {
-                           let instrText = `${cpuData.instruction_asm} (0x${cpuData.instruction.toString(16).padStart(8, "0").toUpperCase()}) [${cpuData.instruction_type}]`;
-                           this.obj.current_instr_text.set({
-                              text: instrText,
-                              fill: "#000"
-                           });
-                        } else {
-                           this.obj.current_instr_text.set({
-                              text: "No valid instruction",
-                              fill: "#999"
-                           });
-                        }
-
-                        // Stage indicator
-                        let stageText = cpuData.is_two_stage ? "2-STAGE" : "1-STAGE";
-                        let stageColor = cpuData.is_two_stage ? "#FF9800" : "#2196F3";
-
-                        this.obj.stage_indicator.set({
-                           text: stageText,
-                           fill: stageColor
-                        });
-
-                        // Progress percentage
-                        this.obj.progress_text.set({
-                           text: `${(cpuData.instruction_progress * 100).toFixed(0)}%`
-                        });
-
-                        // ===== UPDATE BUS ACTIVITY =====
+                        // PC Update active during PC_UPDATE phase or when ctrl_pc_en is active
+                        let pc_updating = (cpuData.lifecycle_phase === "PC_UPDATE") || this.svSigRef(cpu+"state.o_ctrl_pc_en").asBool(false);
+                        this.obj.pc_update_indicator.set({opacity: pc_updating ? 1.0 : 0.3, fill: pc_updating ? "#FF9800" : "#FFCC80"});
 
                         let busActivity = cpuData.bus_activity || {};
 
@@ -954,94 +1216,88 @@
                         let showDbus = cpuData.active_units && cpuData.active_units.mem;
                         this.obj.dbus_indicator.set({
                            opacity: showDbus ? 1.0 : 0.3,
-                           fill: showDbus ? 
-                                 (busActivity.dbus_active ? "#4CAF50" : (busActivity.dbus_cyc ? "#FFC107" : "#ccc")) : 
-                                 "#ccc",
+                           fill: showDbus ? (busActivity.dbus_active ? "#4CAF50" : (busActivity.dbus_cyc ? "#FFC107" : "#ccc")) : "#ccc",
                            strokeWidth: (showDbus && busActivity.dbus_cyc) ? 2 : 1
                         });
+
+                        // ===== UPDATE INSTRUCTION INFORMATION =====
+
+                        if (cpuData.instruction_valid) {
+                           let instrText = `${cpuData.instruction_asm} (0x${cpuData.instruction.toString(16).padStart(8, "0").toUpperCase()}) [${cpuData.opcodeType}]`;
+                           this.obj.current_instr_text.set({text: instrText, fill: "#000"});
+                        } else {
+                           this.obj.current_instr_text.set({text: "No valid instruction", fill: "#999"});
+                        }
+
+                        // Stage indicator
+                        let stageText = cpuData.is_two_stage ? "2-STAGE" : "1-STAGE";
+                        let stageColor = cpuData.is_two_stage ? "#FF9800" : "#2196F3";
+                        this.obj.stage_indicator.set({text: stageText, fill: stageColor});
+
+                        // Progress percentage
+                        this.obj.progress_text.set({text: `${(cpuData.instruction_progress * 100).toFixed(0)}%`});
 
                         // ===== UPDATE INSTRUCTION HISTORY =====
 
                         if (cpuData.instruction_history && cpuData.instruction_history.length > 0) {
-                           let historyText = cpuData.instruction_history
-                              .slice(1, 4) // Skip current instruction, show next 3
-                              .map(instr => instr.asm || "???")
-                              .join(", ");
-
-                           this.obj.history_text.set({
-                              text: historyText,
-                              fill: "#666"
-                           });
+                           let historyText = cpuData.instruction_history.slice(1, 4).map(instr => instr.asm || "???").join(", ");
+                           this.obj.history_text.set({text: historyText, fill: "#666"});
                         } else {
-                           this.obj.history_text.set({
-                              text: "No history",
-                              fill: "#ccc"
-                           });
+                           this.obj.history_text.set({text: "No history", fill: "#ccc"});
                         }
 
                         // ===== UPDATE CYCLE INFORMATION =====
 
                         let cycleText = `${cpuData.total_cycles_completed}/${cpuData.total_instruction_cycles}`;
-                        this.obj.cycle_text.set({
-                           text: cycleText,
-                           fill: cpuData.lifecycle_phase !== "IDLE" ? "#333" : "#999"
-                        });
-
-                        this.obj.bit_text.set({
-                           text: `Bit: ${cpuData.current_bit}`,
-                           fill: cpuData.lifecycle_phase !== "IDLE" ? "#666" : "#ccc"
-                        });
+                        this.obj.cycle_text.set({text: cycleText, fill: cpuData.lifecycle_phase !== "IDLE" ? "#333" : "#999"});
+                        this.obj.bit_text.set({text: `Bit: ${cpuData.current_bit}`, fill: cpuData.lifecycle_phase !== "IDLE" ? "#666" : "#ccc"});
 
                         // ===== BACKGROUND COLOR BASED ON ACTIVITY =====
 
                         let bgColor = "#f5f5f5";
-                        if (cpuData.lifecycle_phase === "EXECUTE") {
-                           bgColor = "#f0f8f0"; // Light green tint
-                        } else if (cpuData.lifecycle_phase === "FETCH") {
-                           bgColor = "#f0f8ff"; // Light blue tint
-                        } else if (cpuData.lifecycle_phase === "INIT") {
-                           bgColor = "#fffdf0"; // Light yellow tint
+                        if (currentPhase === "execute" || currentPhase === "init") {
+                           bgColor = "#f0f8f0"; // Light green tint for multi-cycle phases
+                        } else if (currentPhase === "fetch1" || currentPhase === "fetch2") {
+                           bgColor = "#f0f8ff"; // Light blue tint for fetch phases
+                        } else if (currentPhase === "decode" || currentPhase === "setup") {
+                           bgColor = "#fffdf0"; // Light yellow tint for decode/setup
                         }
 
-                        this.obj.timeline_bg.set({
-                           fill: bgColor
-                        });
+                        this.obj.timeline_bg.set({fill: bgColor});
 
                         // ===== INSTRUCTION BOX COLOR CODING =====
 
                         let instrBgColor = "#fff";
                         if (cpuData.instruction_valid) {
-                           if (cpuData.lifecycle_phase === "EXECUTE") {
+                           if (currentPhase === "execute" || currentPhase === "init") {
                               instrBgColor = "#e8f5e8"; // Light green
-                           } else if (cpuData.lifecycle_phase === "FETCH") {
+                           } else if (currentPhase === "fetch1" || currentPhase === "fetch2") {
                               instrBgColor = "#e3f2fd"; // Light blue
                            }
                         }
 
-                        this.obj.current_instr_bg.set({
-                           fill: instrBgColor
-                        });
-                        // Add this debug section to see what's happening with IBUS:
+                        this.obj.current_instr_bg.set({fill: instrBgColor});
 
+                        // ===== DEBUG BUS STATE =====
                         try {
-                            debugger;
                             let ibus_cyc = this.svSigRef(cpu+"state.o_ibus_cyc").asBool(false);
                             let ibus_ack = this.svSigRef(cpu+"state.i_ibus_ack").asBool(false);
                             let ibus_adr = this.svSigRef(cpu+"o_ibus_adr").asInt(0);
 
                             // Only log when IBUS state changes
-                            this.prev_ibus_state = {
-                               cyc: this.svSigRef(cpu+"state.o_ibus_cyc").step(-1).asBool(false),
-                               ack: this.svSigRef(cpu+"state.i_ibus_ack").step(-1).asBool(false)
-                            };
+                            this.prev_ibus_state = this.prev_ibus_state || {};
+                            let prev_cyc = this.prev_ibus_state.cyc || false;
+                            let prev_ack = this.prev_ibus_state.ack || false;
 
-                            if (ibus_cyc !== this.prev_ibus_state.cyc || ibus_ack !== this.prev_ibus_state.ack) {
+                            if (ibus_cyc !== prev_cyc || ibus_ack !== prev_ack) {
                                 console.log(`=== IBUS STATE CHANGE ===`);
-                                console.log(`cyc: ${this.prev_ibus_state.cyc} → ${ibus_cyc}`);
-                                console.log(`ack: ${this.prev_ibus_state.ack} → ${ibus_ack}`);
+                                console.log(`cyc: ${prev_cyc} → ${ibus_cyc}`);
+                                console.log(`ack: ${prev_ack} → ${ibus_ack}`);
                                 console.log(`address: 0x${ibus_adr.toString(16)}`);
-                                console.log(`phase: ${data.lifecycle_phase}`);
+                                console.log(`phase: ${cpuData.lifecycle_phase}`);
                             }
+
+                            this.prev_ibus_state = {cyc: ibus_cyc, ack: ibus_ack};
 
                         } catch(e) {
                             console.warn("IBUS debug failed:", e);
@@ -1084,245 +1340,68 @@
                      }
                /decode
                   \viz_js
-                     box: {top: -10, width: 150, height: 80, strokeWidth: 1},
-                     where: {left: 0, top: 0, width: 150, height: 80},
+                     box: {top: -10, width: 150, height: 60, strokeWidth: 1},
+                     where: {left: 0, top: -10, width: 150, height: 60},
                      
                      init() {
-                        return {
+                        ret = {
                            // Title
-                           title: new fabric.Text("serv_decode", {
-                              fontSize: 8,
-                              fontWeight: "bold",
-                              top: -5,
-                              left: 75,
-                              textAlign: "center",
-                              originX: "center",
-                              selectable: false
-                           }),
+                           title: new fabric.Text("serv_decode", {fontSize: 8, fontWeight: "bold", top: -5, left: 75, originY: "center", originX: "center", selectable: false}),
                            
                            // Instruction display box
-                           instr_box: new fabric.Rect({
-                              width: 130,
-                              height: 16,
-                              top: 5,
-                              left: 10,
-                              fill: "lightgray",
-                              stroke: "black",
-                              strokeWidth: 1,
-                              selectable: false
-                           }),
+                           instr_box: new fabric.Rect({width: 130, height: 16, top: 5, left: 10, fill: "lightgray", stroke: "black", strokeWidth: 1, selectable: false}),
                            
                            // Assembled instruction
-                           asm_text: new fabric.Text("", {
-                              fontSize: 7,
-                              top: 6,
-                              left: 15,
-                              selectable: false
-                           }),
+                           asm_text: new fabric.Text("", {fontSize: 7, top: 6, left: 15, selectable: false}),
                            
                            // Instruction format and hex
-                           format_text: new fabric.Text("", {
-                              fontSize: 5,
-                              top: 15,
-                              left: 15,
-                              selectable: false
-                           }),
+                           format_text: new fabric.Text("", {fontSize: 5, top: 15, left: 15, selectable: false}),
                            
-                           hex_text: new fabric.Text("", {
-                              fontSize: 5,
-                              top: 15,
-                              left: 90,
-                              fontFamily: "monospace",
-                              selectable: false
-                           }),
+                           hex_text: new fabric.Text("", {fontSize: 5, top: 15, left: 90, fontFamily: "monospace", selectable: false}),
                            
                            // Progress bar background
-                           progress_bar: new fabric.Rect({
-                              width: 130,
-                              height: 6,
-                              top: 25,
-                              left: 10,
-                              fill: "white",
-                              stroke: "black",
-                              strokeWidth: 1,
-                              selectable: false
-                           }),
+                           progress_bar: new fabric.Rect({width: 130, height: 6, top: 25, left: 10, fill: "white", stroke: "black", strokeWidth: 1, selectable: false}),
                            
                            // Progress bar fill
-                           progress_fill: new fabric.Rect({
-                              width: 0,
-                              height: 6,
-                              top: 25,
-                              left: 10,
-                              fill: "blue",
-                              selectable: false
-                           }),
+                           progress_fill: new fabric.Rect({width: 0, height: 6, top: 25, left: 10, fill: "blue", selectable: false}),
                            
                            // Cycle counter
-                           cycle_text: new fabric.Text("0/32", {
-                              fontSize: 4,
-                              top: 34,
-                              left: 75,
-                              textAlign: "center",
-                              originX: "center",
-                              selectable: false
-                           }),
+                           cycle_text: new fabric.Text("0/32", {fontSize: 4, top: 34, left: 75, originY: "center", originX: "center", selectable: false}),
                            
                            // Control signal groups label
-                           ctrl_label: new fabric.Text("Control Groups:", {
-                              fontSize: 5,
-                              top: 42,
-                              left: 5,
-                              fontWeight: "bold",
-                              selectable: false
-                           }),
-                           
-                           // Control signal indicators
-                           alu_indicator: new fabric.Circle({
-                              radius: 3,
-                              left: 10,
-                              top: 52,
-                              fill: "#ff6b6b",
-                              stroke: "black",
-                              strokeWidth: 0.5,
-                              selectable: false
-                           }),
-                           
-                           alu_label: new fabric.Text("ALU", {
-                              fontSize: 3,
-                              top: 58,
-                              left: 10,
-                              textAlign: "center",
-                              originX: "center",
-                              selectable: false
-                           }),
-                           
-                           mem_indicator: new fabric.Circle({
-                              radius: 3,
-                              left: 28,
-                              top: 52,
-                              fill: "#4ecdc4",
-                              stroke: "black",
-                              strokeWidth: 0.5,
-                              selectable: false
-                           }),
-                           
-                           mem_label: new fabric.Text("MEM", {
-                              fontSize: 3,
-                              top: 58,
-                              left: 28,
-                              textAlign: "center",
-                              originX: "center",
-                              selectable: false
-                           }),
-                           
-                           csr_indicator: new fabric.Circle({
-                              radius: 3,
-                              left: 46,
-                              top: 52,
-                              fill: "#45b7d1",
-                              stroke: "black",
-                              strokeWidth: 0.5,
-                              selectable: false
-                           }),
-                           
-                           csr_label: new fabric.Text("CSR", {
-                              fontSize: 3,
-                              top: 58,
-                              left: 46,
-                              textAlign: "center",
-                              originX: "center",
-                              selectable: false
-                           }),
-                           
-                           ctrl_indicator: new fabric.Circle({
-                              radius: 3,
-                              left: 64,
-                              top: 52,
-                              fill: "#96ceb4",
-                              stroke: "black",
-                              strokeWidth: 0.5,
-                              selectable: false
-                           }),
-                           
-                           ctrl_ind_label: new fabric.Text("CTRL", {
-                              fontSize: 3,
-                              top: 58,
-                              left: 64,
-                              textAlign: "center",
-                              originX: "center",
-                              selectable: false
-                           }),
-                           
-                           buf_indicator: new fabric.Circle({
-                              radius: 3,
-                              left: 82,
-                              top: 52,
-                              fill: "#ffeaa7",
-                              stroke: "black",
-                              strokeWidth: 0.5,
-                              selectable: false
-                           }),
-                           
-                           buf_label: new fabric.Text("BUF", {
-                              fontSize: 3,
-                              top: 58,
-                              left: 82,
-                              textAlign: "center",
-                              originX: "center",
-                              selectable: false
-                           }),
-                           
-                           rf_indicator: new fabric.Circle({
-                              radius: 3,
-                              left: 100,
-                              top: 52,
-                              fill: "#dda0dd",
-                              stroke: "black",
-                              strokeWidth: 0.5,
-                              selectable: false
-                           }),
-                           
-                           rf_label: new fabric.Text("RF", {
-                              fontSize: 3,
-                              top: 58,
-                              left: 100,
-                              textAlign: "center",
-                              originX: "center",
-                              selectable: false
-                           }),
-                           
-                           stage_indicator: new fabric.Circle({
-                              radius: 3,
-                              left: 118,
-                              top: 52,
-                              fill: "#ff9ff3",
-                              stroke: "black",
-                              strokeWidth: 0.5,
-                              selectable: false
-                           }),
-                           
-                           stage_label: new fabric.Text("2ST", {
-                              fontSize: 3,
-                              top: 58,
-                              left: 118,
-                              textAlign: "center",
-                              originX: "center",
-                              selectable: false
-                           }),
-                           
-                           // Overall validity border
-                           valid_border: new fabric.Rect({
-                              width: 148,
-                              height: 78,
-                              top: -10,
-                              left: 0,
-                              fill: "transparent",
-                              stroke: "green",
-                              strokeWidth: 2,
-                              selectable: false
-                           })
+                           ctrl_label: new fabric.Text("Control Groups:", {fontSize: 5, top: 42, left: 5, fontWeight: "bold", selectable: false}),
                         };
+
+                        // Helper to create an indicator circle and label, added to ret.
+                        this.indicators = {
+                            alu: ["ALU", "#ff6b6b", 10],
+                            mem: ["MEM", "#4ecdc4", 28],
+                            csr: ["CSR", "#45b7d1", 46],
+                            ctrl: ["CTRL", "#96ceb4", 64],
+                            buf: ["BUF", "#ffeaa7", 82],
+                            rf: ["RF", "#dda0dd", 100],
+                            stage: ["2ST", "#ff9ff3", 118]
+                        }
+                        makeIndicator = (key, label, color, left) => {
+                           ret[`${key}_indicator`] = new fabric.Circle({
+                              radius: 3, left: left, top: 37, originY: "center", originX: "center",
+                              fill: color, stroke: "black", strokeWidth: 0.5, selectable: false
+                           });
+                           ret[`${key}_label`] = new fabric.Text(label, {
+                              fontSize: 3, top: 43, left: left, originY: "center", originX: "center", selectable: false
+                           });
+                        }
+                        // Use a loop to create all indicators using the indicators object
+                        Object.entries(this.indicators).forEach(([key, [label, color, left]]) => {
+                           makeIndicator(key, label, color, left);
+                        });
+
+                        // Overall validity border
+                        ret.valid_border = new fabric.Rect({
+                           width: 148, height: 60, top: -10, left: 0, fill: "transparent", stroke: "green", strokeWidth: 2, selectable: false
+                        });
+
+                        return ret;
                      },
                      render() {
                          // Get centralized data from CPU
@@ -1347,14 +1426,10 @@
                          this.obj.progress_fill.set({opacity: 0.3, width: 0});
                          this.obj.cycle_text.set({text: "IDLE"});
 
-                         // Default control indicators (all inactive)
-                         this.obj.alu_indicator.set({opacity: 0.3});
-                         this.obj.mem_indicator.set({opacity: 0.3});
-                         this.obj.csr_indicator.set({opacity: 0.3});
-                         this.obj.ctrl_indicator.set({opacity: 0.3});
-                         this.obj.buf_indicator.set({opacity: 0.3});
-                         this.obj.rf_indicator.set({opacity: 0.3});
-                         this.obj.stage_indicator.set({opacity: 0.3});
+                         // Default control indicators (all inactive) using this.indicators
+                         Object.keys(this.indicators).forEach(key => {
+                             this.obj[`${key}_indicator`].set({opacity: 0.3});
+                         });
 
                          // Default validity border
                          this.obj.valid_border.set({opacity: 0.3, stroke: "red"});
@@ -1423,131 +1498,69 @@
                          // Title
                          ret.title = new fabric.Text("serv_immdec", {
                              fontSize: 10, fontWeight: "bold",
-                             left: 200, top: -15, textAlign: "center", originX: "center"
+                             left: 200, top: -15, originY: "center", originX: "center"
                          });
 
                          // ===== 1. ALL 32 INSTRUCTION BITS IN A SINGLE ROW =====
 
                          Object.assign(ret, '/top'.lib.initShiftRegister("instruction", {
-                             bitWidth: this.bit_size, bitHeight: this.bit_size, spacing: 1, maxBitsPerRow: 32, labelSize: 6, showLabel: true,
+                             bitWidth: this.bit_size, bitHeight: this.bit_size, spacing: 1, labelSize: 6, showLabel: true,
                              left: 10, top: 10,
                              lsb: 2, width: 30, transparencyMask: 0x3FFFFFE0  // Bits 29:5 are immediate bits (opaque)
                          }));
-                         ret.instruction_label.set({text: "Instruction [31:0]:"});
+                         ret.instruction_label.set({text: "Instruction [31:2]:"});
 
-                         // ===== 2. IMMEDIATE FIELDS ALIGNED TO INSTRUCTION POSITIONS =====
+                         // ===== 2. IMMEDIATE FIELDS: ALIGNED TO INSTRUCTION POSITIONS AND IMMEDIATE VALUE POSITIONS =====
 
-                         let field_top = 40;
                          let bit_spacing = this.bit_size + 1;
-
-                         // Order fields left-to-right by instruction bit position: [31], [30:25], [24:20], [19:12], [11:7]
-
-                         // imm[31] - 1 bit, aligned to instruction bit 31 (leftmost position)
-                         Object.assign(ret, '/top'.lib.initShiftRegister("imm31", {
-                             bitWidth: this.bit_size, bitHeight: 10, labelSize: 4, showLabel: true,
-                             left: 10 + 0 * bit_spacing, top: field_top,  // Leftmost position for highest bit
-                             lsb: 31, width: 1
-                         }));
-                         ret.imm31_label.set({text: "imm[31]", top: field_top - 8});
-
-                         // imm[30:25] - 6 bits, next position to the right
-                         Object.assign(ret, '/top'.lib.initShiftRegister("imm30_25", {
-                             bitWidth: this.bit_size, bitHeight: 10, maxBitsPerRow: 6, labelSize: 4, showLabel: true,
-                             left: 10 + 1 * bit_spacing, top: field_top,
-                             lsb: 25, width: 6
-                         }));
-                         ret.imm30_25_label.set({text: "imm[30:25]", top: field_top - 8});
-
-                         // imm[24:20] - 5 bits, next position to the right
-                         Object.assign(ret, '/top'.lib.initShiftRegister("imm24_20", {
-                             bitWidth: this.bit_size, bitHeight: 10, maxBitsPerRow: 5, labelSize: 4, showLabel: true,
-                             left: 10 + 7 * bit_spacing, top: field_top,
-                             lsb: 20, width: 5
-                         }));
-                         ret.imm24_20_label.set({text: "imm[24:20]", top: field_top - 8});
-
-                         // imm[19:12] - 8 bits from imm19_12_20, next position to the right
-                         Object.assign(ret, '/top'.lib.initShiftRegister("imm19_12", {
-                             bitWidth: this.bit_size, bitHeight: 10, maxBitsPerRow: 8, labelSize: 4, showLabel: true,
-                             left: 10 + 12 * bit_spacing, top: field_top,
-                             lsb: 12, width: 8, ignoreBits: [0]
-                         }));
-                         ret.imm19_12_label.set({text: "imm[19:12]", top: field_top - 8});
-
-                         // imm[11:7] - 5 bits, rightmost position for lowest bits
-                         Object.assign(ret, '/top'.lib.initShiftRegister("imm11_7", {
-                             bitWidth: this.bit_size, bitHeight: 10, maxBitsPerRow: 5, labelSize: 4, showLabel: true,
-                             left: 10 + 20 * bit_spacing, top: field_top,
-                             lsb: 7, width: 5
-                         }));
-                         ret.imm11_7_label.set({text: "imm[11:7]", top: field_top - 8});
-
-                         // ===== 3. IMMEDIATE FIELDS IN FINAL 32-BIT ORDER =====
-
+                         let field_top = 40;
                          let final_top = 80, final_left = 10;
 
-                         // Labels for different immediate types (shown/hidden dynamically in render)
-                         ret.i_type_label = new fabric.Text("I-type: imm[31:0] = {20{imm[31]}, imm[30:25], imm[24:20], imm[19:12], imm[11:7]}", {
-                             fontSize: 5,
-                             left: final_left, top: final_top, visible: false
-                         });
+                         immFields = '/cpu'.lib.immFields;
+                         // Helper to add a field with standard layout, and also add a corresponding "final" field for the final immediate value row
+                         addImmField = (name) => {
+                            let immField = immFields[name];
+                            let left = 10 + (31 - immField.msb) * bit_spacing;
+                            let lsb = immField.lsb;
+                            let width = immField.width;
+                            let label = immField.label;
+                             // Instruction-aligned field (row 2)
+                             props = {
+                                [name]: {top: field_top},
+                                ["final_"+name]: {top: final_top + 15},
+                             };
+                             for (let id in props) {
+                                Object.assign(ret, '/top'.lib.initShiftRegister(id, {
+                                    bitWidth: this.bit_size, bitHeight: 10, labelSize: 4, showLabel: true, label: label,
+                                    left: left, lsb: lsb, width: width,
+                                    ...props[id],
+                                    ...immField.args
+                                }));
+                                ret[`${id}_left_edge`] = new fabric.Line([left - 0.5, props[id].top - 5, left - 0.5, props[id].top + 15], {
+                                    stroke: "black", strokeWidth: 1, selectable: false
+                                });
+                                let right = left + width * bit_spacing;
+                                ret[`${id}_right_edge`] = new fabric.Line([right - 0.5, props[id].top - 5, right - 0.5, props[id].top + 15], {
+                                    stroke: "black", strokeWidth: 1, selectable: false
+                                });
+                             }
+                         }
 
-                         ret.s_type_label = new fabric.Text("S-type: imm[31:0] = {20{imm[31]}, imm[30:25], imm[11:7]}", {
-                             fontSize: 5,
-                             left: final_left, top: final_top, visible: false
-                         });
+                         // Order fields left-to-right by instruction bit position: [31], [30:25], [24:20], [19:12], [11:7]
+                         Object.keys(immFields).forEach(addImmField);
 
-                         ret.b_type_label = new fabric.Text("B-type: imm[31:0] = {19{imm[31]}, imm[7], imm[30:25], imm[11:8], 1'b0}", {
-                             fontSize: 5,
-                             left: final_left, top: final_top, visible: false
-                         });
+                         // ===== 3. IMMEDIATE FIELDS BY TYPE =====
 
-                         ret.u_type_label = new fabric.Text("U-type: imm[31:0] = {imm[31], imm[30:25], imm[24:20], imm[19:12], 12'b0}", {
-                             fontSize: 5,
-                             left: final_left, top: final_top, visible: false
-                         });
+                        instrTypes = '/cpu'.lib.instrTypes;
+                        Object.entries(instrTypes).forEach(([key, {immLabel}]) =>
+                            ret[key + "_type_label"] = new fabric.Text(immLabel, {
+                                fontSize: 5,
+                                left: final_left,
+                                top: final_top,
+                                visible: false
+                            })
+                        );
 
-                         ret.j_type_label = new fabric.Text("J-type: imm[31:0] = {11{imm[31]}, imm[19:12], imm[11], imm[30:25], imm[24:21], 1'b0}", {
-                             fontSize: 5,
-                             left: final_left, top: final_top, visible: false
-                         });
-
-                         // Copies of immediate fields in final order - I-type (default layout)
-                         // Layout: [31] [30:25] [24:20] [19:12] [11:7] from left to right
-                         Object.assign(ret, '/top'.lib.initShiftRegister("final_imm31", {
-                             bitWidth: this.bit_size, bitHeight: 8, labelSize: 3, showLabel: true,
-                             left: final_left, top: final_top + 15,
-                             lsb: 31, width: 1
-                         }));
-                         ret.final_imm31_label.set({text: "31"});
-
-                         Object.assign(ret, '/top'.lib.initShiftRegister("final_imm30_25", {
-                             bitWidth: this.bit_size, bitHeight: 8, maxBitsPerRow: 6, labelSize: 3, showLabel: true,
-                             left: final_left + 1 * bit_spacing, top: final_top + 15,
-                             lsb: 25, width: 6
-                         }));
-                         ret.final_imm30_25_label.set({text: "30:25"});
-
-                         Object.assign(ret, '/top'.lib.initShiftRegister("final_imm24_20", {
-                             bitWidth: this.bit_size, bitHeight: 8, maxBitsPerRow: 5, labelSize: 3, showLabel: true,
-                             left: final_left + 7 * bit_spacing, top: final_top + 15,
-                             lsb: 20, width: 5
-                         }));
-                         ret.final_imm24_20_label.set({text: "24:20"});
-
-                         Object.assign(ret, '/top'.lib.initShiftRegister("final_imm19_12", {
-                             bitWidth: this.bit_size, bitHeight: 8, maxBitsPerRow: 8, labelSize: 3, showLabel: true,
-                             left: final_left + 12 * bit_spacing, top: final_top + 15,
-                             lsb: 12, width: 8, ignoreBits: [0]
-                         }));
-                         ret.final_imm19_12_label.set({text: "19:12"});
-
-                         Object.assign(ret, '/top'.lib.initShiftRegister("final_imm11_7", {
-                             bitWidth: this.bit_size, bitHeight: 8, maxBitsPerRow: 5, labelSize: 3, showLabel: true,
-                             left: final_left + 20 * bit_spacing, top: final_top + 15,
-                             lsb: 7, width: 5
-                         }));
-                         ret.final_imm11_7_label.set({text: "11:7"});
 
                          // Final immediate value display
                          ret.final_imm_box = new fabric.Rect({
@@ -1569,11 +1582,11 @@
 
                          ret.output_bit = new fabric.Circle({
                              radius: 8, fill: "white", stroke: "blue", strokeWidth: 2,
-                             left: final_left + 120, top: final_top + 57
+                             left: final_left + 120, top: final_top + 57, originY: "center", originX: "center"
                          });
 
                          ret.output_value = new fabric.Text("0", {
-                             fontSize: 8, textAlign: "center", originX: "center",
+                             fontSize: 8, originY: "center", originX: "center",
                              left: final_left + 120, top: final_top + 54
                          });
 
@@ -1594,11 +1607,12 @@
                      render() {
                          // Get centralized data from CPU
                          let data = '/cpu'.data;
+                         let lib = '/cpu'.lib;
                          let cpu = "top.servant_sim.dut.cpu.cpu.";
                          let immdec = "top.servant_sim.dut.cpu.cpu.immdec.";
-                         let cpuData = '/cpu'.data;
-                         let isActive = cpuData.active_in_phase["immdec"]; // e.g., 'alu', 'immdec'
-                         let phaseColor = '/cpu'.lib.getLifecycleColor(cpuData.lifecycle_phase);
+                         let fields = lib.instrTypes[data.instrType];
+                         let isActive = data.active_in_phase["immdec"]; // e.g., 'alu', 'immdec'
+                         let phaseColor = lib.getLifecycleColor(data.lifecycle_phase);
 
                          // Get current signals
                          let cnt_en = this.svSigRef(cpu+"state.o_cnt_en").asBool(false);
@@ -1614,150 +1628,7 @@
                          let imm19_12_sig = this.svSigRef(immdec + "gen_immdec_w_eq_1.imm19_12_20");
                          let imm11_7_sig = this.svSigRef(immdec + "gen_immdec_w_eq_1.imm11_7");
 
-                         console.log(`=== IMMDEC: bit=${data.current_bit}, phase=${data.phase}, type=${data.instruction_type} ===`);
-
-                         // Helper function to calculate final field positions based on instruction type
-                         function calculateFinalPositions(instructionType, baseLeft, bitSpacing) {
-                             // Position fields according to their bit positions in the final immediate value
-                             // MSBs on the left, LSBs on the right (higher bit numbers = smaller left coordinates)
-                             // Leave empty space for sign extension bits so data bits appear in correct absolute positions
-                             let positions = {
-                                 imm31: null,
-                                 imm30_25: null,
-                                 imm24_20: null,
-                                 imm19_12: null,
-                                 imm11_7: null,
-                                 visible: {
-                                     imm31: false,
-                                     imm30_25: false,
-                                     imm24_20: false,
-                                     imm19_12: false,
-                                     imm11_7: false
-                                 }
-                             };
-
-                             // Calculate positions based on actual bit positions in 32-bit immediate
-                             // baseLeft represents bit 31 position, each bitSpacing moves one bit to the right
-                             switch(instructionType) {
-                                 case "OP-IMM":
-                                 case "LOAD":
-                                 case "JALR":  // I-type: imm[11:0] = {instr[31], instr[30:20]}
-                                     // imm[31:12] = sign extension (empty space), imm[11:0] = data
-                                     positions.imm31 = baseLeft + (31-11) * bitSpacing;     // imm[11] ← instr[31] (bit 11 position)
-                                     positions.imm30_25 = baseLeft + (31-10) * bitSpacing;  // imm[10:5] ← instr[30:25] (bits 10:5)
-                                     positions.imm24_20 = baseLeft + (31-4) * bitSpacing;   // imm[4:0] ← instr[24:20] (bits 4:0)
-                                     positions.visible = {imm31: true, imm30_25: true, imm24_20: true, imm19_12: false, imm11_7: false};
-                                     break;
-
-                                 case "STORE":  // S-type: imm[11:0] = {instr[31], instr[30:25], instr[11:7]}
-                                     // imm[31:12] = sign extension (empty space), imm[11:0] = data
-                                     positions.imm31 = baseLeft + (31-11) * bitSpacing;     // imm[11] ← instr[31] (bit 11 position)
-                                     positions.imm30_25 = baseLeft + (31-10) * bitSpacing;  // imm[10:5] ← instr[30:25] (bits 10:5)
-                                     positions.imm11_7 = baseLeft + (31-4) * bitSpacing;    // imm[4:0] ← instr[11:7] (bits 4:0)
-                                     positions.visible = {imm31: true, imm30_25: true, imm24_20: false, imm19_12: false, imm11_7: true};
-                                     break;
-
-                                 case "BRANCH": // B-type: imm[12:0] = {instr[31], instr[7], instr[30:25], instr[11:8], 1'b0}
-                                     // imm[31:13] = sign extension (empty space), imm[12:0] = data
-                                     positions.imm31 = baseLeft + (31-12) * bitSpacing;     // imm[12] ← instr[31] (bit 12 position)
-                                     // Note: instr[7] → imm[11] would be at baseLeft + (31-11) * bitSpacing
-                                     positions.imm30_25 = baseLeft + (31-10) * bitSpacing;  // imm[10:5] ← instr[30:25] (bits 10:5)
-                                     positions.imm11_7 = baseLeft + (31-4) * bitSpacing;    // imm[4:1] ← instr[11:8] (bits 4:1, only 4 bits used)
-                                     // imm[0] always 0 (empty space at rightmost position)
-                                     positions.visible = {imm31: true, imm30_25: true, imm24_20: false, imm19_12: false, imm11_7: true};
-                                     break;
-
-                                 case "LUI":
-                                 case "AUIPC":  // U-type: imm[31:0] = {instr[31:12], 12'b0}
-                                     // imm[31:12] = data, imm[11:0] = zeros (empty space)
-                                     positions.imm31 = baseLeft + (31-31) * bitSpacing;     // imm[31] ← instr[31] (bit 31 position)
-                                     positions.imm30_25 = baseLeft + (31-30) * bitSpacing;  // imm[30:25] ← instr[30:25] (bits 30:25)
-                                     positions.imm24_20 = baseLeft + (31-24) * bitSpacing;  // imm[24:20] ← instr[24:20] (bits 24:20)
-                                     positions.imm19_12 = baseLeft + (31-19) * bitSpacing;  // imm[19:12] ← instr[19:12] (bits 19:12)
-                                     // imm[11:0] = zeros (empty space)
-                                     positions.visible = {imm31: true, imm30_25: true, imm24_20: true, imm19_12: true, imm11_7: false};
-                                     break;
-
-                                 case "JAL":    // J-type: imm[20:0] = {instr[31], instr[19:12], instr[20], instr[30:21], 1'b0}
-                                     // imm[31:21] = sign extension (empty space), imm[20:0] = data
-                                     positions.imm31 = baseLeft + (31-20) * bitSpacing;     // imm[20] ← instr[31] (bit 20 position)
-                                     positions.imm19_12 = baseLeft + (31-19) * bitSpacing;  // imm[19:12] ← instr[19:12] (bits 19:12)
-                                     // Note: instr[20] → imm[11] would be at baseLeft + (31-11) * bitSpacing
-                                     positions.imm30_25 = baseLeft + (31-10) * bitSpacing;  // imm[10:5] ← instr[30:25] (bits 10:5)
-                                     positions.imm24_20 = baseLeft + (31-4) * bitSpacing;   // imm[4:1] ← instr[24:21] (bits 4:1, only 4 bits used)
-                                     // imm[0] always 0 (empty space at rightmost position)
-                                     positions.visible = {imm31: true, imm30_25: true, imm24_20: true, imm19_12: true, imm11_7: false};
-                                     break;
-                             }
-
-                             return positions;
-                         }
-
-                         // Helper function to create connection lines between sections 2 and 3
-                         function createConnectionLines(baseLeft, bitSpacing, finalPositions, bit_size) {
-                             let lines = [];
-                             let field_top = 40;
-                             let final_top = 80;
-                             let lineColor = "rgba(100, 100, 100, 0.5)";
-
-                             // Calculate the actual positions of the instruction-aligned fields in row 2
-                             // These should match the positions used in the init() function for row 2
-                             let row2_positions = {
-                                 imm31: 10 + 0 * bitSpacing,           // imm31 - 1 bit, leftmost position
-                                 imm30_25: 10 + 1 * bitSpacing,       // imm30_25 - 6 bits, next position
-                                 imm24_20: 10 + 7 * bitSpacing,       // imm24_20 - 5 bits, next position  
-                                 imm19_12: 10 + 12 * bitSpacing,      // imm19_12 - 8 bits, next position
-                                 imm11_7: 10 + 20 * bitSpacing        // imm11_7 - 5 bits, rightmost position
-                             };
-
-                             // Create lines for each field that's used in the final immediate
-                             if (finalPositions.visible.imm31 && finalPositions.imm31 !== null) {
-                                 lines.push(new fabric.Line([
-                                     row2_positions.imm31 + bit_size/2, field_top + 10,     // From center of imm31 field
-                                     finalPositions.imm31 + bit_size/2, final_top + 15      // To center of final position
-                                 ], {
-                                     stroke: lineColor, strokeWidth: 1, strokeDashArray: [2, 2]
-                                 }));
-                             }
-
-                             if (finalPositions.visible.imm30_25 && finalPositions.imm30_25 !== null) {
-                                 lines.push(new fabric.Line([
-                                     row2_positions.imm30_25 + 3 * bitSpacing, field_top + 10,    // From middle of 6-bit field
-                                     finalPositions.imm30_25 + 3 * bitSpacing, final_top + 15     // To middle of final field
-                                 ], {
-                                     stroke: lineColor, strokeWidth: 1, strokeDashArray: [2, 2]
-                                 }));
-                             }
-
-                             if (finalPositions.visible.imm24_20 && finalPositions.imm24_20 !== null) {
-                                 lines.push(new fabric.Line([
-                                     row2_positions.imm24_20 + 2 * bitSpacing, field_top + 10,    // From middle of 5-bit field
-                                     finalPositions.imm24_20 + 2 * bitSpacing, final_top + 15     // To middle of final field
-                                 ], {
-                                     stroke: lineColor, strokeWidth: 1, strokeDashArray: [2, 2]
-                                 }));
-                             }
-
-                             if (finalPositions.visible.imm19_12 && finalPositions.imm19_12 !== null) {
-                                 lines.push(new fabric.Line([
-                                     row2_positions.imm19_12 + 3.5 * bitSpacing, field_top + 10,  // From middle of 8-bit field
-                                     finalPositions.imm19_12 + 3.5 * bitSpacing, final_top + 15   // To middle of final field
-                                 ], {
-                                     stroke: lineColor, strokeWidth: 1, strokeDashArray: [2, 2]
-                                 }));
-                             }
-
-                             if (finalPositions.visible.imm11_7 && finalPositions.imm11_7 !== null) {
-                                 lines.push(new fabric.Line([
-                                     row2_positions.imm11_7 + 2 * bitSpacing, field_top + 10,     // From middle of 5-bit field
-                                     finalPositions.imm11_7 + 2 * bitSpacing, final_top + 15      // To middle of final field
-                                 ], {
-                                     stroke: lineColor, strokeWidth: 1, strokeDashArray: [2, 2]
-                                 }));
-                             }
-
-                             return lines;
-                         }
+                         console.log(`=== IMMDEC: bit=${data.current_bit}, phase=${data.phase}, type=${data.opcodeType} ===`);
 
                          // ===== 1. RENDER INSTRUCTION BITS =====
 
@@ -1832,148 +1703,82 @@
                          '/top'.lib.renderShiftRegister(imm19_12_sig, this.obj, "imm19_12", {showHex: false, highlightMask: imm19_12_highlight, ignoreBits: [0]});
                          '/top'.lib.renderShiftRegister(imm11_7_sig, this.obj, "imm11_7", {showHex: false, highlightMask: imm11_7_highlight});
 
-                         // ===== 3. RENDER FINAL IMMEDIATE VALUE FIELDS =====
+                        // ===== 3. RENDER FINAL IMMEDIATE VALUE FIELDS AND CONNECTION LINES =====
 
-                         let connectionLines = [];
-                         let final_top = 80, final_left = 10, bit_spacing = 13;  // bit_size + 1
-                         let type_visible = data.instruction_valid && data.instruction_type !== "UNKNOWN";
+                        // Display the immediate format text for this instruction type.
 
-                         // Hide all type labels first
-                         this.obj.i_type_label.set({visible: false});
-                         this.obj.s_type_label.set({visible: false});
-                         this.obj.b_type_label.set({visible: false});
-                         this.obj.u_type_label.set({visible: false});
-                         this.obj.j_type_label.set({visible: false});
+                        // Hide all type labels first
+                        this.obj.i_type_label.set({visible: false});
+                        this.obj.s_type_label.set({visible: false});
+                        this.obj.b_type_label.set({visible: false});
+                        this.obj.u_type_label.set({visible: false});
+                        this.obj.j_type_label.set({visible: false});
 
-                         if (type_visible) {
-                             // Position fields based on instruction type
-                             let positions = calculateFinalPositions(data.instruction_type, final_left, bit_spacing);
+                        const instrType = data.instrType;
 
-                             // Show appropriate type label
-                             if (data.instruction_type === "OP-IMM" || data.instruction_type === "LOAD" || data.instruction_type === "JALR") {
-                                 this.obj.i_type_label.set({visible: true});
-                             } else if (data.instruction_type === "STORE") {
-                                 this.obj.s_type_label.set({visible: true});
-                             } else if (data.instruction_type === "BRANCH") {
-                                 this.obj.b_type_label.set({visible: true});
-                             } else if (data.instruction_type === "LUI" || data.instruction_type === "AUIPC") {
-                                 this.obj.u_type_label.set({visible: true});
-                             } else if (data.instruction_type === "JAL") {
-                                 this.obj.j_type_label.set({visible: true});
-                             }
+                        // Show the correct type label if determined
+                        if (instrType && this.obj[`${instrType}_type_label`]) {
+                            this.obj[`${instrType}_type_label`].set({visible: true});
+                        }
 
-                             // Reposition and show/hide final immediate fields based on instruction type
-                             // Position entire fields at their immediate value bit positions
+                        let connectionLines = [];
+                        let final_left = 10, bit_spacing = 13;  // bit_size + 1
+                        let field_top = 40;
+                        let final_top = 80;
+                        let lineColor = "rgba(100, 100, 100, 0.5)";
+                        let immFields = '/cpu'.lib.immFields;
+                        let fieldNames = Object.keys(immFields);
+                        let offset = 0;
 
-                             if (this.obj.final_imm31_bit_0) {
-                                 if (positions.visible.imm31 && positions.imm31 !== null) {
-                                     this.obj.final_imm31_bit_0.set({left: positions.imm31, visible: true});
-                                     this.obj.final_imm31_label.set({left: positions.imm31 - 5, visible: true, text: "31"});
-                                 } else {
-                                     this.obj.final_imm31_bit_0.set({visible: false});
-                                     this.obj.final_imm31_label.set({visible: false});
-                                 }
-                             }
+                        // Cache fieldPositions for current instruction type
+                        let fieldPositions = fields.fieldPositions || {};
 
-                             if (positions.visible.imm30_25 && positions.imm30_25 !== null) {
-                                 // Position the entire imm30_25 field at the calculated position (MSB to LSB layout)
-                                 for (let i = 0; i < 6; i++) {
-                                     if (this.obj[`final_imm30_25_bit_${i}`]) {
-                                         this.obj[`final_imm30_25_bit_${i}`].set({
-                                             left: positions.imm30_25 + (5-i) * bit_spacing,  // i=0 is LSB (right), i=5 is MSB (left)
-                                             visible: true
-                                         });
-                                     }
-                                 }
-                                 if (this.obj.final_imm30_25_label) {
-                                     this.obj.final_imm30_25_label.set({left: positions.imm30_25 - 5, visible: true, text: "30:25"});
-                                 }
-                             } else {
-                                 for (let i = 0; i < 6; i++) {
-                                     if (this.obj[`final_imm30_25_bit_${i}`]) {
-                                         this.obj[`final_imm30_25_bit_${i}`].set({visible: false});
-                                     }
-                                 }
-                                 if (this.obj.final_imm30_25_label) {
-                                     this.obj.final_imm30_25_label.set({visible: false});
-                                 }
-                             }
+                        fieldNames.forEach(field => {
+                            let fieldInfo = immFields[field];
+                            let isVisible = Object.prototype.hasOwnProperty.call(fieldPositions, field);
+                            let bitPos = isVisible ? fieldPositions[field] : 0;
+                            let left = final_left + (31 - bitPos) * bit_spacing;
 
-                             if (positions.visible.imm24_20 && positions.imm24_20 !== null) {
-                                 // Position the entire imm24_20 field at the calculated position (MSB to LSB layout)
-                                 for (let i = 0; i < 5; i++) {
-                                     if (this.obj[`final_imm24_20_bit_${i}`]) {
-                                         this.obj[`final_imm24_20_bit_${i}`].set({
-                                             left: positions.imm24_20 + (4-i) * bit_spacing,  // i=0 is LSB (right), i=4 is MSB (left)
-                                             visible: true
-                                         });
-                                     }
-                                 }
-                                 if (this.obj.final_imm24_20_label) {
-                                     this.obj.final_imm24_20_label.set({left: positions.imm24_20 - 5, visible: true, text: "24:20"});
-                                 }
-                             } else {
-                                 for (let i = 0; i < 5; i++) {
-                                     if (this.obj[`final_imm24_20_bit_${i}`]) {
-                                         this.obj[`final_imm24_20_bit_${i}`].set({visible: false});
-                                     }
-                                 }
-                                 if (this.obj.final_imm24_20_label) {
-                                     this.obj.final_imm24_20_label.set({visible: false});
-                                 }
-                             }
+                            // Update left position for all objects for this field
+                            
+                            // Bits
+                            for (let i = 0; i < fieldInfo.width; i++) {
+                                let bitObj = this.obj[`final_${field}_bit_${i}`];
+                                if (bitObj) {
+                                    bitObj.set({
+                                        visible: isVisible,
+                                        left: isVisible ? left + (fieldInfo.width - 1 - i) * bit_spacing : bitObj.left
+                                    });
+                                }
+                            }
+                            // Label and edge
+                            ["label", "left_edge", "right_edge"].forEach(suffix => {
+                                let obj = this.obj[`final_${field}_${suffix}`];
+                                if (obj) {
+                                    if (suffix === "label") {
+                                        obj.set({left: left, visible: isVisible});
+                                    } else if (suffix === "left_edge") {
+                                        obj.set({left: left - 0.5, visible: isVisible});
+                                    } else if (suffix === "right_edge") {
+                                        obj.set({left: left + fieldInfo.width * bit_spacing - 0.5, visible: isVisible});
+                                    }
+                                }
+                            });
 
-                             if (positions.visible.imm19_12 && positions.imm19_12 !== null) {
-                                 // Position the entire imm19_12 field at the calculated position (MSB to LSB layout)
-                                 for (let i = 0; i < 8; i++) {  // Only 8 bits for [19:12]
-                                     if (this.obj[`final_imm19_12_bit_${i}`]) {
-                                         this.obj[`final_imm19_12_bit_${i}`].set({
-                                             left: positions.imm19_12 + (7-i) * bit_spacing,  // i=0 is LSB (right), i=7 is MSB (left)
-                                             visible: true
-                                         });
-                                     }
-                                 }
-                                 if (this.obj.final_imm19_12_label) {
-                                     this.obj.final_imm19_12_label.set({left: positions.imm19_12 - 5, visible: true, text: "19:12"});
-                                 }
-                             } else {
-                                 for (let i = 0; i < 8; i++) {
-                                     if (this.obj[`final_imm19_12_bit_${i}`]) {
-                                         this.obj[`final_imm19_12_bit_${i}`].set({visible: false});
-                                     }
-                                 }
-                                 if (this.obj.final_imm19_12_label) {
-                                     this.obj.final_imm19_12_label.set({visible: false});
-                                 }
-                             }
-
-                             if (positions.visible.imm11_7 && positions.imm11_7 !== null) {
-                                 // Position the entire imm11_7 field at the calculated position (MSB to LSB layout)
-                                 for (let i = 0; i < 5; i++) {
-                                     if (this.obj[`final_imm11_7_bit_${i}`]) {
-                                         this.obj[`final_imm11_7_bit_${i}`].set({
-                                             left: positions.imm11_7 + (4-i) * bit_spacing,  // i=0 is LSB (right), i=4 is MSB (left)
-                                             visible: true
-                                         });
-                                     }
-                                 }
-                                 if (this.obj.final_imm11_7_label) {
-                                     this.obj.final_imm11_7_label.set({left: positions.imm11_7 - 5, visible: true, text: "11:7"});
-                                 }
-                             } else {
-                                 for (let i = 0; i < 5; i++) {
-                                     if (this.obj[`final_imm11_7_bit_${i}`]) {
-                                         this.obj[`final_imm11_7_bit_${i}`].set({visible: false});
-                                     }
-                                 }
-                                 if (this.obj.final_imm11_7_label) {
-                                     this.obj.final_imm11_7_label.set({visible: false});
-                                 }
-                             }
-
-                             // Create connection lines between instruction-aligned and final positions
-                             connectionLines = createConnectionLines(final_left, bit_spacing, positions, 12);
-                         }
+                            // Create connection line
+                            if (isVisible) {
+                                let fieldWidth = fieldInfo.width;
+                                let row2_mid = 10 + offset * bit_spacing + ((fieldWidth - 1) / 2) * bit_spacing + 6; // 6 = bitWidth/2
+                                let final_mid = left + ((fieldWidth - 1) / 2) * bit_spacing + 6;
+                                connectionLines.push(new fabric.Line([
+                                    row2_mid, field_top + 10,
+                                    final_mid, final_top + 15
+                                ], {
+                                    stroke: lineColor, strokeWidth: 1, strokeDashArray: [2, 2]
+                                }));
+                            }
+                            offset += fieldInfo.width;
+                        });
 
                          // Render final immediate fields with current values
                          '/top'.lib.renderShiftRegister(imm31_sig, this.obj, "final_imm31", {showHex: false});
@@ -2030,162 +1835,371 @@
                          // Return connection lines to be added to canvas
                          return connectionLines;
                      }
-               /ctrl  // serv_ctrl - PC control and calculation
-                  \viz_js
-                     box: {width: 150, height: 80, strokeWidth: 1, stroke: "blue"},
-                     where: {left: 650, top: 50, width: 150, height: 80},                     
+                /ctrl  // serv_ctrl - PC control and calculation
+                   \viz_js
+                        box: {width: 450, height: 180, strokeWidth: 1},  // Match immdec dimensions
+                        where: {left: 0, top: 50, width: 150, height: 60},  // Adjust position accordingly                        
+                        init() {
+                            let ret = {};
+                            
+                            // Title
+                            ret.title = new fabric.Text("serv_ctrl", {
+                                fontSize: 10, fontWeight: "bold", 
+                                top: -15, left: 75, originY: "center", originX: "center"
+                            });
+                            
+                            // ===== PC REGISTER VISUALIZATION =====
+                            
+                            // Current PC display
+                            ret.pc_label = new fabric.Text("Current PC:", {
+                                fontSize: 7, top: 5, left: 5, fontWeight: "bold"
+                            });
+                            
+                            ret.pc_value = new fabric.Text("0x00000000", {
+                                fontSize: 8, fontFamily: "monospace", 
+                                top: 15, left: 5, fill: "blue"
+                            });
+                            
+                            // Replace the small PC shift register with:
+                            Object.assign(ret, '/top'.lib.initShiftRegister("pc_reg", {
+                                bitWidth: 12, bitHeight: 12, spacing: 1, labelSize: 6, showLabel: true,  // Match immdec bit size
+                                left: 10, top: 32,
+                                lsb: 0, width: 32, label: "Program Counter [31:0]:",
+                                maxBitsPerRow: 32  // Single row like immdec instruction
+                            }));
+                            
+                            // ===== PC CALCULATION SOURCES =====
+                            
+                            ret.calc_label = new fabric.Text("Next PC Source:", {
+                                fontSize: 6, top: 55, left: 5, fontWeight: "bold"
+                            });
+                            
+                            // PC increment (+4)
+                            ret.increment_indicator = new fabric.Circle({
+                                radius: 4, left: 20, top: 67, originY: "center", originX: "center",
+                                fill: "#4CAF50", stroke: "black", strokeWidth: 0.5, opacity: 0.3
+                            });
+                            ret.increment_label = new fabric.Text("+4", {
+                                fontSize: 5, top: 74, left: 20, originY: "center", originX: "center"
+                            });
+                            
+                            // Branch/Jump target (from bufreg)
+                            ret.branch_indicator = new fabric.Circle({
+                                radius: 4, left: 50, top: 67, originY: "center", originX: "center",
+                                fill: "#FF9800", stroke: "black", strokeWidth: 0.5, opacity: 0.3
+                            });
+                            ret.branch_label = new fabric.Text("BRANCH", {
+                                fontSize: 4, top: 74, left: 50, originY: "center", originX: "center"
+                            });
+                            
+                            // Exception/interrupt target (from CSR)
+                            ret.trap_indicator = new fabric.Circle({
+                                radius: 4, left: 85, top: 67, originY: "center", originX: "center",
+                                fill: "#F44336", stroke: "black", strokeWidth: 0.5, opacity: 0.3
+                            });
+                            ret.trap_label = new fabric.Text("TRAP", {
+                                fontSize: 4, top: 74, left: 85, originY: "center", originX: "center"
+                            });
+                            
+                            // Return from exception (mret)
+                            ret.mret_indicator = new fabric.Circle({
+                                radius: 4, left: 115, top: 67, originY: "center", originX: "center",
+                                fill: "#9C27B0", stroke: "black", strokeWidth: 0.5, opacity: 0.3
+                            });
+                            ret.mret_label = new fabric.Text("MRET", {
+                                fontSize: 4, top: 74, left: 115, originY: "center", originX: "center"
+                            });
+                            
+                            // ===== PC UPDATE STATUS =====
+                            
+                            ret.status_label = new fabric.Text("Status:", {
+                                fontSize: 6, top: 82, left: 5
+                            });
+                            
+                            ret.status_text = new fabric.Text("IDLE", {
+                                fontSize: 7, fontWeight: "bold", top: 82, left: 35, fill: "gray"
+                            });
+                            
+                            // PC enable indicator
+                            ret.pc_en_indicator = new fabric.Circle({
+                                radius: 3, left: 80, top: 85, originY: "center", originX: "center",
+                                fill: "#ccc", stroke: "black", strokeWidth: 1
+                            });
+                            ret.pc_en_label = new fabric.Text("PC_EN", {
+                                fontSize: 5, top: 92, left: 80, originY: "center", originX: "center"
+                            });
+                            
+                            // Jump indicator
+                            ret.jump_indicator = new fabric.Circle({
+                                radius: 3, left: 110, top: 85, originY: "center", originX: "center",
+                                fill: "#ccc", stroke: "black", strokeWidth: 1
+                            });
+                            ret.jump_label = new fabric.Text("JUMP", {
+                                fontSize: 5, top: 92, left: 110, originY: "center", originX: "center"
+                            });
+                            
+                            // ===== INTERNAL ARITHMETIC =====
+                            ret.arithmetic_label = new fabric.Text("Internal Calculation:", {
+                            fontSize: 6, top: 140, left: 5, fontWeight: "bold"
+                            });
+
+                            ret.operand_a_label = new fabric.Text("A:", {fontSize: 10, top: 72, left: 180});
+                            ret.operand_a_bit = '/top'.lib.initBit({top: 70, left: 200, width: 16, height: 16});
+
+                            ret.operand_b_label = new fabric.Text("+ B:", {fontSize: 10, top: 72, left: 230});
+                            ret.operand_b_bit = '/top'.lib.initBit({top: 70, left: 260, width: 16, height: 16});
+
+                            ret.result_label = new fabric.Text("=", {fontSize: 16, top: 70, left: 290});
+                            ret.result_bit = '/top'.lib.initBit({top: 70, left: 310, width: 16, height: 16});
+                        
+                            // Internally-generated A/B sources
+                            ret.zero = new fabric.Text("0", {fontSize: 6, top: 50, left: 235});
+                            ret.const4 = new fabric.Text("+4", {fontSize: 6, top: 50, left: 255});
+
+                            return ret;
+                        },
+                        
+                        render() {
+                            // Get centralized data from CPU
+                            let cpuData = '/cpu'.data;
+                            let cpuLib = '/cpu'.lib;
+                            let cpu = "top.servant_sim.dut.cpu.cpu.";
+                            let ctrl = cpu + "ctrl.";
+                            let isActive = cpuData.active_in_phase["ctrl"];
+                            let phaseColor = cpuLib.getLifecycleColor(cpuData.lifecycle_phase);
+
+                            // Get control signals
+                            let ctrl_pc_en = this.svSigRef(cpu+"state.o_ctrl_pc_en").asBool(false);
+                            let ctrl_jump = this.svSigRef(cpu+"state.o_ctrl_jump").asBool(false);
+                            let branch_op = this.svSigRef(cpu+"decode.o_branch_op").asBool(false);
+                            let jal_or_jalr = this.svSigRef(cpu+"decode.o_ctrl_jal_or_jalr").asBool(false);
+                            let pc_rel = this.svSigRef(cpu+"decode.o_ctrl_pc_rel").asBool(false);
+                            let utype = this.svSigRef(cpu+"decode.o_ctrl_utype").asBool(false);
+                            let mret = this.svSigRef(cpu+"decode.o_ctrl_mret").asBool(false);
+                            
+                            // Get trap/interrupt signals
+                            let trap = this.svSigRef(cpu+"state.o_ctrl_trap").asBool(false);
+                            let new_irq = false;
+                            try {
+                                new_irq = this.svSigRef(cpu+"state.i_new_irq").asBool(false);
+                            } catch(e) {
+                                // Signal might not exist in all configurations
+                            }
+                            
+                            // Get PC value and related signals
+                            let pc_value = 0;
+                            let bad_pc = 0;
+                            try {
+                                pc_value = this.svSigRef(cpu+"o_ibus_adr").asInt(0);
+                                bad_pc = this.svSigRef(ctrl+"o_bad_pc").asInt(0);
+                            } catch(e) {
+                                // Use default values if signals not accessible
+                            }
+                            
+                            console.log(`=== CTRL: pc_en=${ctrl_pc_en}, jump=${ctrl_jump}, branch=${branch_op}, jal=${jal_or_jalr}, trap=${trap} ===`);
+                            
+                            // ===== UPDATE PC VALUE DISPLAY =====
+                            
+                            let pc_hex = "0x" + pc_value.toString(16).padStart(8, "0").toUpperCase();
+                            this.obj.pc_value.set({
+                                text: pc_hex,
+                                fill: ctrl_pc_en ? "blue" : "gray"
+                            });
+                            
+                            // ===== RENDER PC SHIFT REGISTER =====
+                            
+                            // Create a synthetic signal object for the PC register
+                            let pc_sig = {
+                                signal: { width: 32 },
+                                asInt: function() { return pc_value; }
+                            };
+                            
+                            // Highlight current bit being updated during PC operations
+                            let pc_highlight = 0;
+                            if (ctrl_pc_en && cpuData.current_bit < 32) {
+                                pc_highlight = 1 << cpuData.current_bit;
+                            }
+                            
+                            '/top'.lib.renderShiftRegister(pc_sig, this.obj, "pc_reg", {
+                                showHex: false,
+                                highlightMask: pc_highlight
+                            });
+                            
+                            // ===== UPDATE PC SOURCE INDICATORS =====
+                            
+                            // Normal increment (+4) - active when no jump/branch/trap
+                            let is_increment = ctrl_pc_en && !ctrl_jump && !trap && !mret;
+                            this.obj.increment_indicator.set({
+                                opacity: is_increment ? 1.0 : 0.3,
+                                fill: is_increment ? "#4CAF50" : "#C8E6C9"
+                            });
+                            
+                            // Branch/Jump target - active when jump signal is set
+                            let is_branch_jump = ctrl_jump && (branch_op || jal_or_jalr);
+                            this.obj.branch_indicator.set({
+                                opacity: is_branch_jump ? 1.0 : 0.3,
+                                fill: is_branch_jump ? "#FF9800" : "#FFCC80"
+                            });
+                            
+                            // Trap/exception - active when trap is asserted
+                            this.obj.trap_indicator.set({
+                                opacity: (trap || new_irq) ? 1.0 : 0.3,
+                                fill: (trap || new_irq) ? "#F44336" : "#FFCDD2"
+                            });
+                            
+                            // Return from exception (mret)
+                            this.obj.mret_indicator.set({
+                                opacity: mret ? 1.0 : 0.3,
+                                fill: mret ? "#9C27B0" : "#E1BEE7"
+                            });
+                            
+                            // ===== UPDATE STATUS DISPLAY =====
+                            
+                            let status_text = "IDLE";
+                            let status_color = "gray";
+                            
+                            if (ctrl_pc_en) {
+                                if (trap || new_irq) {
+                                status_text = "TRAP";
+                                status_color = "#F44336";
+                                } else if (mret) {
+                                status_text = "MRET";
+                                status_color = "#9C27B0";
+                                } else if (ctrl_jump) {
+                                if (branch_op) {
+                                    status_text = "BRANCH";
+                                } else if (jal_or_jalr) {
+                                    status_text = "JUMP";
+                                } else {
+                                    status_text = "CALC";
+                                }
+                                status_color = "#FF9800";
+                                } else {
+                                status_text = "INCREMENT";
+                                status_color = "#4CAF50";
+                                }
+                            } else if (cpuData.lifecycle_phase === "PC_UPDATE") {
+                                status_text = "UPDATING";
+                                status_color = "#2196F3";
+                            }
+                            
+                            this.obj.status_text.set({
+                                text: status_text,
+                                fill: status_color
+                            });
+                            
+                            // ===== UPDATE CONTROL INDICATORS =====
+                            
+                            // PC enable indicator
+                            this.obj.pc_en_indicator.set({
+                                fill: ctrl_pc_en ? "#4CAF50" : "#ccc",
+                                strokeWidth: ctrl_pc_en ? 2 : 1
+                            });
+                            
+                            // Jump indicator  
+                            this.obj.jump_indicator.set({
+                                fill: ctrl_jump ? "#FF9800" : "#ccc",
+                                strokeWidth: ctrl_jump ? 2 : 1
+                            });
+                            
+                            // ===== UPDATE LABELS BASED ON ACTIVITY =====
+                            
+                            let isActiveNow = ctrl_pc_en || (cpuData.lifecycle_phase === "PC_UPDATE");
+                            
+                            this.obj.pc_label.set({
+                                fill: isActiveNow ? "black" : "gray",
+                                fontWeight: isActiveNow ? "bold" : "normal"
+                            });
+                            
+                            this.obj.calc_label.set({
+                                fill: ctrl_pc_en ? "black" : "gray"
+                            });
+                            
+                            this.obj.status_label.set({
+                                fill: isActiveNow ? "black" : "gray"
+                            });
+                            
+                            // ===== SPECIAL HANDLING FOR INSTRUCTION TYPES =====
+                            
+                            // Update source labels based on instruction type
+                            if (cpuData.instruction_valid) {
+                                if (cpuData.opcodeType === "JAL") {
+                                this.obj.branch_label.set({text: "JAL"});
+                                } else if (cpuData.opcodeType === "JALR") {
+                                this.obj.branch_label.set({text: "JALR"});
+                                } else if (cpuData.opcodeType === "BRANCH") {
+                                this.obj.branch_label.set({text: "BRANCH"});
+                                } else {
+                                this.obj.branch_label.set({text: "BRANCH"});
+                                }
+                            }
+                            
+                            // ===== DEBUG OUTPUT =====
+                            
+                            if (ctrl_pc_en || ctrl_jump) {
+                                console.log(`CTRL Activity: PC=0x${pc_hex}, jump=${ctrl_jump}, phase=${cpuData.lifecycle_phase}`);
+                            }
+
+                            // Show internal arithmetic when active
+                            if (ctrl_pc_en || jal_or_jalr || utype) {
+                            // For PC+4: A=PC, B=4
+                            // For PC+IMM: A=PC, B=immediate
+                            // For LUI: A=0, B=immediate
+                            
+                            let a_val = (cpuData.opcodeType === "LUI") ? 0 : ((pc_value >> cpuData.current_bit) & 1);
+                            let b_val = 0; // Would need to get immediate or constant 4
+                            let result_val = ((ctrl_rd >> cpuData.current_bit) & 1);
+                            
+                            '/top'.lib.setBit(this.obj.operand_a_bit, a_val, cpuData.current_bit);
+                            '/top'.lib.setBit(this.obj.operand_b_bit, b_val, cpuData.current_bit);
+                            '/top'.lib.setBit(this.obj.result_bit, result_val, cpuData.current_bit);
+                            }
+                        }
                /rf_read  // Register file read values streaming to ALU
                   \viz_js
-                     box: {left: -30, width: 540, height: 90, strokeWidth: 1, stroke: "green"},
+                     box: {left: -90, width: 540, height: 90, strokeWidth: 1, stroke: "green"},
                      where: {left: -30, top: 160, width: 180, height: 30},
                      init() {
                         let ret = {};
                         
                         // Title
-                        ret.title = new fabric.Text("Register File Read → ALU", {
-                           fontSize: 10,
-                           fontWeight: "bold",
-                           top: -15,
-                           left: 260,
-                           textAlign: "center",
-                           originX: "center",
-                           selectable: false
-                        });
+                        ret.title = new fabric.Text("Register File Read → ALU", {fontSize: 10, fontWeight: "bold", top: -15, left: 260, originY: "center", originX: "center", selectable: false});
                         
                         // RS1 register visualization - aligned with immdec
-                        ret.rs1_label = new fabric.Text("RS1:", {
-                           fontSize: 7,
-                           top: 5,
-                           left: 15,
-                           fontWeight: "bold",
-                           selectable: false
-                        });
+                        ret.rs1_label = new fabric.Text("RS1:", {fontSize: 7, top: 0, left: 10, fontWeight: "bold", selectable: false});
                         
-                        ret.rs1_addr_label = new fabric.Text("x0", {
-                           fontSize: 6,
-                           top: 5,
-                           left: 40,
-                           fontFamily: "monospace",
-                           selectable: false
-                        });
+                        ret.rs1_addr_label = new fabric.Text("x0", {fontSize: 6, top: 0, left: 28, fontFamily: "monospace", selectable: false});
                         
                         // RS1 arrow from RF
-                        ret.rs1_arrow = new fabric.Path("M 15 20 L 55 20 M 50 17 L 55 20 L 50 23", {
-                           stroke: "green",
-                           strokeWidth: 2,
-                           fill: "",
-                           opacity: 0.3,
-                           selectable: false
-                        });
-                        
-                        ret.rs1_arrow_label = new fabric.Text("From RF", {
-                           fontSize: 4,
-                           top: 25,
-                           left: 35,
-                           textAlign: "center",
-                           originX: "center",
-                           fill: "green",
-                           opacity: 0.3,
-                           selectable: false
-                        });
+                        '/cpu'.lib.initLoadArrow(ret, "rs1", 17, true, true, "green", "From RF");
                         
                         // Initialize RS1 as 32-bit shift register - aligned with immdec at x=60
-                        Object.assign(ret, '/top'.lib.initShiftRegister("rs1_reg", {
-                           left: 70,
-                           top: 10,
-                           bitWidth: 12,
-                           bitHeight: 12,
-                           spacing: 1,
-                           maxBitsPerRow: 32,
-                           labelSize: 4,
-                           showLabel: false,
-                           lsb: 0,
-                           width: 32
-                        }));
+                        Object.assign(ret, '/top'.lib.initShiftRegister("rs1_reg", {left: 10, top: 10, bitWidth: 12, bitHeight: 12, spacing: 1, labelSize: 4, showLabel: false, lsb: 0, width: 32}));
                         
                         // RS2 register visualization - aligned with immdec
-                        ret.rs2_label = new fabric.Text("RS2/IMM:", {
-                           fontSize: 7,
-                           top: 35,
-                           left: 15,
-                           fontWeight: "bold",
-                           selectable: false
-                        });
+                        ret.rs2_label = new fabric.Text("RS2/IMM:", {fontSize: 7, top: 30, left: 10, fontWeight: "bold", selectable: false});
                         
-                        ret.rs2_addr_label = new fabric.Text("x0", {
-                           fontSize: 6,
-                           top: 35,
-                           left: 60,
-                           fontFamily: "monospace",
-                           selectable: false
-                        });
+                        ret.rs2_addr_label = new fabric.Text("x0", {fontSize: 6, top: 30, left: 45, fontFamily: "monospace", selectable: false});
                         
                         // RS2 arrow from RF/IMM
-                        ret.rs2_arrow = new fabric.Path("M 15 50 L 55 50 M 50 47 L 55 50 L 50 53", {
-                           stroke: "blue",
-                           strokeWidth: 2,
-                           fill: "",
-                           opacity: 0.3,
-                           selectable: false
-                        });
-                        
-                        ret.rs2_arrow_label = new fabric.Text("From RF/IMM", {
-                           fontSize: 4,
-                           top: 55,
-                           left: 35,
-                           textAlign: "center",
-                           originX: "center",
-                           fill: "blue",
-                           opacity: 0.3,
-                           selectable: false
-                        });
+                        '/cpu'.lib.initLoadArrow(ret, "rs2", 47, true, true, "orange", "From RF/IMM");
                         
                         // Initialize RS2 as 32-bit shift register - aligned with immdec at x=60
-                        Object.assign(ret, '/top'.lib.initShiftRegister("rs2_reg", {
-                           left: 70,
-                           top: 40,
-                           bitWidth: 12,
-                           bitHeight: 12,
-                           spacing: 1,
-                           maxBitsPerRow: 32,
-                           labelSize: 4,
-                           showLabel: false,
-                           lsb: 0,
-                           width: 32
-                        }));
+                        Object.assign(ret, '/top'.lib.initShiftRegister("rs2_reg", {left: 10, top: 40, bitWidth: 12, bitHeight: 12, spacing: 1, labelSize: 4, showLabel: false, lsb: 0, width: 32}));
                         
                         // Status information on the right
-                        ret.status_label = new fabric.Text("Status:", {
-                           fontSize: 6,
-                           top: 60,
-                           left: 15,
-                           selectable: false
-                        });
+                        ret.status_label = new fabric.Text("Status:", {fontSize: 6, top: 60, left: 15, selectable: false});
                         
-                        ret.status_text = new fabric.Text("IDLE", {
-                           fontSize: 7,
-                           fontWeight: "bold",
-                           top: 60,
-                           left: 50,
-                           fill: "gray",
-                           selectable: false
-                        });
+                        ret.status_text = new fabric.Text("IDLE", {fontSize: 7, fontWeight: "bold", top: 60, left: 50, fill: "gray", selectable: false});
                         
-                        ret.bit_pos_label = new fabric.Text("Bit:", {
-                           fontSize: 6,
-                           top: 60,
-                           left: 100,
-                           selectable: false
-                        });
+                        ret.bit_pos_label = new fabric.Text("Bit:", {fontSize: 6, top: 60, left: 100, selectable: false});
                         
-                        ret.bit_pos_text = new fabric.Text("0/31", {
-                           fontSize: 7,
-                           top: 60,
-                           left: 120,
-                           fontFamily: "monospace",
-                           selectable: false
-                        });
+                        ret.bit_pos_text = new fabric.Text("0/31", {fontSize: 7, top: 60, left: 120, fontFamily: "monospace", selectable: false});
                         
+                        ret.write_source_label = new fabric.Text("Write Source:", {fontSize: 6, top: 70, left: 200});
+                        ret.write_source_text = new fabric.Text("--",
+                            {fontSize: 8, fontWeight: "bold", top: 70, left: 270}
+                        );
                         return ret;
                      },
                      render() {
@@ -2260,7 +2274,7 @@
                          let rs1_reading = rf_rreq || (cnt_en && rf_ready);
                          this.obj.rs1_arrow.set({
                              opacity: rs1_reading ? 1.0 : 0.3,
-                             strokeWidth: rs1_reading ? 3 : 2
+                             strokeWidth: rs1_reading ? 6 : 4
                          });
                          
                          this.obj.rs1_arrow_label.set({
@@ -2272,7 +2286,7 @@
                          let rs2_reading = op_b_sel && (rf_rreq || (cnt_en && rf_ready));
                          this.obj.rs2_arrow.set({
                              opacity: rs2_reading ? 1.0 : 0.3,
-                             strokeWidth: rs2_reading ? 3 : 2,
+                             strokeWidth: rs2_reading ? 6 : 4,
                              stroke: op_b_sel ? "blue" : "orange"  // Blue for RF, orange for immediate
                          });
                          
@@ -2352,256 +2366,267 @@
                          this.obj.bit_pos_label.set({
                              fill: cnt_en ? "black" : "gray"
                          });
+                         
+                        let rd_alu_en = this.svSigRef(cpu+"decode.o_rd_alu_en").asBool(false);
+                        let rd_mem_en = this.svSigRef(cpu+"decode.o_rd_mem_en").asBool(false);
+                        let rd_csr_en = this.svSigRef(cpu+"decode.o_rd_csr_en").asBool(false);
+
+                        this.obj.write_source_text.set({
+                            text: rd_alu_en ? "ALU" : rd_mem_en ? "MEM" : rd_csr_en ? "CSR" : "CTRL"
+                        });
                      }
+               /rd_register  // Write-back register
+                  \viz_js
+                        box: {left: -90, width: 540, height: 75, strokeWidth: 1, stroke: "purple"},
+                        where: {left: -30, top: 250, width: 180, height: 25},
+                        
+                        init() {
+                            let ret = {};
+                            
+                            // Title
+                            ret.title = new fabric.Text("RD Write-Back Register", {
+                                fontSize: 10, fontWeight: "bold", 
+                                top: -15, left: 270, originY: "center", originX: "center"
+                            });
+                            
+                            // RD register visualization - full 32-bit like other registers
+                            Object.assign(ret, '/top'.lib.initShiftRegister("rd_reg", {
+                                left: 10, top: 10, bitWidth: 12, bitHeight: 12, spacing: 1,
+                                lsb: 0, width: 32, label: "RD [31:0]:", showLabel: true, labelSize: 6
+                            }));
+                            
+                            // RD arrow from RF
+                            '/cpu'.lib.initLoadArrow(ret, "rd", 17, true, false, "orange", "To RF");
+
+                            // Source indicators showing what's feeding RD
+                            ret.source_label = new fabric.Text("Source:", {
+                                fontSize: 6, top: 35, left: 10, fontWeight: "bold"
+                            });
+                            
+                            ret.alu_source = new fabric.Circle({
+                                radius: 4, left: 50, top: 37, originY: "center", originX: "center",
+                                fill: "#ff6b6b", opacity: 0.3
+                            });
+                            ret.alu_label = new fabric.Text("ALU", {
+                                fontSize: 5, top: 45, left: 50, originY: "center", originX: "center"
+                            });
+                            
+                            ret.mem_source = new fabric.Circle({
+                                radius: 4, left: 80, top: 37, originY: "center", originX: "center",
+                                fill: "#4ecdc4", opacity: 0.3
+                            });
+                            ret.mem_label = new fabric.Text("MEM", {
+                                fontSize: 5, top: 45, left: 80, originY: "center", originX: "center"
+                            });
+                            
+                            ret.ctrl_source = new fabric.Circle({
+                                radius: 4, left: 110, top: 37, originY: "center", originX: "center",
+                                fill: "#45b7d1", opacity: 0.3
+                            });
+                            ret.ctrl_label = new fabric.Text("CTRL", {
+                                fontSize: 5, top: 45, left: 110, originY: "center", originX: "center"
+                            });
+                            
+                            ret.csr_source = new fabric.Circle({
+                                radius: 4, left: 140, top: 37, originY: "center", originX: "center",
+                                fill: "#96ceb4", opacity: 0.3
+                            });
+                            ret.csr_label = new fabric.Text("CSR", {
+                                fontSize: 5, top: 45, left: 140, originY: "center", originX: "center"
+                            });
+                            
+                            // Current bit indicator
+                            ret.current_bit_label = new fabric.Text("Current Bit:", {
+                                fontSize: 6, top: 60, left: 10
+                            });
+                            
+                            ret.current_bit_value = new fabric.Text("0", {
+                                fontSize: 8, fontWeight: "bold", top: 58, left: 70, fill: "purple"
+                            });
+                            
+                            ret.hex_value_label = new fabric.Text("Hex Value:", {
+                                fontSize: 6, top: 60, left: 200
+                            });
+                            
+                            ret.hex_value = new fabric.Text("0x00000000", {
+                                fontSize: 8, fontFamily: "monospace", top: 58, left: 270, fill: "purple"
+                            });
+                            
+                            return ret;
+                        },
+                        
+                        render() {
+                            // Get centralized data from CPU
+                            let cpuData = '/cpu'.data;
+                            let cpu = "top.servant_sim.dut.cpu.cpu.";
+                            
+                            // Get write-back control signals
+                            let rd_alu_en = this.svSigRef(cpu+"decode.o_rd_alu_en").asBool(false);
+                            let rd_mem_en = this.svSigRef(cpu+"decode.o_rd_mem_en").asBool(false);
+                            let rd_csr_en = this.svSigRef(cpu+"decode.o_rd_csr_en").asBool(false);
+                            let jal_or_jalr = this.svSigRef(cpu+"decode.o_ctrl_jal_or_jalr").asBool(false);
+                            let utype = this.svSigRef(cpu+"decode.o_ctrl_utype").asBool(false);
+                            
+                            // Get the actual RD values from different sources
+                            let alu_rd = 0, mem_rd = 0, ctrl_rd = 0, csr_rd = 0;
+                            try {
+                                alu_rd = this.svSigRef(cpu+"alu.o_rd").asInt(0);
+                                mem_rd = this.svSigRef(cpu+"mem_if.o_rd").asInt(0);
+                                ctrl_rd = this.svSigRef(cpu+"ctrl.o_rd").asInt(0);
+                                csr_rd = this.svSigRef(cpu+"csr.o_csr").asInt(0);
+                            } catch(e) {
+                                // Use defaults if signals not accessible
+                            }
+                            
+                            // Determine which source is active and get the final RD value
+                            let final_rd_value = 0;
+                            let active_source = "none";
+                            
+                            if (rd_alu_en) {
+                                final_rd_value = alu_rd;
+                                active_source = "alu";
+                            } else if (rd_mem_en) {
+                                final_rd_value = mem_rd;
+                                active_source = "mem";
+                            } else if (jal_or_jalr || utype) {
+                                final_rd_value = ctrl_rd;
+                                active_source = "ctrl";
+                            } else if (rd_csr_en) {
+                                final_rd_value = csr_rd;
+                                active_source = "csr";
+                            }
+                            
+                            console.log(`=== RD: source=${active_source}, value=0x${final_rd_value.toString(16)}, bit=${cpuData.current_bit} ===`);
+                            
+                            // Create synthetic signal for RD register
+                            let rd_sig = {
+                                signal: { width: 32 },
+                                asInt: function() { return final_rd_value; }
+                            };
+                            
+                            // Highlight current bit being written
+                            let rd_highlight = 0;
+                            if (active_source !== "none" && cpuData.current_bit < 32) {
+                                rd_highlight = 1 << cpuData.current_bit;
+                            }
+                            
+                            '/top'.lib.renderShiftRegister(rd_sig, this.obj, "rd_reg", {
+                                showHex: false,
+                                highlightMask: rd_highlight
+                            });
+                            
+                            // RD arrow - show when writing to RF
+                            let rd_writing = rf_wreq || (cnt_en && rf_ready);
+                            this.obj.rd_arrow.set({
+                                opacity: rd_writing ? 1.0 : 0.3,
+                                strokeWidth: rd_writing ? 6 : 4
+                            });
+
+                            this.obj.rd_arrow_label.set({
+                                opacity: rd_writing ? 1.0 : 0.3,
+                                fontWeight: rd_writing ? "bold" : "normal"
+                            });
+                         
+                            // Update source indicators
+                            this.obj.alu_source.set({
+                                opacity: (active_source === "alu") ? 1.0 : 0.3,
+                                fill: (active_source === "alu") ? "#ff6b6b" : "#ffcccc"
+                            });
+                            
+                            this.obj.mem_source.set({
+                                opacity: (active_source === "mem") ? 1.0 : 0.3,
+                                fill: (active_source === "mem") ? "#4ecdc4" : "#cceeee"
+                            });
+                            
+                            this.obj.ctrl_source.set({
+                                opacity: (active_source === "ctrl") ? 1.0 : 0.3,
+                                fill: (active_source === "ctrl") ? "#45b7d1" : "#cce6ff"
+                            });
+                            
+                            this.obj.csr_source.set({
+                                opacity: (active_source === "csr") ? 1.0 : 0.3,
+                                fill: (active_source === "csr") ? "#96ceb4" : "#cceecc"
+                            });
+                            
+                            // Update current bit and hex displays
+                            let current_bit_val = (final_rd_value >> cpuData.current_bit) & 1;
+                            this.obj.current_bit_value.set({
+                                text: current_bit_val.toString(),
+                                fill: (active_source !== "none") ? "purple" : "gray"
+                            });
+                            
+                            this.obj.hex_value.set({
+                                text: "0x" + final_rd_value.toString(16).padStart(8, "0").toUpperCase(),
+                                fill: (active_source !== "none") ? "purple" : "gray"
+                            });
+                        }
                /alu
                   \viz_js
                      box: {width: 150, height: 100, strokeWidth: 1, stroke: "red"},
-                     where: {left: 0, top: 200, width: 150, height: 100},
+                     where: {left: 160, top: 136, width: 90, height: 60},
                      init() {
                         let ret = {};
                         
                         // Title
-                        ret.title = new fabric.Text("serv_alu", {
-                           fontSize: 10,
-                           fontWeight: "bold",
-                           top: -15,
-                           left: 75,
-                           textAlign: "center",
-                           originX: "center",
-                           selectable: false
-                        });
+                        ret.title = new fabric.Text("serv_alu", {fontSize: 10, fontWeight: "bold", top: -15, left: 75, originY: "center", originX: "center", selectable: false});
                         
                         // Operation display at top
-                        ret.operation_label = new fabric.Text("Operation:", {
-                           fontSize: 6,
-                           top: 5,
-                           left: 5,
-                           selectable: false
-                        });
-                        
-                        ret.operation_text = new fabric.Text("ADD", {
-                           fontSize: 8,
-                           fontWeight: "bold",
-                           top: 5,
-                           left: 50,
-                           fill: "blue",
-                           selectable: false
-                        });
+                        ret.operation_label = new fabric.Text("Operation:", {fontSize: 6, top: 5, left: 5, selectable: false});
+                        ret.operation_text = new fabric.Text("ADD", {fontSize: 8, fontWeight: "bold", top: 5, left: 50, fill: "blue", selectable: false});
                         
                         // Current bit operation section
-                        ret.bit_op_label = new fabric.Text("Current Bit Operation:", {
-                           fontSize: 6,
-                           top: 20,
-                           left: 5,
-                           selectable: false
-                        });
+                        ret.bit_op_label = new fabric.Text("Current Bit Operation:", {fontSize: 6, top: 20, left: 5, selectable: false});
                         
                         // Input operands A and B (current bits)
-                        ret.operand_a_label = new fabric.Text("A:", {
-                           fontSize: 5,
-                           top: 32,
-                           left: 10,
-                           selectable: false
-                        });
-                        
-                        ret.operand_a_bit = '/top'.lib.initBit({
-                           top: 30,
-                           left: 20,
-                           width: 12,
-                           height: 12
-                        });
-                        
-                        ret.operand_b_label = new fabric.Text("B:", {
-                           fontSize: 5,
-                           top: 32,
-                           left: 40,
-                           selectable: false
-                        });
-                        
-                        ret.operand_b_bit = '/top'.lib.initBit({
-                           top: 30,
-                           left: 50,
-                           width: 12,
-                           height: 12
-                        });
-                        
+                        ret.operand_a_label = new fabric.Text("A:", {fontSize: 5, top: 32, left: 10, selectable: false});
+                        ret.operand_a_bit = '/top'.lib.initBit({top: 30, left: 20, width: 12, height: 12});
+                        ret.operand_b_label = new fabric.Text("B:", {fontSize: 5, top: 32, left: 40, selectable: false});
+                        ret.operand_b_bit = '/top'.lib.initBit({top: 30, left: 50, width: 12, height: 12});
+
                         // Carry input
-                        ret.carry_in_label = new fabric.Text("Cin:", {
-                           fontSize: 5,
-                           top: 32,
-                           left: 70,
-                           selectable: false
-                        });
-                        
-                        ret.carry_in_bit = '/top'.lib.initBit({
-                           top: 30,
-                           left: 90,
-                           width: 12,
-                           height: 12
-                        });
+                        ret.carry_in_label = new fabric.Text("Cin:", {fontSize: 5, top: 32, left: 70, selectable: false});
+                        ret.carry_in_bit = '/top'.lib.initBit({top: 30, left: 90, width: 12, height: 12});
                         
                         // Operation symbol
-                        ret.op_symbol = new fabric.Text("+", {
-                           fontSize: 12,
-                           fontWeight: "bold",
-                           top: 28,
-                           left: 110,
-                           textAlign: "center",
-                           originX: "center",
-                           fill: "red",
-                           selectable: false
-                        });
+                        ret.op_symbol = new fabric.Text("+", {fontSize: 12, fontWeight: "bold", top: 28, left: 110, originY: "center", originX: "center", fill: "red", selectable: false});
                         
                         // Result output
-                        ret.result_label = new fabric.Text("Result:", {
-                           fontSize: 5,
-                           top: 50,
-                           left: 10,
-                           selectable: false
-                        });
-                        
-                        ret.result_bit = '/top'.lib.initBit({
-                           top: 48,
-                           left: 45,
-                           width: 12,
-                           height: 12
-                        });
+                        ret.result_label = new fabric.Text("Result:", {fontSize: 5, top: 50, left: 10, selectable: false});
+                        ret.result_bit = '/top'.lib.initBit({top: 48, left: 45, width: 12, height: 12});
                         
                         // Carry output
-                        ret.carry_out_label = new fabric.Text("Cout:", {
-                           fontSize: 5,
-                           top: 50,
-                           left: 70,
-                           selectable: false
-                        });
-                        
-                        ret.carry_out_bit = '/top'.lib.initBit({
-                           top: 48,
-                           left: 100,
-                           width: 12,
-                           height: 12
-                        });
+                        ret.carry_out_label = new fabric.Text("Cout:", {fontSize: 5, top: 50, left: 70, selectable: false});
+                        ret.carry_out_bit = '/top'.lib.initBit({top: 48, left: 100, width: 12, height: 12});
                         
                         // Operation mode indicators
-                        ret.mode_label = new fabric.Text("Mode:", {
-                           fontSize: 6,
-                           top: 65,
-                           left: 5,
-                           selectable: false
-                        });
+                        ret.mode_label = new fabric.Text("Mode:", {fontSize: 6, top: 65, left: 5, selectable: false});
                         
                         // Addition/Subtraction indicator
-                        ret.add_sub_indicator = new fabric.Circle({
-                           radius: 4,
-                           left: 35,
-                           top: 67,
-                           fill: "#ff6b6b",
-                           stroke: "black",
-                           strokeWidth: 0.5,
-                           selectable: false
-                        });
-                        
-                        ret.add_sub_label = new fabric.Text("ADD/SUB", {
-                           fontSize: 4,
-                           top: 73,
-                           left: 35,
-                           textAlign: "center",
-                           originX: "center",
-                           selectable: false
-                        });
+                        ret.add_sub_indicator = new fabric.Circle({radius: 4, left: 35, top: 67, originY: "center", originX: "center", fill: "#ff6b6b", stroke: "black", strokeWidth: 0.5, selectable: false});
+                        ret.add_sub_label = new fabric.Text("ADD/SUB", {fontSize: 4, top: 73, left: 35, originY: "center", originX: "center", selectable: false});
                         
                         // Boolean logic indicator
-                        ret.bool_indicator = new fabric.Circle({
-                           radius: 4,
-                           left: 70,
-                           top: 67,
-                           fill: "#4ecdc4",
-                           stroke: "black",
-                           strokeWidth: 0.5,
-                           selectable: false
-                        });
-                        
-                        ret.bool_label = new fabric.Text("BOOL", {
-                           fontSize: 4,
-                           top: 73,
-                           left: 70,
-                           textAlign: "center",
-                           originX: "center",
-                           selectable: false
-                        });
+                        ret.bool_indicator = new fabric.Circle({radius: 4, left: 70, top: 67, originY: "center", originX: "center", fill: "#4ecdc4", stroke: "black", strokeWidth: 0.5, selectable: false});
+                        ret.bool_label = new fabric.Text("BOOL", {fontSize: 4, top: 73, left: 70, originY: "center", originX: "center", selectable: false});
                         
                         // Comparison indicator  
-                        ret.cmp_indicator = new fabric.Circle({
-                           radius: 4,
-                           left: 100,
-                           top: 67,
-                           fill: "#45b7d1",
-                           stroke: "black",
-                           strokeWidth: 0.5,
-                           selectable: false
-                        });
-                        
-                        ret.cmp_label = new fabric.Text("CMP", {
-                           fontSize: 4,
-                           top: 73,
-                           left: 100,
-                           textAlign: "center",
-                           originX: "center",
-                           selectable: false
-                        });
+                        ret.cmp_indicator = new fabric.Circle({radius: 4, left: 100, top: 67, originY: "center", originX: "center", fill: "#45b7d1", stroke: "black", strokeWidth: 0.5, selectable: false});
+                        ret.cmp_label = new fabric.Text("CMP", {fontSize: 4, top: 73, left: 100, originY: "center", originX: "center", selectable: false});
                         
                         // Progress and bit position
-                        ret.bit_position_label = new fabric.Text("Bit Position:", {
-                           fontSize: 5,
-                           top: 82,
-                           left: 5,
-                           selectable: false
-                        });
-                        
-                        ret.bit_position_text = new fabric.Text("0", {
-                           fontSize: 8,
-                           fontWeight: "bold",
-                           top: 80,
-                           left: 60,
-                           fill: "purple",
-                           selectable: false
-                        });
-                        
-                        ret.bit_of_32_label = new fabric.Text("/31", {
-                           fontSize: 6,
-                           top: 82,
-                           left: 70,
-                           selectable: false
-                        });
+                        ret.bit_position_label = new fabric.Text("Bit Position:", {fontSize: 5, top: 82, left: 5, selectable: false});
+                        ret.bit_position_text = new fabric.Text("0", {fontSize: 8, fontWeight: "bold", top: 80, left: 60, fill: "purple", selectable: false});
+                        ret.bit_of_32_label = new fabric.Text("/31", {fontSize: 6, top: 82, left: 70, selectable: false});
                         
                         // Computation accumulation indicator
-                        ret.accumulation_label = new fabric.Text("Partial Result Building:", {
-                           fontSize: 5,
-                           top: 92,
-                           left: 5,
-                           selectable: false
-                        });
+                        ret.accumulation_label = new fabric.Text("Partial Result Building:", {fontSize: 5, top: 92, left: 5, selectable: false});
                         
                         // Progress bar for accumulation
-                        ret.progress_bar = new fabric.Rect({
-                           width: 100,
-                           height: 4,
-                           top: 95,
-                           left: 25,
-                           fill: "white",
-                           stroke: "black",
-                           strokeWidth: 1,
-                           selectable: false
-                        });
+                        ret.progress_bar = new fabric.Rect({width: 100, height: 4, top: 95, left: 25, fill: "white", stroke: "black", strokeWidth: 1, selectable: false});
+                        ret.progress_fill = new fabric.Rect({width: 0, height: 4, top: 95, left: 25, fill: "green", selectable: false});
                         
-                        ret.progress_fill = new fabric.Rect({
-                           width: 0,
-                           height: 4,
-                           top: 95,
-                           left: 25,
-                           fill: "green",
-                           selectable: false
-                        });
+                        // Op B source label
+                        ret.op_b_source_indicator = new fabric.Text("--", {fontSize: 6, top: 35, left: 65, fill: "black"});
                         
                         return ret;
                      },
@@ -2670,6 +2695,13 @@
                                      default: operation_name = "BOOL"; operation_symbol = "?"; break;
                                  }
                              }
+
+                             // Op B source indicator
+                             let op_b_sel = this.svSigRef(cpu+"bufreg2.i_op_b_sel").asBool(false);
+                             this.obj.op_b_source_indicator.set({
+                                 text: op_b_sel ? "RS2" : "IMM",
+                                 fill: op_b_sel ? "blue" : "orange"
+                             });
                          }
                          
                          // ===== UPDATE OPERATION DISPLAY =====
@@ -2819,17 +2851,51 @@
                                  text: "Partial Result Building:",
                                  fill: "gray"
                              });
-                         }
+                         }                        
                      }
-               /bufreg  // serv_bufreg - buffer register for 2-stage ops
+               /bufreg[2:1]
                   \viz_js
-                     box: {width: 150, height: 100, strokeWidth: 1},
-                     where: {left: 450, top: 180, width: 150, height: 100}
-                     
-               /bufreg2  // serv_bufreg2 - 32-bit buffer with special features
-                  \viz_js
-                     box: {width: 150, height: 100, strokeWidth: 1},
-                     where: {left: 650, top: 180, width: 150, height: 100}
+                    box: {width: 450, height: 75, strokeWidth: 1},
+                    where: {left: 0, top: 200, width: 150, height: 50},
+                    init() {
+                        let bufId = this.getIndex(); // 1 or 2
+                        let ret = {};
+                        
+                        ret.title = new fabric.Text(`serv_bufreg${bufId}`, {
+                            fontSize: 10, fontWeight: "bold", top: -15, left: 75, originY: "center", originX: "center"
+                        });
+                        
+                        // Common 32-bit shift register
+                        Object.assign(ret, '/top'.lib.initShiftRegister(`bufreg${bufId}_data`, {
+                            left: 10, top: 10, bitWidth: 12, 
+                            bitHeight: 12, spacing: 1,
+                            lsb: 0, width: 32, 
+                            label: bufId === 1 ? "Address/Shift Buffer" : "Data Buffer",
+                        }));
+
+                        
+                        /*
+                        // Bufreg1-specific indicators
+                        if (bufId === 1) {
+                            ret.rs1_input = new fabric.Circle({radius: 5, left: 20, top: 40, fill: "#4CAF50", opacity: 0.3});
+                            ret.imm_input = new fabric.Circle({radius: 5, left: 50, top: 40, fill: "#FF9800", opacity: 0.3});
+                            ret.sum_input = new fabric.Circle({radius: 5, left: 80, top: 40, fill: "#2196F3", opacity: 0.3});
+                        } else {
+                            // Bufreg2-specific indicators
+                            ret.shift_mode = new fabric.Circle({radius: 4, left: 20, top: 40, fill: "#FF5722", opacity: 0.3});
+                            ret.load_mode = new fabric.Circle({radius: 4, left: 50, top: 40, fill: "#4CAF50", opacity: 0.3});
+                            ret.store_mode = new fabric.Circle({radius: 4, left: 80, top: 40, fill: "#2196F3", opacity: 0.3});
+                        }
+                        */
+
+                        // To memory.
+                        // BUFREG1 -> ADDRESS
+                        // BUFREG2 -> DATA
+                        '/cpu'.lib.initLoadArrow(ret, "bufreg" + this.getIndex(), 15, false, true, "blue", "To MEM " + (this.getIndex() ? "ADDR" : "DATA"));
+
+                        
+                        return ret;
+                    }
                      
                /mem_if  // serv_mem_if - memory interface
                   \viz_js
@@ -2858,6 +2924,3 @@
                \viz_js
                   box: {width: 120, height: 120, strokeWidth: 1},
                   where: {left: 950, top: 280, width: 120, height: 120}
-
-\SV
-   endmodule
