@@ -55,21 +55,6 @@
             
             \viz_js
                box: {strokeWidth: 0},
-               lib: function () {
-                  // Evaluate ring port colors and return them to be accessed as:
-                  // '/_name'.lib.color[port_index]
-                  colorOf = function (i) {
-                     let colorByte = Math.floor((i / #_size) * 256)
-                     let colorByteString = colorByte.toString(16).padStart(2, "0")
-                     let colorByteString2 = (255 - colorByte).toString(16).padStart(2, "0")
-                     return "#00" + colorByteString + colorByteString2
-                  }
-                  color = []
-                  for (let i = 0; i < #_size; i++) {
-                     color[i] = colorOf(i)
-                  }
-                  return {color}
-               },
                init() {
                   let ring = new fabric.Rect({
                      top: -0.5,
@@ -85,6 +70,16 @@
                },
                where: _where,
             /port[m5_calc(#_size-1):0]
+               \viz_js
+                  box: {strokeWidth: 0},
+                  preInit() {
+                     // Color of this port, accessible as:
+                     // '/_name'.data.color
+                     let colorByte = Math.floor((this.getIndex() / #_size) * 256)
+                     let colorByteString = colorByte.toString(16).padStart(2, "0")
+                     let colorByteString2 = (255 - colorByte).toString(16).padStart(2, "0")
+                     '/port'.data.color = "#00" + colorByteString + colorByteString2
+                  }
                |ring
                   @1
                      /in
@@ -95,7 +90,7 @@
                            let dot = new fabric.Circle({
                               left: - 2, top: - 2,
                               radius: 2,
-                              fill: '/_name'.lib.color[this.getIndex("port")],
+                              fill: '/port'.data.color,
                               strokeWidth: 0
                            })
                            return {dot}
@@ -210,7 +205,7 @@
                   let transRect = new fabric.Rect({
                      width: 20,
                      height: 10,
-                     fill: '/my_ring'.lib.color[dest],
+                     fill: '/my_ring/port[dest]'.data.color,
                      left: 0,
                      top: 0,
                      strokeWidth: 0
@@ -281,7 +276,7 @@
                      left: 0,
                      top: 0,
                      strokeWidth: 1,
-                     stroke: '/my_other_ring'.lib.color[dest]
+                     stroke: '/my_other_ring/port[dest]'.data.color
                   })
                   let transText = new fabric.Text(`${data.toString(16)}`, {
                      left: 1,
