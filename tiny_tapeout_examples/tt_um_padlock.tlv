@@ -2,7 +2,7 @@
 \m5
    use(m5-1.0)
 \SV
-   m4_include_lib(['https://raw.githubusercontent.com/os-fpga/Virtual-FPGA-Lab/93c5e2e1434a2840753087e6a2af2c4f310a89d7/tlv_lib/tiny_tapeout_lib.tlv'])
+   m4_include_lib(['https://raw.githubusercontent.com/os-fpga/Virtual-FPGA-Lab/13f8c1501b1c1cc638a96e998f2fcdb38625d27e/tlv_lib/tiny_tapeout_lib.tlv'])
 
 `default_nettype none
 
