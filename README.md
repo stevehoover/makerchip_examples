@@ -18,6 +18,8 @@ Here are some quick-links:
   - <a href="http://www.makerchip.com/sandbox?code_url=https:%2F%2Fraw.githubusercontent.com%2Fstevehoover%2Fmakerchip_examples%2Fmaster%2Ftiny_tapeout_examples%2Ftt_um_AES.tlv" target="_blank" atom_fix="_">tiny_tapeout_examples/tt_um_AES.tlv</a>: AES encryption, implemented by students in an open final project for a two-week course.
   - <a href="http://www.makerchip.com/sandbox?code_url=https:%2F%2Fraw.githubusercontent.com%2Fstevehoover%2Fmakerchip_examples%2Fmaster%2Fmat_mul.tlv" target="_blank" atom_fix="_">mat_mul.tlv</a>: Output-stationary matrix multiply for ML acceleration.
   - <a href="http://www.makerchip.com/sandbox?code_url=https:%2F%2Fraw.githubusercontent.com%2Fstevehoover%2Fmakerchip_examples%2Fmaster%2Fviz_demo.tlv" target="_blank" atom_fix="_">viz_demo.tlv</a>: A progressive series of simple visualizations to demonstrate Visual Debug.
+  - <a href="http://www.makerchip.com/sandbox?code_url=https:%2F%2Fraw.githubusercontent.com%2Fstevehoover%2Fmakerchip_examples%2Fmaster%2Fclaude_booth_multiplier.tlv" target="_blank" atom_fix="_">claude_booth_multiplier.tlv</a>: A Booth multiplier explainer.
+  - <a href="http://www.makerchip.com/sandbox?code_url=https:%2F%2Fraw.githubusercontent.com%2Fstevehoover%2Fmakerchip_examples%2Fmaster%2Flogic_analyzer.tlv" target="_blank" atom_fix="_">logic_analyzer.tlv</a>: An example for comparison with Spade HDL.
 
 From other repos:
 

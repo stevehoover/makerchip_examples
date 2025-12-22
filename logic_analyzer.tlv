@@ -49,7 +49,6 @@
          $must_empty = ! $Triggered && /_top|fifo_out>>1$avail;
          
    // The trigger logic blocks the input once the data begins streaming out until the FIFO empties.
-   //m5+stall_flow(/_top, |in, @1, |fifo_in, @1, /trans)
    m5+connect(/_top, |in, @1, |fifo_in, @1, /trans, $reset, ['|| $must_empty'])
 
 
