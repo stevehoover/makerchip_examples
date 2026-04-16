@@ -465,7 +465,7 @@
                                 let toPt = points[conn.to];
 
                                 if (!fromPt || !toPt) {
-                                    console.warn(`Connection ${connId} has invalid endpoints (${conn ? conn.from : 'undefined'}→${conn ? conn.to : 'undefined'})`);
+                                    console.warn(`Connection ${connId} has invalid endpoints (${conn ? conn.from : "undefined"}→${conn ? conn.to : "undefined"})`);
                                     return;
                                 }
                                 
@@ -1835,8 +1835,8 @@
                          // Return connection lines to be added to canvas
                          return connectionLines;
                      }
-                /ctrl  // serv_ctrl - PC control and calculation
-                   \viz_js
+               /ctrl  // serv_ctrl - PC control and calculation
+                  \viz_js
                         box: {width: 450, height: 180, strokeWidth: 1},  // Match immdec dimensions
                         where: {left: 0, top: 50, width: 150, height: 60},  // Adjust position accordingly                        
                         init() {
