@@ -11,9 +11,9 @@
 
 // A ripple-carry adder chaining full adders, instantiating full adders in /_slice[*].
 // Input and output bits are under /_slice[*].
-\TLV ripple_carry_adder(/_slice, #_width, $_out, $_carry_out, $_in1, $_in2)
-   /_slice[m5_calc((#_width)-1):0]
-      $carry_in = (#m4_strip_prefix(/_slice) == 0) ? 1'b0 : /_slice[(#m4_strip_prefix(/_slice) - 1) % (#_width)]$_carry_out;
+\TLV ripple_carry_adder(/_slice, #_msb, $_out, $_carry_out, $_in1, $_in2)
+   /_slice[#_msb:0]
+      $carry_in = (#m4_strip_prefix(/_slice) == 0) ? 1'b0 : /_slice[(#m4_strip_prefix(/_slice) - 1) % (#_msb + 1)]$_carry_out;
       m5+full_adder($_out, $_carry_out, $_in1, $_in2, $carry_in)
 
 \SV
@@ -22,18 +22,18 @@
 \TLV
    // Instantiate an 8-bit ripple-carry adder, connecting input and output bits to vector signals.
    
-   m5_var(width, 8)  // adder width
+   m5_var(msb, 7)  // addend MSB bit index
    // Inputs
-   m4_rand($addend1, m5_width-1, 0)
-   m4_rand($addend2, m5_width-1, 0)
+   m4_rand($addend1, m5_msb, 0)
+   m4_rand($addend2, m5_msb, 0)
    // Connect inputs
-   /slice[m5_width-1:0]
+   /slice[m5_msb:0]
       $in1 = /top$addend1[#slice];
       $in2 = /top$addend2[#slice];
    // Adder
-   m5+ripple_carry_adder(/slice, m5_width, $out, $carry_out, $in1, $in2)
+   m5+ripple_carry_adder(/slice, m5_msb, $out, $carry_out, $in1, $in2)
    // Outputs
-   $result[m5_width:0] = {/slice[m5_width-1]$carry_out, /slice[*]$out};
+   $result[m5_calc(m5_msb+1):0] = {/slice[m5_msb]$carry_out, /slice[*]$out};
    
    // VIZ
    \viz_js

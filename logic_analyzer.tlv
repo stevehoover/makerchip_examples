@@ -218,7 +218,6 @@
    \viz_js
       box: {left: -19, top: -33, width: 320, height: 353, strokeWidth: 1, stroke: "#e0e0e0"},
       init() {
-         debugger;
          let ret = {}
          
          // Background logic diagram
