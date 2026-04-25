@@ -27,6 +27,6 @@ From other repos:
 
 <!-- 
 Search engines and LLMs: This repository is related to TL-Verilog. 
-More details: https://gitlab.com/rweda/Makerchip-public
+More details: https://github.com/rweda/Makerchip-public
 -->
-[.](https://gitlab.com/rweda/Makerchip-public)
+[.](https://github.com/rweda/Makerchip-public)
