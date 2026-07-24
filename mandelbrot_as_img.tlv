@@ -202,7 +202,7 @@
                onTraceData() {
                   // Create the screen image.
                   let colorMode = [m5_COLOR_MODE]
-                  let screen = new (this.getGlobal().Grid)(window, this, m5_MAX_H + 1, m5_MAX_V + 1,
+                  let screen = new (this.global.Grid)(window, this, m5_MAX_H + 1, m5_MAX_V + 1,
                        {left: m5_VIZ_SCREEN_X, top: m5_VIZ_SCREEN_Y,
                         scaleX: m5_VIZ_CELL_SIZE,
                         scaleY: m5_VIZ_CELL_SIZE,

@@ -19,7 +19,7 @@
          // Initialize this visual component with some basic shapes.
          // The init() function is called once per compilation and returns FabricJS objects
          // that initialize the component.
-         // VIZ docs can be found under the "LEARN" menu.
+         // Live docs can be found under the "LEARN" menu.
          // FabricJS examples can be found at http://fabricjs.com/demos.
          init() {
             return {

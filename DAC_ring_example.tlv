@@ -180,10 +180,11 @@
                /in
                   m4_rand($valid, 0, 0, port)
                   m4_rand($data, 31, 0, port)
+                  m4_rand($color, 23, 0, port)
                   m4_rand($dest, 1, 0, port)
                
                // Consume outputs:
-               `BOGUS_USE($data $valid)
+               `BOGUS_USE($data $color $valid)
    // Instantiate Ring
    m5+ring(/my_ring, 4, ['{left: -20, top: -40, width: 40, height: 80}'],
       \TLV
