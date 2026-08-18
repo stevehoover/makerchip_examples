@@ -1,0 +1,334 @@
+:root {
+  --bg: #08111f;
+  --bg-2: #0f2036;
+  --ink: #def2ff;
+  --ink-soft: #99bed7;
+  --card: #112742;
+  --stroke: #25557b;
+  --accent: #ff7a1f;
+  --accent-2: #2ec7d3;
+  --pending: #8da6bb;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: "Space Grotesk", sans-serif;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at 12% 0%, rgba(46, 199, 211, 0.2) 0%, transparent 40%),
+    radial-gradient(circle at 88% 8%, rgba(255, 122, 31, 0.18) 0%, transparent 36%),
+    linear-gradient(165deg, var(--bg) 0%, var(--bg-2) 58%, #112e4a 100%);
+}
+
+body.panel-open {
+  padding-bottom: 52vh;
+}
+
+.hero {
+  margin: 0 auto;
+  padding: 48px 20px 22px;
+}
+
+.kicker {
+  margin: 0;
+  font-size: 0.9rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent-2);
+  font-weight: 700;
+}
+
+h1 {
+  margin: 10px 0 10px;
+  font-size: clamp(1.8rem, 3.8vw, 3.4rem);
+  line-height: 1.06;
+}
+
+.intro {
+  max-width: 82ch;
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 1rem;
+}
+
+.legend {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 18px;
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+}
+
+.legend span {
+  background: rgba(6, 20, 34, 0.72);
+  border: 1px solid var(--stroke);
+  border-radius: 999px;
+  padding: 6px 12px;
+}
+
+main {
+  margin: 0 auto;
+  padding: 10px 20px 48px;
+}
+
+.grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  align-items: stretch;
+}
+
+.card {
+  width: 350px;
+  min-height: 442px;
+  background: var(--card);
+  border: 1px solid var(--stroke);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 14px 34px rgba(2, 8, 15, 0.45);
+  display: grid;
+  grid-template-rows: auto 1fr;
+}
+
+.media-wrap {
+  width: 350px;
+  height: 250px;
+  background: #121921;
+  display: grid;
+  place-items: center;
+}
+
+.media-wrap img,
+.media-wrap video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  background: #ffffff;
+}
+
+.pending {
+  font-family: "IBM Plex Mono", monospace;
+  color: #d7e0ef;
+  font-size: 0.85rem;
+  letter-spacing: 0.04em;
+}
+
+.meta {
+  padding: 14px;
+}
+
+.meta-top {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.status {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.78rem;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+  padding: 2px 8px;
+  white-space: nowrap;
+}
+
+.status:empty {
+  display: none;
+}
+
+.status.ready {
+  color: var(--accent-2);
+}
+
+.status.preferred {
+  color: var(--accent);
+}
+
+.status.pending {
+  color: var(--pending);
+}
+
+.desc {
+  margin: 10px 0 12px;
+  line-height: 1.4;
+  color: var(--ink-soft);
+}
+
+.links {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.links a,
+.links button {
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--ink);
+  background: rgba(8, 23, 39, 0.9);
+  border: 1px solid var(--stroke);
+  border-radius: 8px;
+  padding: 6px 10px;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.links a:hover,
+.links button:hover {
+  border-color: var(--accent-2);
+}
+
+/* Makerchip pane mode: this gallery is embedded as a connected third-party pane.
+   Hide the web links and show the single "open in the IDE" button per card. */
+.ide-btn {
+  display: none;
+}
+
+body.pane-mode .inline-btn,
+body.pane-mode .mc-link {
+  display: none;
+}
+
+/* The web links row is empty in pane mode (the button moves up beside the
+   title), so collapse it. */
+body.pane-mode .links {
+  display: none;
+}
+
+/* The single "Open" button sits to the right of the card title, wrapping to
+   its own (right-aligned) line when the title is too long to share the row. */
+body.pane-mode .meta-top {
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+body.pane-mode .meta-top .ide-btn {
+  margin-left: auto;
+}
+
+body.pane-mode .ide-btn {
+  display: inline-block;
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: #061426;
+  background: var(--accent-2);
+  border: 1px solid var(--accent-2);
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+body.pane-mode .ide-btn:hover {
+  filter: brightness(1.08);
+}
+
+.ide-btn:disabled {
+  opacity: 0.65;
+  cursor: progress;
+}
+
+.inline-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.inline-panel {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 50vh;
+  z-index: 99;
+  background: #061426;
+  border-top: 2px solid var(--accent-2);
+  box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.45);
+  display: grid;
+  grid-template-rows: auto 1fr;
+}
+
+.inline-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--stroke);
+  background: linear-gradient(90deg, rgba(46, 199, 211, 0.16), rgba(255, 122, 31, 0.1));
+}
+
+.inline-kicker {
+  margin: 0;
+  color: var(--accent-2);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.inline-header h3 {
+  margin: 2px 0 0;
+  font-size: 1rem;
+}
+
+.close-inline,
+.popout-inline {
+  color: var(--ink);
+  background: rgba(8, 23, 39, 0.95);
+  border: 1px solid var(--stroke);
+  border-radius: 8px;
+  font: inherit;
+  font-size: 0.85rem;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+#inline-frame {
+  border: 0;
+  width: 100%;
+  height: 100%;
+}
+
+@media (max-width: 760px) {
+  .hero {
+    padding-top: 32px;
+  }
+
+  .grid {
+    justify-content: center;
+  }
+
+  .card,
+  .media-wrap {
+    width: min(350px, calc(100vw - 40px));
+  }
+
+  .media-wrap {
+    height: calc(min(350px, calc(100vw - 40px)) * 0.7143);
+  }
+
+  body.panel-open {
+    padding-bottom: 62vh;
+  }
+
+  .inline-panel {
+    height: 60vh;
+  }
+}

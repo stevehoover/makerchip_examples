@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Makerchip Examples Gallery</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="hero">
+    <p class="kicker">Makerchip + TL-Verilog</p>
+    <h1>Examples With VIZ Captures</h1>
+    <p class="intro">A visual gallery of illustrative Makerchip examples. Mouse over to animate. Click buttons to open/compile/explore an example in Makerchip (in this page or in a new tab).</p>
+    <!--div class="legend">
+      <span><b>Live</b> VIZ render</span>
+      <span><b>Ready</b> example captured</span>
+      <span><b>Pending</b> capture not generated yet</span>
+    </div-->
+  </header>
+
+  <main>
+    <section id="grid" class="grid" aria-label="Example cards"></section>
+  </main>
+
+  <template id="card-template">
+    <article class="card">
+      <div class="media-wrap"></div>
+      <div class="meta">
+        <div class="meta-top">
+          <h2></h2>
+          <span class="status"></span>
+        </div>
+        <p class="desc"></p>
+        <div class="links">
+          <button type="button" class="ide-btn">Open</button>
+          <button type="button" class="inline-btn">Open Below</button>
+          <a class="mc-link" target="_blank" rel="noopener noreferrer">Open in Makerchip ↗</a>
+        </div>
+      </div>
+    </article>
+  </template>
+
+  <section id="inline-panel" class="inline-panel" aria-label="Inline Makerchip panel" hidden>
+    <div class="inline-header">
+      <div>
+        <p class="inline-kicker">Inline Runner</p>
+        <h3 id="inline-title">Makerchip Example</h3>
+      </div>
+      <div class="inline-actions">
+        <button id="popout-inline" type="button" class="popout-inline">Pop out</button>
+        <button id="close-inline" type="button" class="close-inline">Close</button>
+      </div>
+    </div>
+    <iframe id="inline-frame" title="Makerchip Inline Example" loading="lazy"></iframe>
+  </section>
+
+  <script src="examples.js"></script>
+</body>
+</html>
