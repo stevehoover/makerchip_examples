@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Weather</title>
+<style>
+  :root {
+    --bg: #1e1e1e; --bg-alt: #252526; --card: #2a2d2e; --card-hover: #323638;
+    --border: #3c3c3c; --fg: #d4d4d4; --fg-dim: #9aa0a6;
+    --accent: #4ea1ff; --accent-fg: #ffffff; --danger: #f48771;
+    --shadow: 0 1px 3px rgba(0,0,0,0.35);
+  }
+  :root[data-theme="light"] {
+    --bg: #ffffff; --bg-alt: #f5f6f7; --card: #ffffff; --card-hover: #f0f4f8;
+    --border: #e3e5e8; --fg: #1f1f1f; --fg-dim: #5f6368;
+    --accent: #1a73e8; --accent-fg: #ffffff; --danger: #c5221f;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--bg); color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 13px; display: flex; flex-direction: column;
+  }
+  header {
+    flex: 0 0 auto; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    padding: 9px 12px; background: var(--bg-alt); border-bottom: 1px solid var(--border);
+  }
+  header .brand { display: flex; align-items: center; gap: 7px; white-space: nowrap; }
+  header .brand .glyph { font-size: 15px; }
+  header h1 { font-size: 14px; font-weight: 600; margin: 0; }
+  header .spacer { flex: 1 1 auto; }
+  input, select, button {
+    font-family: inherit; font-size: 12px; color: var(--fg); background: var(--card);
+    border: 1px solid var(--border); border-radius: 5px; padding: 5px 9px;
+    transition: background 0.12s ease;
+  }
+  input { cursor: text; min-width: 120px; }
+  select, button { cursor: pointer; }
+  select:hover, button:hover { background: var(--card-hover); }
+  button.ghost { background: transparent; }
+  button.ghost:hover { background: var(--card-hover); }
+  button:disabled { opacity: 0.5; cursor: default; }
+  .unit-toggle { display: inline-flex; border: 1px solid var(--border); border-radius: 5px; overflow: hidden; }
+  .unit-toggle button { border: none; border-radius: 0; padding: 5px 9px; background: var(--card); }
+  .unit-toggle button.active { background: var(--accent); color: var(--accent-fg); }
+  main { flex: 1 1 auto; overflow-y: auto; padding: 14px; }
+  .status { color: var(--fg-dim); padding: 34px 8px; text-align: center; line-height: 1.5; }
+  .status.error { color: var(--danger); }
+
+  .current {
+    display: flex; align-items: center; gap: 16px;
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 18px 20px; margin-bottom: 14px; box-shadow: var(--shadow);
+  }
+  .current .icon { font-size: 56px; line-height: 1; }
+  .current .temp { font-size: 46px; font-weight: 300; line-height: 1; }
+  .current .info { flex: 1 1 auto; min-width: 0; }
+  .current .place { font-size: 15px; font-weight: 600; margin-bottom: 2px; }
+  .current .cond { font-size: 13px; color: var(--fg-dim); }
+  .current .updated { font-size: 11px; color: var(--fg-dim); margin-top: 4px; }
+
+  .details {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 8px; margin-bottom: 18px;
+  }
+  .detail {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 9px; padding: 10px 12px; box-shadow: var(--shadow);
+  }
+  .detail .label { font-size: 11px; color: var(--fg-dim); text-transform: uppercase; letter-spacing: 0.04em; }
+  .detail .value { font-size: 16px; font-weight: 600; margin-top: 3px; }
+
+  .forecast-title {
+    font-size: 11px; color: var(--fg-dim); margin: 0 0 8px;
+    text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .forecast { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
+  .day {
+    flex: 0 0 auto; width: 80px; text-align: center;
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 9px; padding: 10px 6px; box-shadow: var(--shadow);
+  }
+  .day .dow { font-size: 12px; font-weight: 600; }
+  .day .dicon { font-size: 27px; margin: 6px 0; }
+  .day .hi { font-size: 13px; font-weight: 600; }
+  .day .lo { font-size: 12px; color: var(--fg-dim); }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><span class="glyph">&#127777;&#65039;</span><h1>Weather</h1></div>
+  <input id="search" type="text" placeholder="Search city&hellip;" title="Type a city and press Enter">
+  <button id="locate-btn" class="ghost" title="Use my approximate location">&#128205;</button>
+  <div class="spacer"></div>
+  <div class="unit-toggle" id="unit-toggle" title="Temperature units">
+    <button data-unit="f" class="active">&deg;F</button>
+    <button data-unit="c">&deg;C</button>
+  </div>
+  <button id="refresh-btn" class="ghost" title="Refresh">&#8635;</button>
+</header>
+<main>
+  <div id="content" class="status">Locating&hellip;</div>
+</main>
+
+<script>
+"use strict";
+
+/* =========================================================================
+ * Weather pane for Makerchip.
+ *
+ * All data services are keyless and CORS-enabled:
+ *   - ipwho.is / geojs.io -> approximate location from IP (auto "local" weather)
+ *   - Open-Meteo geocoding -> city-name search -> lat/lon
+ *   - Open-Meteo forecast  -> current conditions + 7-day forecast
+ * ========================================================================= */
+
+const IP_LOOKUPS  = ["https://ipwho.is/", "https://get.geojs.io/v1/ip/geo.json"];
+const GEOCODE_API = "https://geocoding-api.open-meteo.com/v1/search";
+const FORECAST_API = "https://api.open-meteo.com/v1/forecast";
+
+// WMO weather interpretation codes -> [label, emoji].
+const WMO = {
+  0:["Clear sky","\u2600\uFE0F"], 1:["Mainly clear","\uD83C\uDF24\uFE0F"], 2:["Partly cloudy","\u26C5"],
+  3:["Overcast","\u2601\uFE0F"], 45:["Fog","\uD83C\uDF2B\uFE0F"], 48:["Rime fog","\uD83C\uDF2B\uFE0F"],
+  51:["Light drizzle","\uD83C\uDF26\uFE0F"], 53:["Drizzle","\uD83C\uDF26\uFE0F"], 55:["Dense drizzle","\uD83C\uDF26\uFE0F"],
+  56:["Freezing drizzle","\uD83C\uDF27\uFE0F"], 57:["Freezing drizzle","\uD83C\uDF27\uFE0F"],
+  61:["Light rain","\uD83C\uDF27\uFE0F"], 63:["Rain","\uD83C\uDF27\uFE0F"], 65:["Heavy rain","\uD83C\uDF27\uFE0F"],
+  66:["Freezing rain","\uD83C\uDF27\uFE0F"], 67:["Freezing rain","\uD83C\uDF27\uFE0F"],
+  71:["Light snow","\uD83C\uDF28\uFE0F"], 73:["Snow","\uD83C\uDF28\uFE0F"], 75:["Heavy snow","\u2744\uFE0F"],
+  77:["Snow grains","\uD83C\uDF28\uFE0F"], 80:["Rain showers","\uD83C\uDF26\uFE0F"], 81:["Rain showers","\uD83C\uDF26\uFE0F"],
+  82:["Violent showers","\u26C8\uFE0F"], 85:["Snow showers","\uD83C\uDF28\uFE0F"], 86:["Snow showers","\u2744\uFE0F"],
+  95:["Thunderstorm","\u26C8\uFE0F"], 96:["Thunderstorm","\u26C8\uFE0F"], 99:["Thunderstorm","\u26C8\uFE0F"],
+};
+function wmo(code) { return WMO[code] || ["Unknown", "\u2753"]; }
+
+// -------------------------------------------------------------------------
+// Makerchip pane channel (postMessage v1): used only to match the IDE theme
+// via getContext. Inert when loaded as a normal web page.
+// -------------------------------------------------------------------------
+const PANE_V = 1;
+let _rpcSeq = 0;
+const _rpcPending = new Map();
+
+window.addEventListener("message", (e) => {
+  const m = e.data;
+  if (!m || typeof m !== "object" || m.v !== PANE_V) return;
+  if (m.kind === "rpc-result") { _rpcPending.get(m.id)?.resolve(m.result); _rpcPending.delete(m.id); }
+  else if (m.kind === "rpc-error") { _rpcPending.get(m.id)?.reject(new Error(m.error)); _rpcPending.delete(m.id); }
+});
+
+function callIde(method, ...args) {
+  const id = ++_rpcSeq;
+  return new Promise((resolve, reject) => {
+    if (window.parent === window) { reject(new Error("not a pane")); return; }
+    _rpcPending.set(id, { resolve, reject });
+    parent.postMessage({ v: PANE_V, kind: "rpc", id, target: "ide", method, args }, "*");
+  });
+}
+function callIdeTimeout(method, args, ms) {
+  return Promise.race([
+    callIde(method, ...args),
+    new Promise((_, rej) => setTimeout(() => rej(new Error("IDE RPC timed out")), ms)),
+  ]);
+}
+function applyTheme(dark) { document.documentElement.setAttribute("data-theme", dark ? "dark" : "light"); }
+
+// -------------------------------------------------------------------------
+// DOM refs + state
+// -------------------------------------------------------------------------
+const contentEl = document.getElementById("content");
+const searchEl = document.getElementById("search");
+const locateBtn = document.getElementById("locate-btn");
+const refreshBtn = document.getElementById("refresh-btn");
+const unitToggle = document.getElementById("unit-toggle");
+
+let unit = "f";        // "f" | "c"
+let place = null;      // { name, latitude, longitude }
+
+function showStatus(msg, isError) {
+  contentEl.className = isError ? "status error" : "status";
+  contentEl.textContent = msg;
+}
+
+async function fetchJson(url) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+async function locateByIp() {
+  let lastErr;
+  for (const url of IP_LOOKUPS) {
+    try {
+      const d = await fetchJson(url);
+      const lat = parseFloat(d.latitude), lon = parseFloat(d.longitude);
+      if (isNaN(lat) || isNaN(lon)) throw new Error("no coordinates");
+      const name = [d.city, d.region, d.country].filter(Boolean).join(", ");
+      return { name: name || "Your location", latitude: lat, longitude: lon };
+    } catch (err) { lastErr = err; }
+  }
+  throw lastErr || new Error("IP lookup failed");
+}
+
+async function geocode(query) {
+  const url = `${GEOCODE_API}?name=${encodeURIComponent(query)}&count=1&language=en&format=json`;
+  const d = await fetchJson(url);
+  const r = d.results && d.results[0];
+  if (!r) throw new Error(`No match for "${query}"`);
+  const name = [r.name, r.admin1, r.country].filter(Boolean).join(", ");
+  return { name, latitude: r.latitude, longitude: r.longitude };
+}
+
+async function getForecast(loc) {
+  const params = new URLSearchParams({
+    latitude: loc.latitude,
+    longitude: loc.longitude,
+    current: "temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m",
+    daily: "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max",
+    timezone: "auto",
+    temperature_unit: unit === "c" ? "celsius" : "fahrenheit",
+    wind_speed_unit: unit === "c" ? "kmh" : "mph",
+    forecast_days: "7",
+  });
+  return fetchJson(`${FORECAST_API}?${params.toString()}`);
+}
+
+function render(loc, data) {
+  const cur = data.current || {};
+  const units = data.current_units || {};
+  const [condText, condIcon] = wmo(cur.weather_code);
+  const tSym = unit === "c" ? "\u00B0C" : "\u00B0F";
+  const windSym = units.wind_speed_10m || (unit === "c" ? "km/h" : "mph");
+
+  contentEl.className = "";
+  contentEl.innerHTML = "";
+
+  const current = document.createElement("div");
+  current.className = "current";
+  current.innerHTML = `
+    <div class="icon">${condIcon}</div>
+    <div class="info">
+      <div class="place"></div>
+      <div class="cond">${condText}</div>
+      <div class="updated"></div>
+    </div>
+    <div class="temp">${Math.round(cur.temperature_2m)}${tSym}</div>`;
+  current.querySelector(".place").textContent = loc.name;
+  current.querySelector(".updated").textContent =
+    cur.time ? "Updated " + new Date(cur.time).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "";
+  contentEl.appendChild(current);
+
+  const details = document.createElement("div");
+  details.className = "details";
+  const cells = [
+    ["Feels like", `${Math.round(cur.apparent_temperature)}${tSym}`],
+    ["Humidity", `${Math.round(cur.relative_humidity_2m)}%`],
+    ["Wind", `${Math.round(cur.wind_speed_10m)} ${windSym}`],
+    ["Precip", `${cur.precipitation ?? 0} ${units.precipitation || "mm"}`],
+  ];
+  for (const [label, value] of cells) {
+    const d = document.createElement("div");
+    d.className = "detail";
+    d.innerHTML = `<div class="label"></div><div class="value"></div>`;
+    d.querySelector(".label").textContent = label;
+    d.querySelector(".value").textContent = value;
+    details.appendChild(d);
+  }
+  contentEl.appendChild(details);
+
+  const daily = data.daily;
+  if (daily && daily.time && daily.time.length) {
+    const title = document.createElement("p");
+    title.className = "forecast-title";
+    title.textContent = "7-day forecast";
+    contentEl.appendChild(title);
+
+    const row = document.createElement("div");
+    row.className = "forecast";
+    for (let i = 0; i < daily.time.length; i++) {
+      const [, icon] = wmo(daily.weather_code[i]);
+      const dow = new Date(daily.time[i] + "T00:00").toLocaleDateString([], { weekday: "short" });
+      const day = document.createElement("div");
+      day.className = "day";
+      day.innerHTML = `
+        <div class="dow">${i === 0 ? "Today" : dow}</div>
+        <div class="dicon">${icon}</div>
+        <div class="hi">${Math.round(daily.temperature_2m_max[i])}${tSym}</div>
+        <div class="lo">${Math.round(daily.temperature_2m_min[i])}${tSym}</div>`;
+      row.appendChild(day);
+    }
+    contentEl.appendChild(row);
+  }
+}
+
+async function loadWeather() {
+  if (!place) return;
+  showStatus("Loading weather\u2026", false);
+  refreshBtn.disabled = true;
+  try {
+    render(place, await getForecast(place));
+  } catch (err) {
+    showStatus(`Could not load weather. ${err.message}`, true);
+  } finally {
+    refreshBtn.disabled = false;
+  }
+}
+
+async function useMyLocation() {
+  showStatus("Finding your location\u2026", false);
+  locateBtn.disabled = true;
+  try {
+    place = await locateByIp();
+    await loadWeather();
+  } catch (err) {
+    showStatus(`Could not determine your location. ${err.message}. Try searching for a city.`, true);
+  } finally {
+    locateBtn.disabled = false;
+  }
+}
+
+async function searchCity(query) {
+  if (!query.trim()) return;
+  showStatus(`Searching for "${query}"\u2026`, false);
+  try {
+    place = await geocode(query.trim());
+    await loadWeather();
+  } catch (err) {
+    showStatus(err.message, true);
+  }
+}
+
+// -------------------------------------------------------------------------
+// Boot
+// -------------------------------------------------------------------------
+searchEl.addEventListener("keydown", (e) => { if (e.key === "Enter") searchCity(searchEl.value); });
+locateBtn.addEventListener("click", useMyLocation);
+refreshBtn.addEventListener("click", loadWeather);
+unitToggle.addEventListener("click", (e) => {
+  const btn = e.target.closest("button[data-unit]");
+  if (!btn || btn.dataset.unit === unit) return;
+  unit = btn.dataset.unit;
+  for (const b of unitToggle.querySelectorAll("button")) b.classList.toggle("active", b.dataset.unit === unit);
+  loadWeather();
+});
+
+async function boot() {
+  if (window.parent !== window) {
+    try { parent.postMessage({ v: PANE_V, type: "ready" }, "*"); } catch (_) {}
+    try {
+      const ctx = await callIdeTimeout("getContext", [], 1500);
+      if (ctx?.theme) applyTheme(!!ctx.theme.dark);
+    } catch (_) { /* non-Makerchip host */ }
+  } else {
+    applyTheme(window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
+  }
+  useMyLocation();
+}
+
+boot();
+</script>
+</body>
+</html>

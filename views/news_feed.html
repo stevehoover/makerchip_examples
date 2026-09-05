@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>News Feed</title>
+<style>
+  :root {
+    --bg: #1e1e1e; --bg-alt: #252526; --card: #2a2d2e; --card-hover: #323638;
+    --border: #3c3c3c; --fg: #d4d4d4; --fg-dim: #9aa0a6;
+    --accent: #4ea1ff; --accent-fg: #ffffff; --danger: #f48771;
+    --shadow: 0 1px 3px rgba(0,0,0,0.35);
+  }
+  :root[data-theme="light"] {
+    --bg: #ffffff; --bg-alt: #f5f6f7; --card: #ffffff; --card-hover: #f0f4f8;
+    --border: #e3e5e8; --fg: #1f1f1f; --fg-dim: #5f6368;
+    --accent: #1a73e8; --accent-fg: #ffffff; --danger: #c5221f;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--bg); color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 13px; display: flex; flex-direction: column;
+  }
+  header {
+    flex: 0 0 auto; display: flex; align-items: center; gap: 8px;
+    padding: 9px 12px; background: var(--bg-alt); border-bottom: 1px solid var(--border);
+  }
+  header .brand { display: flex; align-items: center; gap: 7px; white-space: nowrap; }
+  header .brand .glyph { font-size: 15px; }
+  header h1 { font-size: 14px; font-weight: 600; margin: 0; }
+  header .spacer { flex: 1 1 auto; }
+  select, button {
+    font-family: inherit; font-size: 12px; color: var(--fg); background: var(--card);
+    border: 1px solid var(--border); border-radius: 5px; padding: 5px 9px; cursor: pointer;
+    transition: background 0.12s ease;
+  }
+  select:hover, button:hover { background: var(--card-hover); }
+  button.primary { background: var(--accent); color: var(--accent-fg); border-color: transparent; }
+  button.primary:hover { filter: brightness(1.08); }
+  button.ghost { background: transparent; }
+  button.ghost:hover { background: var(--card-hover); }
+  button:disabled { opacity: 0.5; cursor: default; }
+  main { flex: 1 1 auto; overflow-y: auto; }
+  .status { color: var(--fg-dim); padding: 32px 16px; text-align: center; line-height: 1.5; }
+  .status.error { color: var(--danger); }
+  .hidden { display: none !important; }
+
+  /* Feed list */
+  #list { padding: 10px 12px; }
+  .feed-title {
+    font-size: 11px; color: var(--fg-dim); margin: 0 0 10px;
+    text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .card {
+    display: flex; gap: 11px; padding: 11px; margin-bottom: 8px;
+    background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+    box-shadow: var(--shadow); cursor: pointer; transition: background 0.12s ease, transform 0.06s ease;
+  }
+  .card:hover { background: var(--card-hover); }
+  .card:active { transform: scale(0.995); }
+  .card .thumb {
+    flex: 0 0 auto; width: 76px; height: 76px; border-radius: 6px;
+    object-fit: cover; background: var(--bg-alt);
+  }
+  .card .body { flex: 1 1 auto; min-width: 0; }
+  .card .headline { font-size: 13px; font-weight: 600; line-height: 1.35; margin: 0 0 4px; }
+  .card .meta { font-size: 11px; color: var(--fg-dim); margin-bottom: 6px; }
+  .card .snippet {
+    font-size: 12px; color: var(--fg-dim); line-height: 1.45;
+    max-height: 3.6em; overflow: hidden; margin-bottom: 9px;
+  }
+  .card .actions { display: flex; gap: 6px; }
+
+  /* Reader (in-pane) */
+  #reader { padding: 0; }
+  .reader-bar {
+    position: sticky; top: 0; z-index: 2; display: flex; align-items: center; gap: 8px;
+    padding: 9px 12px; background: var(--bg-alt); border-bottom: 1px solid var(--border);
+  }
+  .reader-body { max-width: 760px; margin: 0 auto; padding: 18px 20px 44px; }
+  .reader-body h1 { font-size: 21px; line-height: 1.3; margin: 0 0 6px; }
+  .reader-body .meta { color: var(--fg-dim); font-size: 12px; margin-bottom: 16px; }
+  .reader-body .original {
+    display: inline-block; margin-bottom: 18px; padding: 7px 14px; border-radius: 6px;
+    background: var(--accent); color: var(--accent-fg); text-decoration: none; font-size: 13px;
+  }
+  .reader-body article { font-size: 14px; line-height: 1.65; }
+  .reader-body article img { max-width: 100%; height: auto; border-radius: 6px; }
+  .reader-body article a { color: var(--accent); }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><span class="glyph">&#128240;</span><h1>News Feed</h1></div>
+  <select id="feed-select" title="Choose a feed"></select>
+  <div class="spacer"></div>
+  <button id="refresh-btn" class="ghost" title="Reload the feed">&#8635;</button>
+</header>
+<main>
+  <div id="list" class="status">Loading&hellip;</div>
+  <div id="reader" class="hidden"></div>
+</main>
+
+<script>
+"use strict";
+
+/* =========================================================================
+ * News Feed pane for Makerchip.
+ *
+ * Feeds are RSS/Atom URLs converted to JSON via a CORS-friendly proxy. Add
+ * more sources by extending FEEDS below.
+ *
+ * "Open" currently shows the article *in this pane* (a reader view with a
+ * Back button). The article is first normalized by toArticle(); showArticle()
+ * renders it. To later open each item in its own Makerchip pane, replace the
+ * body of openArticle() to deliver the toArticle() record to a companion
+ * reader pane (e.g. over the pane bus) instead of calling showArticle().
+ * ========================================================================= */
+
+const FEEDS = [
+  { id: "bbc",     label: "BBC Top",      url: "https://feeds.bbci.co.uk/news/rss.xml" },
+  { id: "world",   label: "BBC World",    url: "https://feeds.bbci.co.uk/news/world/rss.xml" },
+  { id: "npr",     label: "NPR News",     url: "https://feeds.npr.org/1001/rss.xml" },
+  { id: "ars",     label: "Ars Technica", url: "https://feeds.arstechnica.com/arstechnica/index" },
+  { id: "verge",   label: "The Verge",    url: "https://www.theverge.com/rss/index.xml" },
+  { id: "hn",      label: "Hacker News",  url: "https://hnrss.org/frontpage?count=30" },
+];
+
+const PROXY = "https://api.rss2json.com/v1/api.json?rss_url=";
+
+// -------------------------------------------------------------------------
+// Makerchip pane channel (postMessage v1): used only to match the IDE theme
+// via getContext. Inert when loaded as a normal web page.
+// -------------------------------------------------------------------------
+const PANE_V = 1;
+let _rpcSeq = 0;
+const _rpcPending = new Map();
+
+window.addEventListener("message", (e) => {
+  const m = e.data;
+  if (!m || typeof m !== "object" || m.v !== PANE_V) return;
+  if (m.kind === "rpc-result") { _rpcPending.get(m.id)?.resolve(m.result); _rpcPending.delete(m.id); }
+  else if (m.kind === "rpc-error") { _rpcPending.get(m.id)?.reject(new Error(m.error)); _rpcPending.delete(m.id); }
+});
+
+function callIde(method, ...args) {
+  const id = ++_rpcSeq;
+  return new Promise((resolve, reject) => {
+    if (window.parent === window) { reject(new Error("not a pane")); return; }
+    _rpcPending.set(id, { resolve, reject });
+    parent.postMessage({ v: PANE_V, kind: "rpc", id, target: "ide", method, args }, "*");
+  });
+}
+function callIdeTimeout(method, args, ms) {
+  return Promise.race([
+    callIde(method, ...args),
+    new Promise((_, rej) => setTimeout(() => rej(new Error("IDE RPC timed out")), ms)),
+  ]);
+}
+function applyTheme(dark) { document.documentElement.setAttribute("data-theme", dark ? "dark" : "light"); }
+
+// -------------------------------------------------------------------------
+// Helpers
+// -------------------------------------------------------------------------
+function stripHtml(html) {
+  const tmp = document.createElement("div");
+  tmp.innerHTML = html || "";
+  return (tmp.textContent || tmp.innerText || "").trim();
+}
+function timeAgo(dateStr) {
+  const then = new Date(dateStr).getTime();
+  if (isNaN(then)) return "";
+  const s = Math.max(0, (Date.now() - then) / 1000);
+  if (s < 60) return "just now";
+  const m = s / 60; if (m < 60) return `${Math.floor(m)}m ago`;
+  const h = m / 60; if (h < 24) return `${Math.floor(h)}h ago`;
+  return `${Math.floor(h / 24)}d ago`;
+}
+function articleSource(item, feedData) {
+  if (item.author) return item.author;
+  try { return new URL(item.link).hostname.replace(/^www\./, ""); }
+  catch (_) { return feedData.feed?.title || ""; }
+}
+
+// First usable <img> src embedded in an HTML body (fallback for feeds that put
+// images only in the item content, e.g. The Verge).
+function firstImageFromHtml(html) {
+  const tmp = document.createElement("div");
+  tmp.innerHTML = html || "";
+  for (const img of tmp.querySelectorAll("img")) {
+    const src = img.getAttribute("src");
+    if (src && /^https?:\/\//i.test(src)) return src;
+  }
+  return "";
+}
+
+// Normalize a feed item into a compact, self-contained article record. This is
+// the hand-off shape a future separate reader pane would consume.
+function toArticle(item, feedData) {
+  const body = item.content || item.description || "";
+  return {
+    title: stripHtml(item.title),
+    source: articleSource(item, feedData),
+    pubDate: item.pubDate || "",
+    link: item.link || "",
+    thumbnail: item.thumbnail || item.enclosure?.link || firstImageFromHtml(body),
+    contentHtml: body,
+  };
+}
+
+// -------------------------------------------------------------------------
+// DOM refs + state
+// -------------------------------------------------------------------------
+const listEl = document.getElementById("list");
+const readerEl = document.getElementById("reader");
+const selectEl = document.getElementById("feed-select");
+const refreshBtn = document.getElementById("refresh-btn");
+
+function currentFeed() { return FEEDS.find((f) => f.id === selectEl.value) || FEEDS[0]; }
+
+async function fetchFeed(feed) {
+  const res = await fetch(PROXY + encodeURIComponent(feed.url));
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data = await res.json();
+  if (data.status !== "ok") throw new Error(data.message || "Feed error");
+  return data;
+}
+
+function showListStatus(msg, isError) {
+  listEl.className = isError ? "status error" : "status";
+  listEl.textContent = msg;
+}
+
+function renderList(feedData) {
+  listEl.className = "";
+  listEl.innerHTML = "";
+
+  const title = document.createElement("p");
+  title.className = "feed-title";
+  title.textContent = feedData.feed?.title || currentFeed().label;
+  listEl.appendChild(title);
+
+  const items = feedData.items || [];
+  if (!items.length) { showListStatus("No articles found in this feed.", false); return; }
+
+  for (const item of items) {
+    const article = toArticle(item, feedData);
+    const card = document.createElement("div");
+    card.className = "card";
+    card.addEventListener("click", () => openArticle(article));
+
+    if (article.thumbnail) {
+      const img = document.createElement("img");
+      img.className = "thumb"; img.src = article.thumbnail; img.loading = "lazy";
+      img.onerror = () => img.remove();
+      card.appendChild(img);
+    }
+
+    const body = document.createElement("div");
+    body.className = "body";
+
+    const headline = document.createElement("div");
+    headline.className = "headline";
+    headline.textContent = article.title;
+    body.appendChild(headline);
+
+    const meta = document.createElement("div");
+    meta.className = "meta";
+    meta.textContent = [article.source, timeAgo(article.pubDate)].filter(Boolean).join(" \u00b7 ");
+    body.appendChild(meta);
+
+    const snippetText = stripHtml(article.contentHtml);
+    if (snippetText) {
+      const snippet = document.createElement("div");
+      snippet.className = "snippet";
+      snippet.textContent = snippetText;
+      body.appendChild(snippet);
+    }
+
+    const actions = document.createElement("div");
+    actions.className = "actions";
+    const openBtn = document.createElement("button");
+    openBtn.className = "primary";
+    openBtn.textContent = "Open";
+    openBtn.title = "Open this article";
+    openBtn.addEventListener("click", (e) => { e.stopPropagation(); openArticle(article); });
+    actions.appendChild(openBtn);
+    body.appendChild(actions);
+
+    card.appendChild(body);
+    listEl.appendChild(card);
+  }
+}
+
+async function loadFeed() {
+  const feed = currentFeed();
+  showList();
+  showListStatus("Loading\u2026", false);
+  refreshBtn.disabled = true;
+  try {
+    renderList(await fetchFeed(feed));
+  } catch (err) {
+    showListStatus(`Could not load "${feed.label}". ${err.message}`, true);
+  } finally {
+    refreshBtn.disabled = false;
+  }
+}
+
+// -------------------------------------------------------------------------
+// View switching + in-pane reader
+//
+// EXTENSION POINT: to open items in their own Makerchip pane instead, change
+// openArticle() to hand `article` to a companion reader pane (e.g. via the
+// pane bus) rather than calling showArticle().
+// -------------------------------------------------------------------------
+function showList() {
+  readerEl.classList.add("hidden");
+  readerEl.innerHTML = "";
+  listEl.classList.remove("hidden");
+}
+
+function openArticle(article) {
+  showArticle(article);
+}
+
+function showArticle(article) {
+  listEl.classList.add("hidden");
+  readerEl.classList.remove("hidden");
+  readerEl.innerHTML = "";
+
+  const bar = document.createElement("div");
+  bar.className = "reader-bar";
+  const back = document.createElement("button");
+  back.className = "ghost";
+  back.innerHTML = "&#8592; Back";
+  back.addEventListener("click", showList);
+  bar.appendChild(back);
+  readerEl.appendChild(bar);
+
+  const wrap = document.createElement("div");
+  wrap.className = "reader-body";
+
+  const h1 = document.createElement("h1");
+  h1.textContent = article.title || "Article";
+  wrap.appendChild(h1);
+
+  const meta = document.createElement("div");
+  meta.className = "meta";
+  const when = article.pubDate ? new Date(article.pubDate).toLocaleString() : "";
+  meta.textContent = [article.source, when].filter(Boolean).join(" \u00b7 ");
+  wrap.appendChild(meta);
+
+  if (article.link) {
+    const a = document.createElement("a");
+    a.className = "original";
+    a.href = article.link; a.target = "_blank"; a.rel = "noopener";
+    a.textContent = "Open original \u2197";
+    wrap.appendChild(a);
+  }
+
+  const art = document.createElement("article");
+  art.innerHTML = article.contentHtml || "<p>No article text available.</p>";
+  wrap.appendChild(art);
+
+  readerEl.appendChild(wrap);
+  readerEl.scrollTop = 0;
+  document.querySelector("main").scrollTop = 0;
+}
+
+// -------------------------------------------------------------------------
+// Boot
+// -------------------------------------------------------------------------
+selectEl.addEventListener("change", loadFeed);
+refreshBtn.addEventListener("click", loadFeed);
+
+for (const f of FEEDS) {
+  const opt = document.createElement("option");
+  opt.value = f.id; opt.textContent = f.label;
+  selectEl.appendChild(opt);
+}
+
+async function boot() {
+  if (window.parent !== window) {
+    try { parent.postMessage({ v: PANE_V, type: "ready" }, "*"); } catch (_) {}
+    try {
+      const ctx = await callIdeTimeout("getContext", [], 1500);
+      if (ctx?.theme) applyTheme(!!ctx.theme.dark);
+    } catch (_) { /* non-Makerchip host */ }
+  } else {
+    applyTheme(window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
+  }
+  loadFeed();
+}
+
+boot();
+</script>
+</body>
+</html>
