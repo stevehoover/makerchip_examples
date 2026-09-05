@@ -2,6 +2,8 @@
 
 Various examples of TL-Verilog code to run in Makerchip.com. (All have custom simulation visualization.)
 
+📸 **[Browse the visual gallery &raquo;](https://stevehoover.github.io/makerchip_examples/gallery/)** &mdash; Animated VIZ captures of many of these examples that you can view and explore in Makerchip.
+
 <!--- To open one of these in makerchip, copy the following into your browser, and append the corresponding file name.
 `http://www.makerchip.com/sandbox?code_url=https:%2F%2Fraw.githubusercontent.com%2Fstevehoover%2Fwarp-v%2Fmaster%2F` --->
 

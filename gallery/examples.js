@@ -593,7 +593,7 @@ async function initPaneMode() {
     const btn = card.querySelector(".ide-btn");
     const metaTop = card.querySelector(".meta-top");
     if (btn && metaTop) {
-      btn.textContent = "Open";
+      btn.textContent = "Load";
       metaTop.appendChild(btn);
     }
   }
@@ -610,10 +610,8 @@ async function openInIde(ex, btn) {
     const code = await res.text();
 
     // setCode loads the source into the Editor and compiles it; in an editor-less
-    // IDE (hasEditor: false) it degrades to a headless compile. It is the single
-    // whitelisted entry point that covers both cases, so no editor probing is needed.
+    // IDE (hasEditor: false) it degrades to a headless compile.
     await callIde("setCode", code);
-    callIde("activatePane", "Editor").catch(() => {}); // best-effort focus
   } catch (err) {
     console.error("Open in Makerchip failed:", err);
     btn.textContent = "Failed \u2014 retry";
