@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Logic Hex</title>
+<!--
+  Logic Hex - a hexagonal tile puzzle for learning logic gates.
+  Self-contained (no external resources). Load it into a Makerchip View, e.g.:
+    https://stevehoover.github.io/makerchip_examples/views/logic_hex_puzzle.html
+
+  Each tile is a hexagon holding one gate. The four slanted edges carry wire
+  connections; the flat top and bottom edges do not. Two inputs enter on the
+  upper-left/lower-left edges; the gate output leaves on both the upper-right
+  and lower-right edges, so it feeds the two tiles to its right. Tiles have a
+  fixed orientation, so signals always flow left to right.
+
+  All tile geometry is parameterized - open the gear panel to experiment.
+-->
+<style>
+  :root {
+    --bg: #1e1e1e; --bg-alt: #252526; --card: #2a2d2e; --card-hover: #323638;
+    --border: #3c3c3c; --fg: #d4d4d4; --fg-dim: #9aa0a6;
+    --accent: #4ea1ff; --accent-fg: #ffffff; --danger: #f48771;
+    --good: #6ac46a;
+    --shadow: 0 1px 3px rgba(0,0,0,0.35);
+    --hex: #2f3336; --hex-edge: #4a5054; --hex-empty: #26292b;
+    --gate: #3a4045; --ink: #c9d1d9;
+  }
+  :root[data-theme="light"] {
+    --bg: #ffffff; --bg-alt: #f5f6f7; --card: #ffffff; --card-hover: #f0f4f8;
+    --border: #e3e5e8; --fg: #1f1f1f; --fg-dim: #5f6368;
+    --accent: #1a73e8; --accent-fg: #ffffff; --danger: #c5221f;
+    --good: #188038;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08);
+    --hex: #eef1f4; --hex-edge: #b9c1c9; --hex-empty: #f7f8fa;
+    --gate: #dfe4ea; --ink: #2b3137;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--bg); color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 13px; display: flex; flex-direction: column; overflow: hidden;
+  }
+  header {
+    flex: 0 0 auto; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    padding: 8px 12px; background: var(--bg-alt); border-bottom: 1px solid var(--border);
+  }
+  header h1 { font-size: 14px; font-weight: 600; margin: 0; white-space: nowrap; }
+  header h1 .glyph { color: var(--accent); }
+  header .spacer { flex: 1 1 auto; }
+  select, button {
+    font-family: inherit; font-size: 12px; color: var(--fg); background: var(--card);
+    border: 1px solid var(--border); border-radius: 5px; padding: 5px 9px; cursor: pointer;
+  }
+  select:hover, button:hover { background: var(--card-hover); }
+  button:disabled { opacity: 0.45; cursor: default; }
+  button.icon { padding: 4px 8px; }
+  button.hot { border-color: var(--good); color: var(--good); }
+  #status { font-size: 12px; color: var(--fg-dim); white-space: nowrap; }
+  #status.solved { color: var(--good); font-weight: 600; }
+
+  #blurb {
+    flex: 0 0 auto; padding: 7px 14px; color: var(--fg-dim); font-size: 12px;
+    background: var(--bg-alt); border-bottom: 1px solid var(--border); line-height: 1.45;
+  }
+  main {
+    flex: 1 1 auto; min-height: 0; position: relative; display: flex;
+  }
+  #board { flex: 1 1 auto; width: 100%; height: 100%; touch-action: none; user-select: none; }
+  #board .cellhit { cursor: pointer; }
+
+  footer {
+    flex: 0 0 auto; border-top: 1px solid var(--border); background: var(--bg-alt);
+    display: flex; align-items: stretch; gap: 10px; padding: 8px 10px; overflow-x: auto;
+  }
+  .tray-item {
+    flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; gap: 2px;
+    padding: 4px 6px 3px; border: 1px solid transparent; border-radius: 8px;
+    cursor: grab; position: relative; touch-action: none; user-select: none;
+  }
+  .tray-item:hover { background: var(--card-hover); }
+  .tray-item.sel { border-color: var(--accent); background: var(--card-hover); }
+  .tray-item.out { opacity: 0.3; cursor: default; }
+  .tray-item svg { display: block; }
+  .tray-item .nm { font-size: 10.5px; color: var(--fg-dim); white-space: nowrap; }
+  .tray-item .ct {
+    position: absolute; top: 0; right: 0; min-width: 16px; text-align: center;
+    font-size: 10px; font-weight: 600; padding: 1px 4px; border-radius: 9px;
+    background: var(--accent); color: var(--accent-fg);
+  }
+  #legend { flex: 0 0 auto; margin-left: auto; display: flex; align-items: center; gap: 10px;
+            font-size: 11px; color: var(--fg-dim); padding-left: 10px; }
+  #legend i { display: inline-block; width: 14px; height: 3px; border-radius: 2px; margin-right: 4px;
+              vertical-align: middle; }
+
+  #ghost { position: fixed; left: 0; top: 0; pointer-events: none; z-index: 50; opacity: 0.9;
+           filter: drop-shadow(0 3px 6px rgba(0,0,0,0.5)); display: none; }
+
+  #geom {
+    flex: 0 0 244px; z-index: 20;
+    background: var(--bg-alt); border-left: 1px solid var(--border); box-shadow: var(--shadow);
+    padding: 10px 12px; overflow-y: auto; display: none;
+  }
+  #geom.open { display: block; }
+  #geom h2 { font-size: 12px; margin: 0 0 8px; font-weight: 600; }
+  #geom .row { margin-bottom: 7px; }
+  #geom label { display: flex; justify-content: space-between; font-size: 11px; color: var(--fg-dim); }
+  #geom label b { color: var(--fg); font-weight: 600; font-variant-numeric: tabular-nums; }
+  #geom input[type=range] { width: 100%; margin: 1px 0 0; accent-color: var(--accent); }
+  #geom textarea {
+    width: 100%; height: 92px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 10.5px; background: var(--card); color: var(--fg); border: 1px solid var(--border);
+    border-radius: 5px; padding: 5px; resize: vertical;
+  }
+  #geom .btns { display: flex; gap: 6px; margin: 8px 0; }
+
+  /* --- SVG pieces (the board and the tray tiles share these) --- */
+  .hex { stroke: var(--hex-edge); }
+  .hex.full { fill: var(--hex); }
+  .hex.empty { fill: var(--hex-empty); stroke-dasharray: 5 4; }
+  .cellhit:hover { fill: rgba(127,166,255,0.10); }
+  .hex.empty.target { stroke: var(--accent); }
+  .body { fill: var(--gate); stroke: var(--ink); stroke-linejoin: round; }
+  .body.arc { fill: none; }
+  .bub { fill: var(--hex); }
+  svg text { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+             text-anchor: middle; dominant-baseline: central; }
+  .boxon, .tietxt { fill: #14181d; font-weight: 700; }
+  .boxoff { font-weight: 700; }
+  .lbl { fill: var(--fg-dim); font-weight: 600; }
+  .lblL { text-anchor: end; }
+  .lblR { text-anchor: start; }
+  .tiebox { stroke: none; }
+</style>
+</head>
+<body>
+<header>
+  <h1><span class="glyph">&#11041;</span> Logic Hex</h1>
+  <button class="icon" id="prev" title="Previous challenge">&#9664;</button>
+  <select id="pick"></select>
+  <button class="icon" id="next" title="Next challenge">&#9654;</button>
+  <span id="status"></span>
+  <span class="spacer"></span>
+  <button id="reset" title="Take every tile back off the board">Reset</button>
+  <button class="icon" id="gearBtn" title="Tile geometry">&#9881;</button>
+  <button class="icon" id="themeBtn" title="Light / dark">&#9728;</button>
+</header>
+<div id="blurb"></div>
+<main>
+  <svg id="board" xmlns="http://www.w3.org/2000/svg"></svg>
+  <aside id="geom">
+    <h2>Tile geometry</h2>
+    <div id="sliders"></div>
+    <div class="btns">
+      <button id="geomReset">Defaults</button>
+      <button id="geomCopy">Copy</button>
+    </div>
+    <textarea id="geomJson" spellcheck="false"></textarea>
+  </aside>
+</main>
+<footer id="tray"></footer>
+<div id="ghost"></div>
+<script>
+"use strict";
+/* =====================================================================
+   1. GEOMETRY
+   ---------------------------------------------------------------------
+   A tile is a hexagon with a point at the left and right and flat edges
+   at the top and bottom:
+
+               TL _________ TR
+                 /         \            <- upper-left / upper-right edges
+              L +           + R            carry the wire connections
+                 \_________/
+               BL           BR
+
+   The four slanted edges are shared with neighboring tiles. Inputs "a"
+   (upper-left edge) and "b" (lower-left edge) sit a fraction `conn` of
+   the way from the left point L toward TL / BL. The output sits a
+   fraction `conn` of the way from TR / BR toward the right point R, on
+   both right-hand edges, so a tile feeds the two tiles to its right.
+   Measuring both ends of a shared edge this way makes the connection
+   points of adjacent tiles land on exactly the same spot.
+
+   W (overall width) is fixed at 100 user units; the SVG viewBox scales
+   the drawing to the pane. Every other dimension is a ratio of W or H,
+   so all of them can be played with in the geometry panel.
+   ===================================================================== */
+
+var W = 100;
+
+var GEOM_DEFAULTS = {
+  flat:      0.46,  // width of the flat top/bottom edges, as a fraction of W
+  hr:        0.80,  // tile height H, as a fraction of W
+  conn:      0.30,  // connection point position along the slanted edges
+  gap:       0.030, // shrink of the tile body, leaving a gap that wires bridge
+  gateW:     0.36,  // gate body width / W
+  gateH:     0.50,  // gate body height / H
+  gateX:    -0.07,  // gate body center offset / W (the input side needs more room)
+  pinSpread: 1.00,  // gate input pin spacing / connection point spacing
+  bubble:    0.042, // inversion bubble radius / W
+  wire:      0.022, // wire stroke width / W
+  outStub:   0.08,  // gap between the output riser and the tile edge / W
+  orDepth:   0.30,  // depth of the concave back of OR/XOR bodies / gate width
+  xorGap:    0.14,  // spacing of the extra XOR arc / gate width
+  lead:      0.55   // length of the fixed-input / expected-output leads / W
+};
+var GEOM_DEFS = [
+  ["flat",      "Flat edge width", 0.05, 0.90, 0.01],
+  ["hr",        "Tile height",     0.30, 1.60, 0.01],
+  ["conn",      "Connector place", 0.05, 0.75, 0.01],
+  ["gap",       "Tile gap",        0.00, 0.12, 0.005],
+  ["gateW",     "Gate width",      0.15, 0.75, 0.01],
+  ["gateH",     "Gate height",     0.15, 0.95, 0.01],
+  ["gateX",     "Gate x offset",  -0.25, 0.25, 0.01],
+  ["pinSpread", "Pin spread",      0.20, 2.50, 0.05],
+  ["bubble",    "Bubble radius",   0.015,0.09, 0.002],
+  ["wire",      "Wire width",      0.005,0.05, 0.001],
+  ["outStub",   "Output stub",     0.01, 0.28, 0.005],
+  ["orDepth",   "OR back curve",   0.00, 0.50, 0.01],
+  ["xorGap",    "XOR arc gap",     0.04, 0.35, 0.01],
+  ["lead",      "I/O lead length", 0.10, 1.50, 0.05]
+];
+var G = Object.assign({}, GEOM_DEFAULTS);
+
+/* Values: 0, 1 or null ("X" - not driven to a known value). */
+var COL = { 0: "#3b82f6", 1: "#f5a524", x: "#78808f" };
+function col(v) { return v === 0 ? COL[0] : v === 1 ? COL[1] : COL.x; }
+
+function par(c) { return ((c % 2) + 2) % 2; }   // column parity: odd columns sit half a tile lower
+
+/* Derived geometry, recomputed whenever a parameter changes. */
+var g;
+function regeo() {
+  var w = W * G.flat, H = W * G.hr, k = G.conn;
+  g = {
+    w: w, H: H, k: k,
+    dx: (W + w) / 2,                 // horizontal distance between columns
+    ix: -W / 2 + k * (W - w) / 2,    // input connection x, relative to tile center
+    iy: k * H / 2,                   // input connection y (a is -iy, b is +iy)
+    ox: w / 2 + k * (W - w) / 2,     // output connection x
+    oy: (1 - k) * H / 2,             // output connection y (ur is -oy, lr is +oy)
+    sw: G.wire * W,                  // wire stroke width
+    lead: G.lead * W,
+    /* x of the vertical riser that carries the output to both right-hand
+       edges: the requested stub length, but never left of the gate's own
+       output (bubble included), and never past the tile edge. */
+    splitX: Math.min(w/2 + k*(W-w)/2 - 0.02*W,
+                     Math.max(w/2 + k*(W-w)/2 - G.outStub*W,
+                              G.gateX*W + G.gateW*W/2 + 2*G.bubble*W + 0.02*W)),
+    hex: [[-W/2, 0], [-w/2, -H/2], [w/2, -H/2], [W/2, 0], [w/2, H/2], [-w/2, H/2]]
+  };
+}
+regeo();
+
+function ctr(c, r) { return [c * g.dx, (r + par(c) / 2) * g.H]; }
+
+/* A "node" is a connection point shared by two tiles. It is named after the
+   tile on its left: "<col>,<row>,ur" or "<col>,<row>,lr". A tile's own two
+   inputs are the output nodes of its upper-left and lower-left neighbors. */
+function nodeOfCell(c, r, side) {
+  if (side === "ur" || side === "lr") return c + "," + r + "," + side;
+  if (side === "a") return (c - 1) + "," + (r - 1 + par(c)) + ",lr";
+  return (c - 1) + "," + (r + par(c)) + ",ur";                     // "b"
+}
+function nodeXY(node) {
+  var p = node.split(","), c = +p[0], r = +p[1], o = ctr(c, r);
+  return [o[0] + g.ox, o[1] + (p[2] === "ur" ? -g.oy : g.oy)];
+}
+function cellKey(c, r) { return c + "," + r; }
+
+/* =====================================================================
+   2. TILES
+   ===================================================================== */
+/* k: gate kind; ia/ib: input bubbles; oy: output bubble;
+   src: which input a 1-input tile uses; v: value of a tie-off tile. */
+var TILES = {
+  and:   { k: "and", nm: "AND",   desc: "1 only when both inputs are 1" },
+  nand:  { k: "and", oy: 1, nm: "NAND", desc: "AND with an inverted output" },
+  or:    { k: "or",  nm: "OR",    desc: "1 when either input is 1" },
+  nor:   { k: "or",  oy: 1, nm: "NOR", desc: "OR with an inverted output" },
+  xor:   { k: "xor", nm: "XOR",   desc: "1 when the inputs differ" },
+  xnor:  { k: "xor", oy: 1, nm: "XNOR", desc: "1 when the inputs are equal" },
+  andna: { k: "and", ia: 1, nm: "AND↑°", desc: "AND with the top input inverted" },
+  andnb: { k: "and", ib: 1, nm: "AND↓°", desc: "AND with the bottom input inverted" },
+  orna:  { k: "or",  ia: 1, nm: "OR↑°",  desc: "OR with the top input inverted" },
+  ornb:  { k: "or",  ib: 1, nm: "OR↓°",  desc: "OR with the bottom input inverted" },
+  bufa:  { k: "buf", src: "a", nm: "BUF↑", desc: "Passes the top input along" },
+  bufb:  { k: "buf", src: "b", nm: "BUF↓", desc: "Passes the bottom input along" },
+  nota:  { k: "buf", src: "a", oy: 1, nm: "NOT↑", desc: "Inverts the top input" },
+  notb:  { k: "buf", src: "b", oy: 1, nm: "NOT↓", desc: "Inverts the bottom input" },
+  one:   { k: "const", v: 1, nm: "TIE 1", desc: "Ties its output high" },
+  zero:  { k: "const", v: 0, nm: "TIE 0", desc: "Ties its output low" }
+};
+
+function inv(v, b) { return (!b || v === null) ? v : 1 - v; }
+
+/* Evaluate a tile. An input that is not driven is null ("X"), but a
+   controlling value still decides the output: 0 AND X is 0. */
+function evalTile(t, va, vb) {
+  if (t.k === "const") return t.v;
+  if (t.k === "buf") return inv(t.src === "a" ? va : vb, t.oy);
+  var a = inv(va, t.ia), b = inv(vb, t.ib), y;
+  if (t.k === "and")      y = (a === 0 || b === 0) ? 0 : (a === 1 && b === 1) ? 1 : null;
+  else if (t.k === "or")  y = (a === 1 || b === 1) ? 1 : (a === 0 && b === 0) ? 0 : null;
+  else                    y = (a === null || b === null) ? null : (a === b ? 0 : 1);   // xor
+  return inv(y, t.oy);
+}
+
+/* =====================================================================
+   3. CHALLENGES
+   ---------------------------------------------------------------------
+   cells:   board spaces, as [column, row]. Odd columns sit half a tile
+            lower, so [c,r] touches [c+1,r-1+parity] (up-right) and
+            [c+1,r+parity] (down-right).
+   inputs:  fixed values driven in from the left. `at` lists the tile
+            inputs they drive: [column, row, "a" (upper) | "b" (lower)].
+   outputs: expected values, shown in a box to the right of the tile
+            output they watch: [column, row, "ur" | "lr"].
+   tray:    the tiles you get, and how many of each.
+   fill:    "all" - every space must be filled; "any" - spaces may be left
+            empty.
+   ===================================================================== */
+/* ---PUZZLES-START--- */
+var PUZZLES = [
+  {
+    id: "first", name: "1. First Gate",
+    blurb: "Drag a tile into the empty space. Wires light up once they are driven: " +
+           "blue for 0, amber for 1. Drive the output to the 0 in the box on the right.",
+    cells: [[0,0]],
+    inputs: [ {label:"A", value:1, at:[[0,0,"a"]]}, {label:"B", value:0, at:[[0,0,"b"]]} ],
+    outputs: [ {label:"Y", value:0, at:[0,0,"ur"]} ],
+    tray: [ {t:"and", n:1}, {t:"or", n:1} ],
+    fill: "all"
+  },
+  {
+    id: "bubble", name: "2. Bubble",
+    blurb: "The little circle on a gate's output inverts it. Both inputs are 0 here, " +
+           "so find the gate that answers 1 to that.",
+    cells: [[0,0]],
+    inputs: [ {label:"A", value:0, at:[[0,0,"a"]]}, {label:"B", value:0, at:[[0,0,"b"]]} ],
+    outputs: [ {label:"Y", value:1, at:[0,0,"ur"]} ],
+    tray: [ {t:"or", n:1}, {t:"nor", n:1}, {t:"xor", n:1} ],
+    fill: "all"
+  },
+  {
+    id: "chain", name: "3. Chain",
+    blurb: "A tile's output leaves on both of its right-hand edges, feeding the two " +
+           "tiles to its right. The second space here hangs below the first, so the " +
+           "signal arrives on that tile's upper-left edge.",
+    cells: [[0,0],[1,0]],
+    inputs: [ {label:"A", value:1, at:[[0,0,"a"]]}, {label:"B", value:0, at:[[0,0,"b"]]} ],
+    outputs: [ {label:"Y", value:0, at:[1,0,"ur"]} ],
+    tray: [ {t:"nand", n:1}, {t:"nota", n:1} ],
+    fill: "all"
+  },
+  {
+    id: "fanout", name: "4. Fan-out",
+    blurb: "A and B feed both tiles of the first column, and those two tiles feed the " +
+           "third. Only one of the three tiles belongs in the last space.",
+    cells: [[0,0],[0,1],[1,0]],
+    inputs: [ {label:"A", value:1, at:[[0,0,"a"],[0,1,"a"]]},
+              {label:"B", value:0, at:[[0,0,"b"],[0,1,"b"]]} ],
+    outputs: [ {label:"Y", value:0, at:[1,0,"ur"]} ],
+    tray: [ {t:"nor", n:1}, {t:"and", n:1}, {t:"xnor", n:1} ],
+    fill: "all"
+  },
+  {
+    id: "tie", name: "5. Tie-off",
+    blurb: "Nothing feeds the lower space, so only a tie-off can fill it - it drives a " +
+           "constant with no inputs at all. Notice what a gate becomes when one of its " +
+           "inputs is tied to 1.",
+    cells: [[0,0],[0,1],[1,0]],
+    inputs: [ {label:"A", value:1, at:[[0,0,"a"]]}, {label:"B", value:1, at:[[0,0,"b"]]} ],
+    outputs: [ {label:"Y", value:0, at:[1,0,"ur"]} ],
+    tray: [ {t:"and", n:1}, {t:"nand", n:1}, {t:"one", n:1} ],
+    fill: "all"
+  },
+  {
+    id: "diamond", name: "6. Diamond",
+    blurb: "Four inputs, and three boxes to satisfy at once. The two middle tiles each " +
+           "take one signal from the left column and one from outside, then the last " +
+           "tile brings both paths together. Exactly one arrangement works.",
+    cells: [[0,0],[1,-1],[1,0],[2,0]],
+    inputs: [ {label:"C", value:0, at:[[1,-1,"a"]]},
+              {label:"A", value:1, at:[[0,0,"a"]]},
+              {label:"B", value:1, at:[[0,0,"b"]]},
+              {label:"D", value:1, at:[[1,0,"b"]]} ],
+    outputs: [ {label:"P", value:1, at:[1,-1,"ur"]},
+               {label:"Y", value:1, at:[2,0,"ur"]},
+               {label:"Q", value:1, at:[1,0,"lr"]} ],
+    tray: [ {t:"nand", n:1}, {t:"or", n:1}, {t:"xor", n:1}, {t:"and", n:1} ],
+    fill: "all"
+  },
+  {
+    id: "inputbubble", name: "7. Input Bubbles",
+    blurb: "Bubbles sit on inputs too. A tile marked with a circle on one input edge " +
+           "inverts whatever arrives there, so its top and bottom edges behave " +
+           "differently. One arrangement of these four tiles works.",
+    cells: [[0,0],[1,-1],[1,0],[2,0]],
+    inputs: [ {label:"C", value:1, at:[[1,-1,"a"]]},
+              {label:"A", value:0, at:[[0,0,"a"]]},
+              {label:"B", value:1, at:[[0,0,"b"]]},
+              {label:"D", value:0, at:[[1,0,"b"]]} ],
+    outputs: [ {label:"Y", value:0, at:[2,0,"ur"]},
+               {label:"Q", value:0, at:[1,0,"lr"]} ],
+    tray: [ {t:"andnb", n:1}, {t:"orna", n:1}, {t:"xnor", n:1}, {t:"nor", n:1} ],
+    fill: "all"
+  },
+  {
+    id: "wedge", name: "8. The Wedge",
+    blurb: "Six spaces, six tiles, three boxes to get right at once. The two extra " +
+           "boxes tap tiles in the first column - treat them as checkpoints and work " +
+           "forward from the inputs.",
+    cells: [[0,0],[0,1],[0,2],[1,0],[1,1],[2,1]],
+    inputs: [ {label:"A", value:1, at:[[0,0,"a"],[0,1,"a"],[0,2,"a"]]},
+              {label:"B", value:0, at:[[0,0,"b"],[0,1,"b"],[0,2,"b"]]} ],
+    outputs: [ {label:"P", value:0, at:[0,0,"ur"]},
+               {label:"Y", value:0, at:[2,1,"ur"]},
+               {label:"Q", value:0, at:[0,2,"lr"]} ],
+    tray: [ {t:"and", n:1}, {t:"or", n:1}, {t:"xor", n:1},
+            {t:"nand", n:1}, {t:"nor", n:1}, {t:"xnor", n:1} ],
+    fill: "all"
+  }
+];
+/* ---PUZZLES-END--- */
+
+/* =====================================================================
+   4. DRAWING
+   ===================================================================== */
+function n(v) { return Math.round(v * 100) / 100; }
+function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;"); }
+
+function wire(d, v) {
+  return '<path d="' + d + '" fill="none" stroke="' + col(v) + '" stroke-width="' + n(g.sw) +
+         '" stroke-linecap="round" stroke-linejoin="round"/>';
+}
+function dot(x, y, v) {
+  return '<circle cx="' + n(x) + '" cy="' + n(y) + '" r="' + n(g.sw * 1.15) + '" fill="' + col(v) + '"/>';
+}
+
+/* Gate body outlines, centered on (0,0) in gate-local coordinates. */
+function gateBody(t, gw, gh) {
+  if (t.k === "and")
+    return '<path d="M' + n(-gw/2) + ',' + n(-gh/2) + 'L0,' + n(-gh/2) +
+           'C' + n(gw*0.42) + ',' + n(-gh/2) + ' ' + n(gw/2) + ',' + n(-gh*0.28) + ' ' + n(gw/2) + ',0' +
+           'C' + n(gw/2) + ',' + n(gh*0.28) + ' ' + n(gw*0.42) + ',' + n(gh/2) + ' 0,' + n(gh/2) +
+           'L' + n(-gw/2) + ',' + n(gh/2) + 'Z" class="body"/>';
+  if (t.k === "buf")
+    return '<path d="M' + n(-gw/2) + ',' + n(-gh/2) + 'L' + n(gw/2) + ',0L' + n(-gw/2) + ',' + n(gh/2) +
+           'Z" class="body"/>';
+  var x0 = -gw/2, xc = x0 + G.orDepth * gw, s = "";
+  if (t.k === "xor") {                       // the extra arc behind an XOR body
+    var xg = G.xorGap * gw;
+    s += '<path d="M' + n(x0-xg) + ',' + n(-gh/2) + 'Q' + n(xc-xg) + ',0 ' + n(x0-xg) + ',' + n(gh/2) +
+         '" class="body arc"/>';
+  }
+  s += '<path d="M' + n(x0) + ',' + n(-gh/2) + 'Q' + n(xc) + ',0 ' + n(x0) + ',' + n(gh/2) +
+       'C' + n(x0 + gw*0.45) + ',' + n(gh/2) + ' ' + n(gw/2 - gw*0.30) + ',' + n(gh*0.36) + ' ' + n(gw/2) + ',0' +
+       'C' + n(gw/2 - gw*0.30) + ',' + n(-gh*0.36) + ' ' + n(x0 + gw*0.45) + ',' + n(-gh/2) + ' ' + n(x0) + ',' + n(-gh/2) +
+       'Z" class="body"/>';
+  return s;
+}
+/* x of the gate's left edge at height y (the back of OR/XOR bodies is curved). */
+function leftEdgeX(t, y, gw, gh, outer) {
+  if (t.k === "and" || t.k === "buf") return -gw/2;
+  var x0 = -gw/2 - (outer && t.k === "xor" ? G.xorGap * gw : 0);
+  var xc = x0 + G.orDepth * gw;
+  var u = Math.max(0, Math.min(1, (y / (gh/2) + 1) / 2));     // Bezier parameter at height y
+  return x0 * ((1-u)*(1-u) + u*u) + 2*u*(1-u)*xc;
+}
+
+/* One tile: its internal wiring, gate body and bubbles, centered on (cx,cy). */
+function tileMarkup(id, cx, cy, va, vb, y) {
+  var t = TILES[id], s = "";
+  var gw = G.gateW * W, gh = G.gateH * g.H, gx = G.gateX * W;
+  var pinY = g.iy * G.pinSpread, br = G.bubble * W;
+  var xSplit = g.splitX;
+  var o = function (x, yy) { return n(cx + x) + "," + n(cy + yy); };
+
+  /* Input wires: connection point -> (bubble ->) gate pin. */
+  function inWire(which, v, bub) {
+    var cy0 = which === "a" ? -g.iy : g.iy, py = which === "a" ? -pinY : pinY;
+    var ex = gx + leftEdgeX(t, py, gw, gh, bub);
+    var endX = bub ? ex - 2*br : ex;
+    var d;
+    if (Math.abs(cy0 - py) < 0.01) d = "M" + o(g.ix, cy0) + "L" + o(endX, py);
+    else {
+      var mid = (g.ix + endX) / 2;
+      d = "M" + o(g.ix, cy0) + "L" + o(mid, cy0) + "L" + o(mid, py) + "L" + o(endX, py);
+    }
+    s += wire(d, v);
+    if (bub) s += '<circle cx="' + n(cx + ex - br) + '" cy="' + n(cy + py) + '" r="' + n(br) + '" stroke-width="' + n(g.sw) +
+                  '" class="bub" stroke="' + col(inv(v, 1)) + '"/>';
+  }
+  if (t.k === "const") {
+    var bw = gw * 0.62, bh = gh * 0.8;
+    s += '<rect x="' + n(cx + gx - bw/2) + '" y="' + n(cy - bh/2) + '" width="' + n(bw) +
+         '" height="' + n(bh) + '" rx="' + n(bh*0.22) + '" fill="' + col(t.v) +
+         '" class="tiebox"/>' +
+         '<text x="' + n(cx + gx) + '" y="' + n(cy) + '" class="tietxt" font-size="' + n(bh*0.8) +
+         '">' + t.v + '</text>';
+  } else if (t.k === "buf") {
+    inWire(t.src, t.src === "a" ? va : vb, 0);
+  } else {
+    inWire("a", va, t.ia);
+    inWire("b", vb, t.ib);
+  }
+  /* Output: gate -> riser -> both right-hand connection points. */
+  var outX = t.k === "const" ? gx + gw*0.31 : gx + gw/2;
+  var startX = outX + (t.oy ? 2*br : 0);
+  s += wire("M" + o(startX, 0) + "L" + o(xSplit, 0) +
+            "M" + o(xSplit, -g.oy) + "L" + o(xSplit, g.oy) +
+            "M" + o(xSplit, -g.oy) + "L" + o(g.ox, -g.oy) +
+            "M" + o(xSplit, g.oy) + "L" + o(g.ox, g.oy), y);
+  if (t.k !== "const") {
+    s += '<g transform="translate(' + n(cx + gx) + ',' + n(cy) + ')" stroke-width="' + n(g.sw) + '">' + gateBody(t, gw, gh) + "</g>";
+  }
+  if (t.oy) s += '<circle cx="' + n(cx + outX + br) + '" cy="' + n(cy) + '" r="' + n(br) + '" stroke-width="' + n(g.sw) +
+                 '" class="bub" stroke="' + col(y) + '"/>';
+  return s;
+}
+
+function hexPoints(cx, cy, shrink) {
+  var k = shrink ? 1 - G.gap : 1, p = [];
+  for (var i = 0; i < 6; i++) p.push(n(cx + g.hex[i][0]*k) + "," + n(cy + g.hex[i][1]*k));
+  return p.join(" ");
+}
+
+/* A value box: fixed inputs, expected outputs and tie-offs all use this shape. */
+function boxDims() { return [0.27 * W, 0.30 * g.H]; }
+function valueBox(x, y, v, state, label, side) {
+  var d = boxDims(), bw = d[0], bh = d[1], s = "";
+  var fill = state === "on" ? col(v) : CSSV.card;
+  var stroke = state === "on" ? col(v) : state === "bad" ? CSSV.danger : CSSV.edge;
+  s += '<rect x="' + n(x - bw/2) + '" y="' + n(y - bh/2) + '" width="' + n(bw) + '" height="' + n(bh) +
+       '" rx="' + n(bh*0.2) + '" fill="' + fill + '" stroke="' + stroke + '" stroke-width="' + n(g.sw) + '"/>';
+  s += '<text x="' + n(x) + '" y="' + n(y) + '" class="' + (state === "on" ? "boxon" : "boxoff") + '"' +
+       (state === "on" ? "" : ' fill="' + col(v) + '"') +
+       ' font-size="' + n(bh*0.72) + '">' + v + "</text>";
+  if (label) s += '<text x="' + n(x + side * (bw/2 + 0.055*W)) + '" y="' + n(y) + '" class="lbl ' +
+                  (side < 0 ? "lblL" : "lblR") + '" font-size="' + n(bh*0.6) + '">' + esc(label) + "</text>";
+  return s;
+}
+
+/* Give each input (or output) box a column in the margin. Boxes sharing a
+   column must not overlap (hard), and a lead wire should not be drawn across
+   a box nearer the board (soft - given up on if the margin gets crowded). */
+function assignColumns(items, bh) {
+  var m = bh * 0.30, wm = g.sw, out = [];
+  items.forEach(function (it) {
+    var y0 = it.boxY - bh/2, y1 = it.boxY + bh/2;
+    function hits(y, b, pad) { return y > b.y0 - pad && y < b.y1 + pad; }
+    function hard(j) {
+      return out.some(function (b) { return b.col === j && y0 < b.y1 + m && y1 > b.y0 - m; });
+    }
+    function soft(j) {
+      return out.some(function (b) {
+        if (b.col < j) return it.ys.some(function (y) { return hits(y, b, wm); });
+        if (b.col > j) return b.ys.some(function (y) { return y > y0 - wm && y < y1 + wm; });
+        return false;
+      });
+    }
+    var j = 0;
+    while (j < 5 && (hard(j) || soft(j))) j++;
+    if (j >= 5) { j = 0; while (j < 12 && hard(j)) j++; }
+    out.push({ col: j, y0: y0, y1: y1, ys: it.ys });
+  });
+  return out.map(function (b) { return b.col; });
+}
+
+/* =====================================================================
+   5. STATE AND SIMULATION
+   ===================================================================== */
+var puzzle = null, pIdx = 0;
+var placed = new Map();      // "col,row" -> index into puzzle.tray
+var left = [];               // tiles still in the tray, per tray entry
+var sel = -1;                // tray entry selected by clicking
+var solvedSet = new Set();
+
+function tileAt(c, r) {
+  var i = placed.get(cellKey(c, r));
+  return i === undefined ? null : puzzle.tray[i].t;
+}
+/* Values on every node, left to right. Columns only ever feed the column
+   to their right, so one ordered pass is enough. */
+function evaluate() {
+  var vals = new Map();
+  puzzle.inputs.forEach(function (inp) {
+    inp.at.forEach(function (at) { vals.set(nodeOfCell(at[0], at[1], at[2]), inp.value); });
+  });
+  puzzle.cells.slice().sort(function (x, y) { return x[0] - y[0]; }).forEach(function (cr) {
+    var id = tileAt(cr[0], cr[1]);
+    if (!id) return;
+    var get = function (side) {
+      var v = vals.get(nodeOfCell(cr[0], cr[1], side));
+      return v === undefined ? null : v;
+    };
+    var y = evalTile(TILES[id], get("a"), get("b"));
+    vals.set(cr[0] + "," + cr[1] + ",ur", y);
+    vals.set(cr[0] + "," + cr[1] + ",lr", y);
+  });
+  return vals;
+}
+function valOf(vals, node) { var v = vals.get(node); return v === undefined ? null : v; }
+function isFull() {
+  return puzzle.cells.every(function (cr) { return placed.has(cellKey(cr[0], cr[1])); });
+}
+function outputsOk(vals) {
+  return puzzle.outputs.every(function (o) {
+    return valOf(vals, nodeOfCell(o.at[0], o.at[1], o.at[2])) === o.value;
+  });
+}
+
+/* =====================================================================
+   6. BOARD
+   ===================================================================== */
+var boardEl = document.getElementById("board");
+
+function renderBoard() {
+  regeo();
+  var vals = evaluate();
+  var s = "", x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+  function span(x, y, m) { m = m || 0; x0 = Math.min(x0, x-m); x1 = Math.max(x1, x+m);
+                           y0 = Math.min(y0, y-m); y1 = Math.max(y1, y+m); }
+
+  var centers = {};
+  puzzle.cells.forEach(function (cr) {
+    var p = ctr(cr[0], cr[1]);
+    centers[cellKey(cr[0], cr[1])] = p;
+    span(p[0] - W/2, p[1]); span(p[0] + W/2, p[1]);
+    span(p[0], p[1] - g.H/2); span(p[0], p[1] + g.H/2);
+  });
+
+  /* Spaces. */
+  puzzle.cells.forEach(function (cr) {
+    var p = centers[cellKey(cr[0], cr[1])], filled = placed.has(cellKey(cr[0], cr[1]));
+    s += '<polygon points="' + hexPoints(p[0], p[1], true) + '" stroke-width="' + n(g.sw * 0.55) +
+         '" class="hex ' + (filled ? "full" : "empty" + (sel >= 0 ? " target" : "")) + '"/>';
+  });
+
+  /* Fixed inputs, driven in from the left. */
+  var boardLeft = x0, bh = boxDims()[1];
+  var inItems = puzzle.inputs.map(function (inp) {
+    var pts = inp.at.map(function (at) { return nodeXY(nodeOfCell(at[0], at[1], at[2])); });
+    var ys = pts.map(function (p) { return p[1]; });
+    return { pts: pts, ys: ys, boxY: (Math.min.apply(null, ys) + Math.max.apply(null, ys)) / 2 };
+  });
+  var inCols = assignColumns(inItems, bh);
+  puzzle.inputs.forEach(function (inp, i) {
+    var it = inItems[i];
+    var busX = boardLeft - g.lead * (0.42 + 0.95 * inCols[i]);
+    var boxX = busX - g.lead * 0.45;
+    if (it.pts.length > 1)
+      s += wire("M" + n(busX) + "," + n(Math.min.apply(null, it.ys)) +
+                "L" + n(busX) + "," + n(Math.max.apply(null, it.ys)), inp.value);
+    it.pts.forEach(function (p) {
+      s += wire("M" + n(busX) + "," + n(p[1]) + "L" + n(p[0]) + "," + n(p[1]), inp.value);
+      if (it.pts.length > 1) s += dot(busX, p[1], inp.value);
+    });
+    s += wire("M" + n(boxX) + "," + n(it.boxY) + "L" + n(busX) + "," + n(it.boxY), inp.value);
+    s += valueBox(boxX, it.boxY, inp.value, "on", inp.label, -1);
+    span(boxX - 0.30*W, it.boxY, 0.55 * bh);
+  });
+
+  /* Tiles. */
+  puzzle.cells.forEach(function (cr) {
+    var id = tileAt(cr[0], cr[1]);
+    if (!id) return;
+    var p = centers[cellKey(cr[0], cr[1])];
+    s += tileMarkup(id, p[0], p[1],
+                    valOf(vals, nodeOfCell(cr[0], cr[1], "a")),
+                    valOf(vals, nodeOfCell(cr[0], cr[1], "b")),
+                    valOf(vals, cr[0] + "," + cr[1] + ",ur"));
+  });
+
+  /* Expected outputs, in boxes to the right. */
+  var boardRight = x1;
+  var outItems = puzzle.outputs.map(function (o) {
+    var p = nodeXY(nodeOfCell(o.at[0], o.at[1], o.at[2]));
+    return { p: p, ys: [p[1]], boxY: p[1] };
+  });
+  var outCols = assignColumns(outItems, bh);
+  puzzle.outputs.forEach(function (o, i) {
+    var node = nodeOfCell(o.at[0], o.at[1], o.at[2]);
+    var p = outItems[i].p, v = valOf(vals, node);
+    var boxX = boardRight + g.lead * (0.85 + 0.95 * outCols[i]);
+    s += wire("M" + n(p[0]) + "," + n(p[1]) + "L" + n(boxX) + "," + n(p[1]), v);
+    s += valueBox(boxX, p[1], o.value, v === o.value ? "on" : v === null ? "off" : "bad", o.label, 1);
+    span(boxX + 0.30*W, p[1], 0.55 * bh);
+  });
+
+  /* Click / drop targets, on top of everything. */
+  puzzle.cells.forEach(function (cr) {
+    var p = centers[cellKey(cr[0], cr[1])];
+    s += '<polygon points="' + hexPoints(p[0], p[1], true) + '" class="cellhit" fill="transparent" data-cell="' +
+         cellKey(cr[0], cr[1]) + '"/>';
+  });
+
+  var pad = 0.16 * W;
+  boardEl.setAttribute("viewBox", n(x0-pad) + " " + n(y0-pad) + " " + n(x1-x0+2*pad) + " " + n(y1-y0+2*pad));
+  boardEl.setAttribute("preserveAspectRatio", "xMidYMid meet");
+  boardEl.innerHTML = s;
+}
+
+/* =====================================================================
+   7. TRAY
+   ===================================================================== */
+var trayEl = document.getElementById("tray");
+
+/* A single tile drawn on its own, for the tray and the drag ghost. */
+function tileSVG(id, px) {
+  var pad = 0.10 * W;
+  var vw = W + 2*pad, vh = g.H + 2*pad;
+  var h = Math.round(px * vh / vw);
+  return '<svg width="' + px + '" height="' + h + '" viewBox="' + n(-W/2-pad) + ' ' + n(-g.H/2-pad) +
+         ' ' + n(vw) + ' ' + n(vh) + '" xmlns="http://www.w3.org/2000/svg">' +
+         '<polygon points="' + hexPoints(0, 0, true) + '" stroke-width="' + n(g.sw * 0.55) + '" class="hex full"/>' +
+         tileMarkup(id, 0, 0, null, null, null) + "</svg>";
+}
+function renderTray() {
+  var s = "";
+  puzzle.tray.forEach(function (it, i) {
+    var t = TILES[it.t];
+    s += '<div class="tray-item' + (left[i] <= 0 ? " out" : "") + (sel === i ? " sel" : "") +
+         '" data-tray="' + i + '" title="' + esc(t.nm + " - " + t.desc) + '">' +
+         tileSVG(it.t, 62) + '<span class="nm">' + esc(t.nm) + "</span>" +
+         (it.n > 1 || left[i] !== it.n ? '<span class="ct">' + left[i] + "</span>" : "") + "</div>";
+  });
+  s += '<div id="legend"><span><i style="background:' + COL[1] + '"></i>1</span>' +
+       '<span><i style="background:' + COL[0] + '"></i>0</span>' +
+       '<span><i style="background:' + COL.x + '"></i>not driven</span></div>';
+  trayEl.innerHTML = s;
+}
+
+/* =====================================================================
+   8. INTERACTION
+   ---------------------------------------------------------------------
+   Click a tray tile then a space, or just drag. Clicking a placed tile
+   takes it back; dragging one moves it.
+   ===================================================================== */
+var ghost = document.getElementById("ghost");
+var drag = null;      // {idx, from, started, x, y}
+
+function pickUp(key) {
+  var i = placed.get(key);
+  if (i === undefined) return -1;
+  placed.delete(key); left[i]++;
+  return i;
+}
+function put(key, i) {
+  if (placed.has(key)) pickUp(key);
+  placed.set(key, i); left[i]--;
+}
+var ghostSize = [72, 60];
+function startGhost(i) {
+  ghost.innerHTML = tileSVG(puzzle.tray[i].t, 72);
+  var svg = ghost.firstChild;
+  ghostSize = [+svg.getAttribute("width"), +svg.getAttribute("height")];
+  ghost.style.display = "block";
+}
+function moveGhost(e) {
+  ghost.style.transform = "translate(" + (e.clientX - ghostSize[0]/2) + "px," +
+                          (e.clientY - ghostSize[1]/2) + "px)";
+}
+
+document.addEventListener("pointerdown", function (e) {
+  var ti = e.target.closest ? e.target.closest(".tray-item") : null;
+  var ce = e.target.closest ? e.target.closest("[data-cell]") : null;
+  if (ti) {
+    var i = +ti.dataset.tray;
+    if (left[i] <= 0) return;
+    drag = { idx: i, from: null, started: false, x: e.clientX, y: e.clientY };
+    e.preventDefault();
+  } else if (ce) {
+    var key = ce.dataset.cell;
+    if (placed.has(key)) {
+      drag = { idx: placed.get(key), from: key, started: false, x: e.clientX, y: e.clientY };
+      e.preventDefault();
+    }
+  }
+});
+document.addEventListener("pointermove", function (e) {
+  if (!drag) return;
+  if (!drag.started) {
+    if (Math.abs(e.clientX - drag.x) + Math.abs(e.clientY - drag.y) < 6) return;
+    drag.started = true;
+    if (drag.from) { pickUp(drag.from); renderAll(); }
+    startGhost(drag.idx);
+  }
+  moveGhost(e);
+});
+document.addEventListener("pointerup", function (e) {
+  var d = drag;
+  drag = null;
+  if (d && d.started) {                       /* finish a drag */
+    ghost.style.display = "none";
+    var el = document.elementFromPoint(e.clientX, e.clientY);
+    var ce = el && el.closest ? el.closest("[data-cell]") : null;
+    if (ce && left[d.idx] > 0) put(ce.dataset.cell, d.idx);
+    renderAll();
+    return;
+  }
+  ghost.style.display = "none";
+  /* No movement: treat it as a click. */
+  var ti = e.target.closest ? e.target.closest(".tray-item") : null;
+  var cell = e.target.closest ? e.target.closest("[data-cell]") : null;
+  if (ti) {
+    var i = +ti.dataset.tray;
+    sel = (sel === i || left[i] <= 0) ? -1 : i;
+    renderAll();
+  } else if (cell) {
+    var key = cell.dataset.cell;
+    if (placed.has(key)) { pickUp(key); renderAll(); }
+    else if (sel >= 0 && left[sel] > 0) {
+      put(key, sel);
+      if (left[sel] <= 0) sel = -1;
+      renderAll();
+    }
+  }
+});
+
+/* =====================================================================
+   9. SHELL
+   ===================================================================== */
+var CSSV = {};
+function readTheme() {
+  var cs = getComputedStyle(document.documentElement);
+  CSSV = { card: cs.getPropertyValue("--card").trim() || "#2a2d2e",
+           edge: cs.getPropertyValue("--hex-edge").trim() || "#4a5054",
+           danger: cs.getPropertyValue("--danger").trim() || "#f48771" };
+}
+function renderAll() {
+  readTheme();
+  renderBoard();
+  renderTray();
+  var vals = evaluate(), ok = outputsOk(vals), full = isFull();
+  var st = document.getElementById("status");
+  document.getElementById("next").classList.toggle("hot", ok && full);
+  if (ok && full) {
+    st.textContent = "Solved!"; st.className = "solved";
+    if (!solvedSet.has(puzzle.id)) { solvedSet.add(puzzle.id); saveSolved(); fillPicker(); }
+  } else if (ok && puzzle.fill === "all") {
+    st.textContent = "Outputs match - now fill every space."; st.className = "";
+  } else {
+    var remaining = puzzle.outputs.filter(function (o) {
+      return valOf(vals, nodeOfCell(o.at[0], o.at[1], o.at[2])) !== o.value;
+    }).length;
+    st.textContent = remaining + " of " + puzzle.outputs.length + " output" +
+                     (puzzle.outputs.length > 1 ? "s" : "") + " to go";
+    st.className = "";
+  }
+}
+function loadPuzzle(i) {
+  pIdx = (i + PUZZLES.length) % PUZZLES.length;
+  puzzle = PUZZLES[pIdx];
+  placed = new Map();
+  left = puzzle.tray.map(function (t) { return t.n; });
+  sel = -1;
+  document.getElementById("blurb").textContent = puzzle.blurb;
+  document.getElementById("pick").value = String(pIdx);
+  renderAll();
+}
+function fillPicker() {
+  document.getElementById("pick").innerHTML = PUZZLES.map(function (p, i) {
+    return '<option value="' + i + '">' + (solvedSet.has(p.id) ? "✓ " : "") + esc(p.name) + "</option>";
+  }).join("");
+  document.getElementById("pick").value = String(pIdx);
+}
+function saveSolved() {
+  try { localStorage.setItem("logicHexSolved", JSON.stringify([].concat(Array.from(solvedSet)))); } catch (e) {}
+}
+try {
+  var st0 = JSON.parse(localStorage.getItem("logicHexSolved") || "[]");
+  st0.forEach(function (x) { solvedSet.add(x); });
+} catch (e) {}
+
+/* Geometry panel. */
+function fillSliders() {
+  document.getElementById("sliders").innerHTML = GEOM_DEFS.map(function (d) {
+    return '<div class="row"><label for="s_' + d[0] + '">' + d[1] + '<b id="v_' + d[0] + '">' +
+           G[d[0]] + '</b></label><input type="range" id="s_' + d[0] + '" data-p="' + d[0] +
+           '" min="' + d[2] + '" max="' + d[3] + '" step="' + d[4] + '" value="' + G[d[0]] + '"></div>';
+  }).join("");
+  showJson();
+}
+function showJson() {
+  document.getElementById("geomJson").value = JSON.stringify(G, null, 1).replace(/\n\s*/g, " ");
+}
+document.getElementById("sliders").addEventListener("input", function (e) {
+  var p = e.target.dataset.p;
+  if (!p) return;
+  G[p] = +e.target.value;
+  document.getElementById("v_" + p).textContent = e.target.value;
+  showJson(); renderAll();
+});
+document.getElementById("geomReset").onclick = function () {
+  G = Object.assign({}, GEOM_DEFAULTS); fillSliders(); renderAll();
+};
+document.getElementById("geomCopy").onclick = function () {
+  var ta = document.getElementById("geomJson");
+  ta.select();
+  try { navigator.clipboard.writeText(ta.value); } catch (e) { try { document.execCommand("copy"); } catch (e2) {} }
+};
+document.getElementById("geomJson").addEventListener("change", function (e) {
+  try {
+    var o = JSON.parse(e.target.value), any = false;
+    GEOM_DEFS.forEach(function (d) {
+      if (typeof o[d[0]] === "number") { G[d[0]] = o[d[0]]; any = true; }
+    });
+    if (any) { fillSliders(); renderAll(); }
+  } catch (err) { showJson(); }
+});
+document.getElementById("gearBtn").onclick = function () {
+  document.getElementById("geom").classList.toggle("open");
+};
+document.getElementById("themeBtn").onclick = function () {
+  var d = document.documentElement;
+  d.setAttribute("data-theme", d.getAttribute("data-theme") === "light" ? "dark" : "light");
+  renderAll();
+};
+document.getElementById("reset").onclick = function () { loadPuzzle(pIdx); };
+document.getElementById("prev").onclick = function () { loadPuzzle(pIdx - 1); };
+document.getElementById("next").onclick = function () { loadPuzzle(pIdx + 1); };
+document.getElementById("pick").onchange = function (e) { loadPuzzle(+e.target.value); };
+window.addEventListener("resize", function () { renderBoard(); });
+
+fillPicker();
+fillSliders();
+loadPuzzle(0);
+</script>
+</body>
+</html>

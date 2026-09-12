@@ -23,6 +23,13 @@ Here are some quick-links:
   - <a href="http://www.makerchip.com/sandbox?code_url=https:%2F%2Fraw.githubusercontent.com%2Fstevehoover%2Fmakerchip_examples%2Fmaster%2Fclaude_booth_multiplier.tlv" target="_blank" atom_fix="_">claude_booth_multiplier.tlv</a>: A Booth multiplier explainer.
   - <a href="http://www.makerchip.com/sandbox?code_url=https:%2F%2Fraw.githubusercontent.com%2Fstevehoover%2Fmakerchip_examples%2Fmaster%2Flogic_analyzer.tlv" target="_blank" atom_fix="_">logic_analyzer.tlv</a>: An example for comparison with Spade HDL.
 
+## Views
+
+HTML pages in [`views/`](views/) are standalone and can be loaded into a Makerchip View pane by URL:
+
+  - [`logic_hex_puzzle.html`](https://stevehoover.github.io/makerchip_examples/views/logic_hex_puzzle.html): **Logic Hex**, a puzzle game for learning logic gates. Fit hexagonal gate tiles together so that fixed inputs driven in from the left produce the expected outputs on the right. Wires color themselves as they are driven, and all of the tile geometry is adjustable from the gear panel.
+  - [`news_feed.html`](views/news_feed.html) and [`weather.html`](views/weather.html): News feed and weather panes.
+
 From other repos:
 
   - <a href="http://www.makerchip.com/sandbox?code_url=https:%2F%2Fraw.githubusercontent.com%2Fstevehoover%2Fwarp-v%2Fmaster%2Fwarp-v.tlv" target="_blank" atom_fix="_">WARP-V</a>: A configurable RISC-V core generator (See <a href="https://warp-v.org" target="_blank" atom_fix="_">warp-v.org</a>.)
