@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>xkcd</title>
+<style>
+  :root {
+    --bg: #1e1e1e; --bg-alt: #252526; --card: #2a2d2e; --card-hover: #323638;
+    --border: #3c3c3c; --fg: #d4d4d4; --fg-dim: #9aa0a6;
+    --accent: #4ea1ff; --accent-fg: #ffffff; --danger: #f48771;
+    --shadow: 0 1px 3px rgba(0,0,0,0.35);
+  }
+  :root[data-theme="light"] {
+    --bg: #ffffff; --bg-alt: #f5f6f7; --card: #ffffff; --card-hover: #f0f4f8;
+    --border: #e3e5e8; --fg: #1f1f1f; --fg-dim: #5f6368;
+    --accent: #1a73e8; --accent-fg: #ffffff; --danger: #c5221f;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--bg); color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 13px; display: flex; flex-direction: column;
+  }
+  header {
+    flex: 0 0 auto; display: flex; align-items: center; gap: 8px;
+    padding: 9px 12px; background: var(--bg-alt); border-bottom: 1px solid var(--border);
+  }
+  header .brand { display: flex; align-items: center; gap: 7px; white-space: nowrap; }
+  header .brand .glyph { font-size: 15px; }
+  header h1 { font-size: 14px; font-weight: 600; margin: 0; }
+  header .spacer { flex: 1 1 auto; }
+  button {
+    font-family: inherit; font-size: 12px; color: var(--fg); background: var(--card);
+    border: 1px solid var(--border); border-radius: 5px; padding: 5px 9px; cursor: pointer;
+    transition: background 0.12s ease;
+  }
+  button:hover { background: var(--card-hover); }
+  button.ghost { background: transparent; }
+  button.ghost:hover { background: var(--card-hover); }
+  button:disabled { opacity: 0.4; cursor: default; }
+  main { flex: 1 1 auto; overflow-y: auto; padding: 14px 16px 28px; }
+  .status { color: var(--fg-dim); padding: 32px 16px; text-align: center; line-height: 1.5; }
+  .status.error { color: var(--danger); }
+
+  .comic { max-width: 760px; margin: 0 auto; text-align: center; }
+  .comic .title { font-size: 16px; font-weight: 600; margin: 0 0 3px; }
+  .comic .date { font-size: 11px; color: var(--fg-dim); margin-bottom: 12px; }
+  .comic figure { margin: 0; }
+  .comic img {
+    max-width: 100%; height: auto; border-radius: 8px; background: #fff;
+    padding: 8px; box-shadow: var(--shadow);
+  }
+  .comic .alt {
+    margin: 12px auto 0; max-width: 640px; font-size: 12.5px; font-style: italic;
+    color: var(--fg-dim); line-height: 1.5;
+  }
+  .nav { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 16px; }
+  .nav .pos { font-size: 11px; color: var(--fg-dim); min-width: 46px; text-align: center; }
+  .permalink {
+    display: inline-block; margin-top: 14px; color: var(--accent); font-size: 12px; text-decoration: none;
+  }
+  .permalink:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><span class="glyph">&#129302;</span><h1>xkcd</h1></div>
+  <div class="spacer"></div>
+  <button id="refresh-btn" class="ghost" title="Reload">&#8635;</button>
+</header>
+<main>
+  <div id="view" class="status">Loading&hellip;</div>
+</main>
+
+<script>
+"use strict";
+
+/* =========================================================================
+ * xkcd daily-comic pane for Makerchip.
+ *
+ * xkcd.com has no CORS, so we read its RSS feed through the rss2json proxy
+ * (a known-good webview host). Each RSS item embeds the comic as
+ *   <img src="…comics/x.png" title="<hover/alt text>" alt="<comic title>">
+ * We browse the handful of most-recent comics the feed returns.
+ * ========================================================================= */
+
+const FEED_URL = "https://xkcd.com/rss.xml";
+const PROXY = "https://api.rss2json.com/v1/api.json?rss_url=";
+
+// -------------------------------------------------------------------------
+// Makerchip pane channel (postMessage v1): only used to match the IDE theme.
+// -------------------------------------------------------------------------
+const PANE_V = 1;
+let _rpcSeq = 0;
+const _rpcPending = new Map();
+
+window.addEventListener("message", (e) => {
+  const m = e.data;
+  if (!m || typeof m !== "object" || m.v !== PANE_V) return;
+  if (m.kind === "rpc-result") { _rpcPending.get(m.id)?.resolve(m.result); _rpcPending.delete(m.id); }
+  else if (m.kind === "rpc-error") { _rpcPending.get(m.id)?.reject(new Error(m.error)); _rpcPending.delete(m.id); }
+});
+
+function callIde(method, ...args) {
+  const id = ++_rpcSeq;
+  return new Promise((resolve, reject) => {
+    if (window.parent === window) { reject(new Error("not a pane")); return; }
+    _rpcPending.set(id, { resolve, reject });
+    parent.postMessage({ v: PANE_V, kind: "rpc", id, target: "ide", method, args }, "*");
+  });
+}
+function callIdeTimeout(method, args, ms) {
+  return Promise.race([
+    callIde(method, ...args),
+    new Promise((_, rej) => setTimeout(() => rej(new Error("IDE RPC timed out")), ms)),
+  ]);
+}
+function applyTheme(dark) { document.documentElement.setAttribute("data-theme", dark ? "dark" : "light"); }
+
+// -------------------------------------------------------------------------
+// Parse an rss2json xkcd item into { title, img, alt, link, date }.
+// -------------------------------------------------------------------------
+function toComic(item) {
+  const html = item.content || item.description || "";
+  const tmp = document.createElement("div");
+  tmp.innerHTML = html;
+  const img = tmp.querySelector("img");
+  return {
+    title: (item.title || "xkcd").trim(),
+    img: img ? img.getAttribute("src") || "" : "",
+    alt: img ? (img.getAttribute("title") || img.getAttribute("alt") || "") : "",
+    link: item.link || "https://xkcd.com/",
+    date: item.pubDate || "",
+  };
+}
+
+// -------------------------------------------------------------------------
+// DOM + state
+// -------------------------------------------------------------------------
+const viewEl = document.getElementById("view");
+const refreshBtn = document.getElementById("refresh-btn");
+let comics = [];
+let idx = 0;
+
+function showStatus(msg, isError) {
+  viewEl.className = isError ? "status error" : "status";
+  viewEl.textContent = msg;
+}
+
+function render() {
+  const c = comics[idx];
+  if (!c) { showStatus("No comics found.", false); return; }
+  viewEl.className = "comic";
+  viewEl.innerHTML = "";
+
+  const title = document.createElement("p");
+  title.className = "title";
+  title.textContent = c.title;
+  viewEl.appendChild(title);
+
+  if (c.date) {
+    const date = document.createElement("p");
+    date.className = "date";
+    const d = new Date(c.date);
+    date.textContent = isNaN(d) ? "" : d.toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
+    viewEl.appendChild(date);
+  }
+
+  const fig = document.createElement("figure");
+  const image = document.createElement("img");
+  image.src = c.img; image.alt = c.title; image.title = c.alt;
+  fig.appendChild(image);
+  viewEl.appendChild(fig);
+
+  if (c.alt) {
+    const alt = document.createElement("p");
+    alt.className = "alt";
+    alt.textContent = c.alt;
+    viewEl.appendChild(alt);
+  }
+
+  const nav = document.createElement("div");
+  nav.className = "nav";
+  const newer = document.createElement("button");
+  newer.textContent = "\u2190 Newer";
+  newer.disabled = idx === 0;
+  newer.addEventListener("click", () => { if (idx > 0) { idx--; render(); } });
+  const pos = document.createElement("span");
+  pos.className = "pos";
+  pos.textContent = `${idx + 1} / ${comics.length}`;
+  const older = document.createElement("button");
+  older.textContent = "Older \u2192";
+  older.disabled = idx >= comics.length - 1;
+  older.addEventListener("click", () => { if (idx < comics.length - 1) { idx++; render(); } });
+  nav.append(newer, pos, older);
+  viewEl.appendChild(nav);
+
+  const link = document.createElement("a");
+  link.className = "permalink";
+  link.href = c.link; link.target = "_blank"; link.rel = "noopener";
+  link.textContent = "View on xkcd.com \u2197";
+  viewEl.appendChild(link);
+}
+
+async function load() {
+  showStatus("Loading\u2026", false);
+  refreshBtn.disabled = true;
+  try {
+    const res = await fetch(PROXY + encodeURIComponent(FEED_URL));
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    if (data.status !== "ok") throw new Error(data.message || "Feed error");
+    comics = (data.items || []).map(toComic).filter((c) => c.img);
+    idx = 0;
+    if (!comics.length) throw new Error("No comics in feed");
+    render();
+  } catch (err) {
+    showStatus(`Could not load xkcd. ${err.message}`, true);
+  } finally {
+    refreshBtn.disabled = false;
+  }
+}
+
+refreshBtn.addEventListener("click", load);
+
+async function boot() {
+  if (window.parent !== window) {
+    try { parent.postMessage({ v: PANE_V, type: "ready" }, "*"); } catch (_) {}
+    try {
+      const ctx = await callIdeTimeout("getContext", [], 1500);
+      if (ctx?.theme) applyTheme(!!ctx.theme.dark);
+    } catch (_) { /* non-Makerchip host */ }
+  } else {
+    applyTheme(window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
+  }
+  load();
+}
+
+boot();
+</script>
+</body>
+</html>
