@@ -1,3 +1,8 @@
+// The Makerchip Third-Party View client (the pane<->IDE postMessage wire protocol). Imported as an
+// ES module from the jsDelivr CDN, so the gallery needs no build step and no vendored bundle; see the
+// "Makerchip pane integration" section below for how it's used.
+import { connect } from "https://cdn.jsdelivr.net/npm/@rweda/makerchip-view-client@0.2.0/+esm";
+
 // Per-example VIZ thumbnail capture settings (recording metadata; NOT used by the gallery at
 // runtime). Recorded at 350x250 (media-wrap aspect 1.4) as MP4. Entries with `mode:"fit-relative"`
 // frame relative to the whole-design fit (`scale` multiplies that fit; `focus` is a fraction of the
@@ -528,48 +533,27 @@ for (const ex of examples) {
 // a normal standalone web page, that button is hidden and the usual web links
 // (Open Below / Open in Makerchip) are used instead.
 //
-// The pane<->IDE protocol is a simple postMessage RPC (nothing is injected into
-// this page); see doc-src/plugin/Third_Party_Pane_API.md in the mono repo.
+// The pane<->IDE postMessage wire protocol is implemented by the
+// @rweda/makerchip-view-client library, imported as an ES module from the jsDelivr
+// CDN (see the import at the top of this file; and doc-src/plugin/Third_Party_Pane_API.md
+// in the mono repo). This page has no build step, so it consumes the published npm
+// package straight from the CDN rather than a vendored bundle.
 // ---------------------------------------------------------------------------
 
-const PANE_V = 1;
-let _rpcSeq = 0;
-const _rpcPending = new Map();
-
-window.addEventListener("message", (e) => {
-  const m = e.data;
-  if (!m || m.v !== PANE_V) return;
-  if (m.kind === "rpc-result") {
-    _rpcPending.get(m.id)?.resolve(m.result);
-    _rpcPending.delete(m.id);
-  } else if (m.kind === "rpc-error") {
-    _rpcPending.get(m.id)?.reject(new Error(m.error));
-    _rpcPending.delete(m.id);
-  }
-});
-
-function callIde(method, ...args) {
-  const id = ++_rpcSeq;
-  return new Promise((resolve, reject) => {
-    _rpcPending.set(id, { resolve, reject });
-    // target "ide" is the only supported RPC destination today.
-    parent.postMessage({ v: PANE_V, kind: "rpc", id, target: "ide", method, args }, "*");
-  });
-}
+// connect() finds the parent window when embedded and auto-sends the `ready`
+// handshake; in a standalone tab `view.embedded` is false and call() rejects.
+const view = connect();
 
 function callIdeWithTimeout(method, args, ms) {
   return Promise.race([
-    callIde(method, ...args),
+    view.call(method, ...args),
     new Promise((_, reject) => setTimeout(() => reject(new Error("IDE RPC timed out")), ms)),
   ]);
 }
 
 async function initPaneMode() {
   // A standalone, top-level page is never a pane.
-  if (window.parent === window) return;
-
-  // Announce readiness (harmless if the parent isn't the Makerchip IDE).
-  try { parent.postMessage({ v: PANE_V, type: "ready" }, "*"); } catch (_) {}
+  if (!view.embedded) return;
 
   // Probe the IDE: if it answers, we're a connected Makerchip pane.
   try {
@@ -593,7 +577,7 @@ async function initPaneMode() {
     const btn = card.querySelector(".ide-btn");
     const metaTop = card.querySelector(".meta-top");
     if (btn && metaTop) {
-      btn.textContent = "Open";
+      btn.textContent = "Load";
       metaTop.appendChild(btn);
     }
   }
@@ -610,10 +594,8 @@ async function openInIde(ex, btn) {
     const code = await res.text();
 
     // setCode loads the source into the Editor and compiles it; in an editor-less
-    // IDE (hasEditor: false) it degrades to a headless compile. It is the single
-    // whitelisted entry point that covers both cases, so no editor probing is needed.
-    await callIde("setCode", code);
-    callIde("activatePane", "Editor").catch(() => {}); // best-effort focus
+    // IDE (hasEditor: false) it degrades to a headless compile.
+    await view.call("setCode", code);
   } catch (err) {
     console.error("Open in Makerchip failed:", err);
     btn.textContent = "Failed \u2014 retry";
