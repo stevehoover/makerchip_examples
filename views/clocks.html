@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>World Clocks</title>
+<style>
+  :root {
+    --bg: #1e1e1e; --bg-alt: #252526; --card: #2a2d2e; --card-hover: #323638;
+    --border: #3c3c3c; --fg: #d4d4d4; --fg-dim: #9aa0a6;
+    --accent: #4ea1ff; --accent-fg: #ffffff; --danger: #f48771;
+    --face: #202325; --tick: #6b7075; --hand: #d4d4d4;
+    --shadow: 0 1px 3px rgba(0,0,0,0.35);
+  }
+  :root[data-theme="light"] {
+    --bg: #ffffff; --bg-alt: #f5f6f7; --card: #ffffff; --card-hover: #f0f4f8;
+    --border: #e3e5e8; --fg: #1f1f1f; --fg-dim: #5f6368;
+    --accent: #1a73e8; --accent-fg: #ffffff; --danger: #c5221f;
+    --face: #f3f5f7; --tick: #b6bcc4; --hand: #1f1f1f;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--bg); color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 13px; display: flex; flex-direction: column;
+  }
+  header {
+    flex: 0 0 auto; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    padding: 9px 12px; background: var(--bg-alt); border-bottom: 1px solid var(--border);
+  }
+  header .brand { display: flex; align-items: center; gap: 7px; white-space: nowrap; }
+  header .brand .glyph { font-size: 15px; }
+  header h1 { font-size: 14px; font-weight: 600; margin: 0; }
+  header .spacer { flex: 1 1 auto; }
+  select, button {
+    font-family: inherit; font-size: 12px; color: var(--fg); background: var(--card);
+    border: 1px solid var(--border); border-radius: 5px; padding: 5px 9px; cursor: pointer;
+    transition: background 0.12s ease;
+  }
+  select:hover, button:hover { background: var(--card-hover); }
+  button.ghost { background: transparent; }
+  button.ghost:hover { background: var(--card-hover); }
+  button.toggle[aria-pressed="true"] { background: var(--accent); color: var(--accent-fg); border-color: transparent; }
+  main { flex: 1 1 auto; overflow-y: auto; padding: 14px; }
+  .grid {
+    display: grid; gap: 12px;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  }
+  .clock {
+    position: relative; display: flex; flex-direction: column; align-items: center;
+    padding: 14px 10px 12px; background: var(--card); border: 1px solid var(--border);
+    border-radius: 10px; box-shadow: var(--shadow); text-align: center;
+  }
+  .clock .remove {
+    position: absolute; top: 5px; right: 5px; width: 20px; height: 20px; padding: 0;
+    line-height: 1; border-radius: 50%; background: transparent; border: none;
+    color: var(--fg-dim); font-size: 15px; opacity: 0; transition: opacity 0.12s ease;
+  }
+  .clock:hover .remove { opacity: 1; }
+  .clock .remove:hover { color: var(--danger); background: var(--card-hover); }
+  .face { width: 92px; height: 92px; }
+  .face .rim { fill: var(--face); stroke: var(--border); stroke-width: 2; }
+  .face .tick { stroke: var(--tick); stroke-width: 2; }
+  .face .tick.major { stroke-width: 3.4; }
+  .hand-hour { stroke: var(--hand); stroke-width: 4; stroke-linecap: round; }
+  .hand-min  { stroke: var(--hand); stroke-width: 3; stroke-linecap: round; }
+  .hand-sec  { stroke: var(--accent); stroke-width: 1.4; stroke-linecap: round; }
+  .face .pin { fill: var(--accent); }
+  .label { margin-top: 9px; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 5px; }
+  .digital { margin-top: 3px; font-size: 17px; font-variant-numeric: tabular-nums; letter-spacing: 0.5px; }
+  .sub { margin-top: 2px; font-size: 10.5px; color: var(--fg-dim); }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><span class="glyph">&#128340;</span><h1>World Clocks</h1></div>
+  <select id="add-select" title="Add a city"></select>
+  <button id="fmt-btn" class="toggle" aria-pressed="false" title="Toggle 12/24-hour">24h</button>
+  <div class="spacer"></div>
+</header>
+<main>
+  <div id="grid" class="grid"></div>
+</main>
+
+<script>
+"use strict";
+
+/* =========================================================================
+ * World-clocks pane for Makerchip. Fully self-contained (no network): each
+ * card shows an analog + digital clock for an IANA time zone, updated every
+ * second via Intl.DateTimeFormat.
+ *
+ * Config (zone list + 12/24h) is persisted to localStorage when available.
+ * NOTE: panes opened from a data: URI have an opaque origin where localStorage
+ * throws, so persistence silently no-ops there and defaults are used; it will
+ * persist if this pane is ever served from a real origin.
+ * ========================================================================= */
+
+// Curated cities: [IANA zone, display label].
+const CITIES = [
+  ["UTC", "UTC"],
+  ["America/Los_Angeles", "San Francisco"],
+  ["America/Denver", "Denver"],
+  ["America/Chicago", "Chicago"],
+  ["America/New_York", "New York"],
+  ["America/Sao_Paulo", "S\u00e3o Paulo"],
+  ["Europe/London", "London"],
+  ["Europe/Paris", "Paris"],
+  ["Europe/Berlin", "Berlin"],
+  ["Europe/Moscow", "Moscow"],
+  ["Asia/Dubai", "Dubai"],
+  ["Asia/Kolkata", "Bengaluru"],
+  ["Asia/Singapore", "Singapore"],
+  ["Asia/Shanghai", "Shanghai"],
+  ["Asia/Tokyo", "Tokyo"],
+  ["Australia/Sydney", "Sydney"],
+  ["Pacific/Auckland", "Auckland"],
+];
+const LABELS = new Map(CITIES);
+const LOCAL_TZ = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+
+const DEFAULT_ZONES = [LOCAL_TZ, "UTC", "America/Los_Angeles", "America/New_York",
+  "Europe/London", "Asia/Kolkata", "Asia/Tokyo"];
+
+const STORE_KEY = "mc.clocks.v1";
+
+function labelFor(tz) {
+  if (tz === LOCAL_TZ) return "Local";
+  return LABELS.get(tz) || tz.split("/").pop().replace(/_/g, " ");
+}
+
+// -------------------------------------------------------------------------
+// Makerchip pane channel (postMessage v1): only used to match the IDE theme.
+// -------------------------------------------------------------------------
+const PANE_V = 1;
+let _rpcSeq = 0;
+const _rpcPending = new Map();
+
+window.addEventListener("message", (e) => {
+  const m = e.data;
+  if (!m || typeof m !== "object" || m.v !== PANE_V) return;
+  if (m.kind === "rpc-result") { _rpcPending.get(m.id)?.resolve(m.result); _rpcPending.delete(m.id); }
+  else if (m.kind === "rpc-error") { _rpcPending.get(m.id)?.reject(new Error(m.error)); _rpcPending.delete(m.id); }
+});
+
+function callIde(method, ...args) {
+  const id = ++_rpcSeq;
+  return new Promise((resolve, reject) => {
+    if (window.parent === window) { reject(new Error("not a pane")); return; }
+    _rpcPending.set(id, { resolve, reject });
+    parent.postMessage({ v: PANE_V, kind: "rpc", id, target: "ide", method, args }, "*");
+  });
+}
+function callIdeTimeout(method, args, ms) {
+  return Promise.race([
+    callIde(method, ...args),
+    new Promise((_, rej) => setTimeout(() => rej(new Error("IDE RPC timed out")), ms)),
+  ]);
+}
+function applyTheme(dark) { document.documentElement.setAttribute("data-theme", dark ? "dark" : "light"); }
+
+// -------------------------------------------------------------------------
+// Persistence (best-effort; opaque-origin panes silently fall back).
+// -------------------------------------------------------------------------
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch (_) { /* opaque origin / disabled */ }
+  return null;
+}
+function saveState() {
+  try { localStorage.setItem(STORE_KEY, JSON.stringify({ zones, h24 })); }
+  catch (_) { /* opaque origin / disabled */ }
+}
+
+// -------------------------------------------------------------------------
+// Time helpers
+// -------------------------------------------------------------------------
+function zoneParts(tz) {
+  const p = new Intl.DateTimeFormat("en-US", {
+    timeZone: tz, hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit",
+    weekday: "short", month: "short", day: "numeric",
+  }).formatToParts(new Date());
+  const get = (t) => p.find((x) => x.type === t)?.value || "";
+  return {
+    h: parseInt(get("hour"), 10) % 24,
+    m: parseInt(get("minute"), 10),
+    s: parseInt(get("second"), 10),
+    weekday: get("weekday"), month: get("month"), day: get("day"),
+  };
+}
+function zoneOffset(tz) {
+  try {
+    const p = new Intl.DateTimeFormat("en-US", { timeZone: tz, timeZoneName: "shortOffset" }).formatToParts(new Date());
+    return (p.find((x) => x.type === "timeZoneName")?.value || "").replace("GMT", "UTC");
+  } catch (_) { return ""; }
+}
+
+// -------------------------------------------------------------------------
+// DOM + state
+// -------------------------------------------------------------------------
+const gridEl = document.getElementById("grid");
+const addSelect = document.getElementById("add-select");
+const fmtBtn = document.getElementById("fmt-btn");
+
+const saved = loadState();
+let zones = Array.isArray(saved?.zones) && saved.zones.length ? saved.zones.slice() : DEFAULT_ZONES.slice();
+let h24 = saved ? !!saved.h24 : true;
+let entries = []; // { tz, digital, sub, dayNight, hour, min, sec }
+
+const SVGNS = "http://www.w3.org/2000/svg";
+function svgEl(name, attrs) {
+  const el = document.createElementNS(SVGNS, name);
+  for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
+  return el;
+}
+
+function buildFace() {
+  const svg = svgEl("svg", { class: "face", viewBox: "0 0 100 100" });
+  svg.appendChild(svgEl("circle", { class: "rim", cx: 50, cy: 50, r: 47 }));
+  for (let i = 0; i < 12; i++) {
+    const a = (i * 30) * Math.PI / 180;
+    const outer = 45, inner = i % 3 === 0 ? 38 : 41;
+    svg.appendChild(svgEl("line", {
+      class: i % 3 === 0 ? "tick major" : "tick",
+      x1: 50 + inner * Math.sin(a), y1: 50 - inner * Math.cos(a),
+      x2: 50 + outer * Math.sin(a), y2: 50 - outer * Math.cos(a),
+    }));
+  }
+  const hour = svgEl("line", { class: "hand-hour", x1: 50, y1: 50, x2: 50, y2: 27 });
+  const min = svgEl("line", { class: "hand-min", x1: 50, y1: 50, x2: 50, y2: 18 });
+  const sec = svgEl("line", { class: "hand-sec", x1: 50, y1: 55, x2: 50, y2: 14 });
+  svg.append(hour, min, sec);
+  svg.appendChild(svgEl("circle", { class: "pin", cx: 50, cy: 50, r: 2.6 }));
+  return { svg, hour, min, sec };
+}
+
+function build() {
+  gridEl.innerHTML = "";
+  entries = [];
+  for (const tz of zones) {
+    const card = document.createElement("div");
+    card.className = "clock";
+
+    const remove = document.createElement("button");
+    remove.className = "remove"; remove.textContent = "\u00d7"; remove.title = "Remove";
+    remove.addEventListener("click", () => removeZone(tz));
+    card.appendChild(remove);
+
+    const face = buildFace();
+    card.appendChild(face.svg);
+
+    const label = document.createElement("div");
+    label.className = "label";
+    const dn = document.createElement("span");
+    label.append(dn, document.createTextNode(labelFor(tz)));
+    card.appendChild(label);
+
+    const digital = document.createElement("div");
+    digital.className = "digital";
+    card.appendChild(digital);
+
+    const sub = document.createElement("div");
+    sub.className = "sub";
+    card.appendChild(sub);
+
+    gridEl.appendChild(card);
+    entries.push({ tz, face, digital, sub, dn });
+  }
+  refreshAddOptions();
+  tick();
+}
+
+function pad(n) { return String(n).padStart(2, "0"); }
+
+function tick() {
+  for (const e of entries) {
+    const t = zoneParts(e.tz);
+    const hourAngle = (t.h % 12) * 30 + t.m * 0.5;
+    const minAngle = t.m * 6 + t.s * 0.1;
+    const secAngle = t.s * 6;
+    e.face.hour.setAttribute("transform", `rotate(${hourAngle} 50 50)`);
+    e.face.min.setAttribute("transform", `rotate(${minAngle} 50 50)`);
+    e.face.sec.setAttribute("transform", `rotate(${secAngle} 50 50)`);
+
+    let hh = t.h, ap = "";
+    if (!h24) { ap = hh < 12 ? " AM" : " PM"; hh = hh % 12 || 12; }
+    e.digital.textContent = `${h24 ? pad(hh) : hh}:${pad(t.m)}:${pad(t.s)}${ap}`;
+    e.sub.textContent = `${t.weekday}, ${t.month} ${t.day} \u00b7 ${zoneOffset(e.tz)}`;
+    e.dn.textContent = (t.h >= 6 && t.h < 18) ? "\u2600\ufe0f" : "\u{1F319}";
+  }
+}
+
+function refreshAddOptions() {
+  addSelect.innerHTML = "";
+  const ph = document.createElement("option");
+  ph.value = ""; ph.textContent = "+ Add city\u2026"; ph.disabled = true; ph.selected = true;
+  addSelect.appendChild(ph);
+  for (const [tz, label] of CITIES) {
+    if (zones.includes(tz)) continue;
+    const opt = document.createElement("option");
+    opt.value = tz; opt.textContent = label;
+    addSelect.appendChild(opt);
+  }
+}
+
+function addZone(tz) {
+  if (!tz || zones.includes(tz)) return;
+  zones.push(tz);
+  saveState();
+  build();
+}
+function removeZone(tz) {
+  zones = zones.filter((z) => z !== tz);
+  saveState();
+  build();
+}
+
+addSelect.addEventListener("change", () => { const tz = addSelect.value; addSelect.value = ""; addZone(tz); });
+fmtBtn.addEventListener("click", () => {
+  h24 = !h24;
+  fmtBtn.setAttribute("aria-pressed", String(!h24));
+  fmtBtn.textContent = h24 ? "24h" : "12h";
+  saveState();
+  tick();
+});
+
+setInterval(tick, 1000);
+
+async function boot() {
+  fmtBtn.setAttribute("aria-pressed", String(!h24));
+  fmtBtn.textContent = h24 ? "24h" : "12h";
+  if (window.parent !== window) {
+    try { parent.postMessage({ v: PANE_V, type: "ready" }, "*"); } catch (_) {}
+    try {
+      const ctx = await callIdeTimeout("getContext", [], 1500);
+      if (ctx?.theme) applyTheme(!!ctx.theme.dark);
+    } catch (_) { /* non-Makerchip host */ }
+  } else {
+    applyTheme(window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
+  }
+  build();
+}
+
+boot();
+</script>
+</body>
+</html>

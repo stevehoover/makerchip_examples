@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TLV Trending</title>
+<style>
+  :root {
+    --bg: #1e1e1e; --bg-alt: #252526; --card: #2a2d2e; --card-hover: #323638;
+    --border: #3c3c3c; --fg: #d4d4d4; --fg-dim: #9aa0a6;
+    --accent: #4ea1ff; --accent-fg: #ffffff; --danger: #f48771;
+    --shadow: 0 1px 3px rgba(0,0,0,0.35);
+  }
+  :root[data-theme="light"] {
+    --bg: #ffffff; --bg-alt: #f5f6f7; --card: #ffffff; --card-hover: #f0f4f8;
+    --border: #e3e5e8; --fg: #1f1f1f; --fg-dim: #5f6368;
+    --accent: #1a73e8; --accent-fg: #ffffff; --danger: #c5221f;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--bg); color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 13px; display: flex; flex-direction: column;
+  }
+  header {
+    flex: 0 0 auto; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    padding: 9px 12px; background: var(--bg-alt); border-bottom: 1px solid var(--border);
+  }
+  header .brand { display: flex; align-items: center; gap: 7px; white-space: nowrap; }
+  header .brand .glyph { font-size: 15px; }
+  header h1 { font-size: 14px; font-weight: 600; margin: 0; }
+  header .spacer { flex: 1 1 auto; }
+  select, button {
+    font-family: inherit; font-size: 12px; color: var(--fg); background: var(--card);
+    border: 1px solid var(--border); border-radius: 5px; padding: 5px 9px; cursor: pointer;
+    transition: background 0.12s ease;
+  }
+  select:hover, button:hover { background: var(--card-hover); }
+  button.ghost { background: transparent; }
+  button.ghost:hover { background: var(--card-hover); }
+  button.toggle[aria-pressed="true"] { background: var(--accent); color: var(--accent-fg); border-color: transparent; }
+  button:disabled { opacity: 0.4; cursor: default; }
+  main { flex: 1 1 auto; overflow-y: auto; }
+  .status { color: var(--fg-dim); padding: 32px 16px; text-align: center; line-height: 1.5; }
+  .status.error { color: var(--danger); }
+
+  #list { padding: 10px 12px; }
+  .scope-note { font-size: 11px; color: var(--fg-dim); margin: 0 2px 10px; }
+  .card {
+    display: flex; gap: 11px; padding: 11px; margin-bottom: 8px;
+    background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+    box-shadow: var(--shadow); text-decoration: none; color: inherit;
+    transition: background 0.12s ease, transform 0.06s ease;
+  }
+  .card:hover { background: var(--card-hover); }
+  .card:active { transform: scale(0.995); }
+  .card .avatar {
+    flex: 0 0 auto; width: 40px; height: 40px; border-radius: 8px;
+    object-fit: cover; background: var(--bg-alt);
+  }
+  .card .body { flex: 1 1 auto; min-width: 0; }
+  .card .name { font-size: 13px; font-weight: 600; margin: 0 0 3px; overflow-wrap: anywhere; }
+  .card .name .owner { color: var(--fg-dim); font-weight: 400; }
+  .card .desc {
+    font-size: 12px; color: var(--fg-dim); line-height: 1.45;
+    max-height: 3em; overflow: hidden; margin-bottom: 7px;
+  }
+  .card .meta { display: flex; flex-wrap: wrap; gap: 12px; font-size: 11px; color: var(--fg-dim); }
+  .card .meta .dot { display: inline-flex; align-items: center; gap: 4px; }
+  .lang-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--accent); display: inline-block; }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><span class="glyph">&#128200;</span><h1>TLV Trending</h1></div>
+  <select id="scope-select" title="Choose a scope"></select>
+  <button id="recent-btn" class="toggle" aria-pressed="false" title="Only repos active in the last 60 days">Active&nbsp;60d</button>
+  <div class="spacer"></div>
+  <button id="refresh-btn" class="ghost" title="Reload">&#8635;</button>
+</header>
+<main>
+  <div id="list" class="status">Loading&hellip;</div>
+</main>
+
+<script>
+"use strict";
+
+/* =========================================================================
+ * GitHub "trending" pane for Makerchip, tuned to the TL-Verilog ecosystem.
+ *
+ * There is no official trending API, so we approximate it with the GitHub
+ * search API (keyless, CORS, webview-allowed; ~60 req/hr): sort by stars,
+ * scoped to our ecosystem topics/keywords, optionally filtered to repos
+ * pushed recently ("Active 60d") to bias toward what's moving now.
+ *
+ * Add or retune scopes by editing SCOPES below.
+ * ========================================================================= */
+
+// Each scope has one or more search queries. GitHub's search API can't OR
+// multiple `topic:` qualifiers (returns 422), so a topic union is expressed as
+// several queries whose results we merge and re-rank by stars.
+const SCOPES = [
+  { id: "tlv",   label: "TL-Verilog", queries: ["topic:tl-verilog"],
+    note: "Repositories tagged TL-Verilog." },
+  { id: "mchip", label: "Makerchip / WARP-V",
+    queries: ['warp-v OR warpv OR makerchip OR sandpiper OR "redwood eda"'],
+    note: "Makerchip, WARP-V, SandPiper and Redwood EDA projects." },
+  { id: "openhw", label: "Open Hardware",
+    queries: ["topic:risc-v", "topic:fpga", "topic:hdl", "topic:chisel"],
+    note: "Adjacent open-hardware ecosystem (RISC-V, FPGA, HDL, Chisel)." },
+];
+
+const API = "https://api.github.com/search/repositories";
+
+// -------------------------------------------------------------------------
+// Makerchip pane channel (postMessage v1): only used to match the IDE theme.
+// -------------------------------------------------------------------------
+const PANE_V = 1;
+let _rpcSeq = 0;
+const _rpcPending = new Map();
+
+window.addEventListener("message", (e) => {
+  const m = e.data;
+  if (!m || typeof m !== "object" || m.v !== PANE_V) return;
+  if (m.kind === "rpc-result") { _rpcPending.get(m.id)?.resolve(m.result); _rpcPending.delete(m.id); }
+  else if (m.kind === "rpc-error") { _rpcPending.get(m.id)?.reject(new Error(m.error)); _rpcPending.delete(m.id); }
+});
+
+function callIde(method, ...args) {
+  const id = ++_rpcSeq;
+  return new Promise((resolve, reject) => {
+    if (window.parent === window) { reject(new Error("not a pane")); return; }
+    _rpcPending.set(id, { resolve, reject });
+    parent.postMessage({ v: PANE_V, kind: "rpc", id, target: "ide", method, args }, "*");
+  });
+}
+function callIdeTimeout(method, args, ms) {
+  return Promise.race([
+    callIde(method, ...args),
+    new Promise((_, rej) => setTimeout(() => rej(new Error("IDE RPC timed out")), ms)),
+  ]);
+}
+function applyTheme(dark) { document.documentElement.setAttribute("data-theme", dark ? "dark" : "light"); }
+
+// -------------------------------------------------------------------------
+// Helpers
+// -------------------------------------------------------------------------
+function timeAgo(dateStr) {
+  const then = new Date(dateStr).getTime();
+  if (isNaN(then)) return "";
+  const d = Math.max(0, (Date.now() - then) / 86400000);
+  if (d < 1) return "today";
+  if (d < 30) return `${Math.floor(d)}d ago`;
+  const mo = d / 30; if (mo < 12) return `${Math.floor(mo)}mo ago`;
+  return `${Math.floor(mo / 12)}y ago`;
+}
+function isoDaysAgo(days) {
+  return new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);
+}
+function fmtStars(n) {
+  return n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n);
+}
+
+// -------------------------------------------------------------------------
+// DOM + state
+// -------------------------------------------------------------------------
+const listEl = document.getElementById("list");
+const selectEl = document.getElementById("scope-select");
+const recentBtn = document.getElementById("recent-btn");
+const refreshBtn = document.getElementById("refresh-btn");
+let recentOnly = false;
+
+function currentScope() { return SCOPES.find((s) => s.id === selectEl.value) || SCOPES[0]; }
+
+function showStatus(msg, isError) {
+  listEl.className = isError ? "status error" : "status";
+  listEl.textContent = msg;
+}
+
+function render(scope, items) {
+  listEl.className = "";
+  listEl.innerHTML = "";
+
+  const note = document.createElement("p");
+  note.className = "scope-note";
+  note.textContent = scope.note + (recentOnly ? " \u00b7 active in last 60 days" : "");
+  listEl.appendChild(note);
+
+  if (!items.length) { showStatus("No repositories matched this scope.", false); return; }
+
+  for (const repo of items) {
+    const card = document.createElement("a");
+    card.className = "card";
+    card.href = repo.html_url; card.target = "_blank"; card.rel = "noopener";
+
+    if (repo.owner?.avatar_url) {
+      const img = document.createElement("img");
+      img.className = "avatar"; img.src = repo.owner.avatar_url; img.loading = "lazy"; img.alt = "";
+      img.onerror = () => img.remove();
+      card.appendChild(img);
+    }
+
+    const body = document.createElement("div");
+    body.className = "body";
+
+    const name = document.createElement("div");
+    name.className = "name";
+    const owner = document.createElement("span");
+    owner.className = "owner";
+    owner.textContent = (repo.owner?.login || "") + "/";
+    name.appendChild(owner);
+    name.appendChild(document.createTextNode(repo.name));
+    body.appendChild(name);
+
+    if (repo.description) {
+      const desc = document.createElement("div");
+      desc.className = "desc";
+      desc.textContent = repo.description;
+      body.appendChild(desc);
+    }
+
+    const meta = document.createElement("div");
+    meta.className = "meta";
+    const stars = document.createElement("span");
+    stars.className = "dot";
+    stars.textContent = `\u2605 ${fmtStars(repo.stargazers_count)}`;
+    meta.appendChild(stars);
+    if (repo.language) {
+      const lang = document.createElement("span");
+      lang.className = "dot";
+      lang.innerHTML = `<span class="lang-dot"></span>${repo.language}`;
+      meta.appendChild(lang);
+    }
+    const upd = document.createElement("span");
+    upd.className = "dot";
+    upd.textContent = `updated ${timeAgo(repo.pushed_at)}`;
+    meta.appendChild(upd);
+    body.appendChild(meta);
+
+    card.appendChild(body);
+    listEl.appendChild(card);
+  }
+}
+
+async function fetchQuery(q) {
+  const url = `${API}?q=${encodeURIComponent(q)}&sort=stars&order=desc&per_page=25`;
+  const res = await fetch(url, { headers: { Accept: "application/vnd.github+json" } });
+  if (res.status === 403) throw new Error("GitHub rate limit reached \u2014 try again shortly.");
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return (await res.json()).items || [];
+}
+
+async function load() {
+  const scope = currentScope();
+  showStatus("Loading\u2026", false);
+  refreshBtn.disabled = true;
+  try {
+    const suffix = recentOnly ? ` pushed:>${isoDaysAgo(60)}` : "";
+    // Run the scope's queries, merge by repo id, and re-rank by stars. If some
+    // queries fail (e.g. transient 422), keep going; only fail if all do.
+    const settled = await Promise.allSettled(scope.queries.map((q) => fetchQuery(q + suffix)));
+    if (settled.every((r) => r.status === "rejected")) {
+      throw settled[0].reason || new Error("request failed");
+    }
+    const byId = new Map();
+    for (const r of settled) {
+      if (r.status !== "fulfilled") continue;
+      for (const repo of r.value) if (!byId.has(repo.id)) byId.set(repo.id, repo);
+    }
+    const items = [...byId.values()]
+      .sort((a, b) => b.stargazers_count - a.stargazers_count)
+      .slice(0, 25);
+    render(scope, items);
+  } catch (err) {
+    showStatus(`Could not load trending repos. ${err.message}`, true);
+  } finally {
+    refreshBtn.disabled = false;
+  }
+}
+
+selectEl.addEventListener("change", load);
+refreshBtn.addEventListener("click", load);
+recentBtn.addEventListener("click", () => {
+  recentOnly = !recentOnly;
+  recentBtn.setAttribute("aria-pressed", String(recentOnly));
+  load();
+});
+
+for (const s of SCOPES) {
+  const opt = document.createElement("option");
+  opt.value = s.id; opt.textContent = s.label;
+  selectEl.appendChild(opt);
+}
+
+async function boot() {
+  if (window.parent !== window) {
+    try { parent.postMessage({ v: PANE_V, type: "ready" }, "*"); } catch (_) {}
+    try {
+      const ctx = await callIdeTimeout("getContext", [], 1500);
+      if (ctx?.theme) applyTheme(!!ctx.theme.dark);
+    } catch (_) { /* non-Makerchip host */ }
+  } else {
+    applyTheme(window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
+  }
+  load();
+}
+
+boot();
+</script>
+</body>
+</html>

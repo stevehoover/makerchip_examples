@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pomodoro</title>
+<style>
+  :root {
+    --bg: #1e1e1e; --bg-alt: #252526; --card: #2a2d2e; --card-hover: #323638;
+    --border: #3c3c3c; --fg: #d4d4d4; --fg-dim: #9aa0a6;
+    --accent: #4ea1ff; --accent-fg: #ffffff; --danger: #f48771;
+    --track: #3c3c3c;
+    --work: #f4685f; --short: #4caf77; --long: #4ea1ff;
+    --shadow: 0 1px 3px rgba(0,0,0,0.35);
+  }
+  :root[data-theme="light"] {
+    --bg: #ffffff; --bg-alt: #f5f6f7; --card: #ffffff; --card-hover: #f0f4f8;
+    --border: #e3e5e8; --fg: #1f1f1f; --fg-dim: #5f6368;
+    --accent: #1a73e8; --accent-fg: #ffffff; --danger: #c5221f;
+    --track: #e3e5e8;
+    --work: #e5484d; --short: #2e9e63; --long: #1a73e8;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--bg); color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 13px; display: flex; flex-direction: column;
+  }
+  header {
+    flex: 0 0 auto; display: flex; align-items: center; gap: 8px;
+    padding: 9px 12px; background: var(--bg-alt); border-bottom: 1px solid var(--border);
+  }
+  header .brand { display: flex; align-items: center; gap: 7px; white-space: nowrap; }
+  header .brand .glyph { font-size: 15px; }
+  header h1 { font-size: 14px; font-weight: 600; margin: 0; }
+  header .spacer { flex: 1 1 auto; }
+  button {
+    font-family: inherit; font-size: 12px; color: var(--fg); background: var(--card);
+    border: 1px solid var(--border); border-radius: 5px; padding: 5px 9px; cursor: pointer;
+    transition: background 0.12s ease;
+  }
+  button:hover { background: var(--card-hover); }
+  button.ghost { background: transparent; }
+  button.ghost:hover { background: var(--card-hover); }
+  main { flex: 1 1 auto; overflow-y: auto; display: flex; flex-direction: column; align-items: center; }
+
+  .phase-tabs { display: flex; gap: 6px; margin: 18px 0 4px; }
+  .phase-tabs button {
+    border-radius: 999px; padding: 5px 13px; font-size: 12px; background: transparent;
+  }
+  .phase-tabs button[aria-selected="true"] { color: #fff; border-color: transparent; }
+  .phase-tabs button[data-phase="work"][aria-selected="true"] { background: var(--work); }
+  .phase-tabs button[data-phase="short"][aria-selected="true"] { background: var(--short); }
+  .phase-tabs button[data-phase="long"][aria-selected="true"] { background: var(--long); }
+
+  .dial { position: relative; width: 240px; height: 240px; margin: 10px 0; }
+  .dial svg { transform: rotate(-90deg); }
+  .dial .track { fill: none; stroke: var(--track); stroke-width: 10; }
+  .dial .prog { fill: none; stroke-width: 10; stroke-linecap: round; transition: stroke-dashoffset 0.3s linear; }
+  .dial .center {
+    position: absolute; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 3px;
+  }
+  .dial .time { font-size: 46px; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: 1px; }
+  .dial .plabel { font-size: 12px; color: var(--fg-dim); text-transform: uppercase; letter-spacing: 0.08em; }
+
+  .dots { display: flex; gap: 7px; margin: 6px 0 2px; }
+  .dots .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--track); }
+  .dots .dot.done { background: var(--work); }
+  .count { font-size: 11px; color: var(--fg-dim); }
+
+  .controls { display: flex; gap: 8px; margin: 16px 0 8px; }
+  .controls .primary {
+    min-width: 108px; font-size: 14px; font-weight: 600; padding: 9px 16px;
+    color: var(--accent-fg); border-color: transparent;
+  }
+  .controls .primary.work { background: var(--work); }
+  .controls .primary.short { background: var(--short); }
+  .controls .primary.long { background: var(--long); }
+
+  .settings {
+    width: 100%; max-width: 320px; margin: 10px auto 24px; padding: 0 16px;
+  }
+  .settings[hidden] { display: none; }
+  .settings .row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 12.5px;
+  }
+  .settings .row:last-child { border-bottom: none; }
+  .settings input[type="number"] {
+    width: 58px; font: inherit; font-size: 12.5px; color: var(--fg); background: var(--card);
+    border: 1px solid var(--border); border-radius: 5px; padding: 4px 6px; text-align: right;
+  }
+  .settings input[type="checkbox"] { width: 15px; height: 15px; accent-color: var(--accent); }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><span class="glyph">&#127813;</span><h1>Pomodoro</h1></div>
+  <div class="spacer"></div>
+  <button id="settings-btn" class="ghost" title="Settings">&#9881;</button>
+</header>
+<main>
+  <div class="phase-tabs" id="phase-tabs">
+    <button data-phase="work"  aria-selected="true">Focus</button>
+    <button data-phase="short" aria-selected="false">Short break</button>
+    <button data-phase="long"  aria-selected="false">Long break</button>
+  </div>
+
+  <div class="dial">
+    <svg width="240" height="240" viewBox="0 0 240 240">
+      <circle class="track" cx="120" cy="120" r="110"></circle>
+      <circle class="prog"  id="prog" cx="120" cy="120" r="110"></circle>
+    </svg>
+    <div class="center">
+      <div class="time" id="time">25:00</div>
+      <div class="plabel" id="plabel">Focus</div>
+    </div>
+  </div>
+
+  <div class="dots" id="dots"></div>
+  <div class="count" id="count">0 focus sessions completed</div>
+
+  <div class="controls">
+    <button class="primary work" id="start-btn">Start</button>
+    <button class="ghost" id="reset-btn" title="Reset current phase">Reset</button>
+    <button class="ghost" id="skip-btn" title="Skip to next phase">Skip &#8594;</button>
+  </div>
+
+  <div class="settings" id="settings" hidden>
+    <div class="row"><label for="cfg-work">Focus length (min)</label><input type="number" id="cfg-work" min="1" max="120"></div>
+    <div class="row"><label for="cfg-short">Short break (min)</label><input type="number" id="cfg-short" min="1" max="60"></div>
+    <div class="row"><label for="cfg-long">Long break (min)</label><input type="number" id="cfg-long" min="1" max="60"></div>
+    <div class="row"><label for="cfg-interval">Long break after N focus</label><input type="number" id="cfg-interval" min="1" max="12"></div>
+    <div class="row"><label for="cfg-auto">Auto-start next phase</label><input type="checkbox" id="cfg-auto"></div>
+    <div class="row"><label for="cfg-chime">Chime on finish</label><input type="checkbox" id="cfg-chime"></div>
+  </div>
+</main>
+
+<script>
+"use strict";
+
+/* =========================================================================
+ * Pomodoro-timer pane for Makerchip. Fully self-contained (no network).
+ *
+ * Focus / short-break / long-break cycles with a countdown ring, session
+ * dots, configurable durations, auto-start, and a WebAudio chime. Timing is
+ * end-timestamp based so it doesn't drift while the tab is throttled.
+ *
+ * Settings persist to localStorage when available; data:-URI panes have an
+ * opaque origin where that throws, so it degrades to in-session defaults.
+ * ========================================================================= */
+
+const PHASES = {
+  work:  { label: "Focus",       tab: "Focus" },
+  short: { label: "Short break", tab: "Short break" },
+  long:  { label: "Long break",  tab: "Long break" },
+};
+const STORE_KEY = "mc.pomodoro.v1";
+const DEFAULTS = { work: 25, short: 5, long: 15, interval: 4, autoStart: true, chime: true };
+
+// -------------------------------------------------------------------------
+// Makerchip pane channel (postMessage v1): only used to match the IDE theme.
+// -------------------------------------------------------------------------
+const PANE_V = 1;
+let _rpcSeq = 0;
+const _rpcPending = new Map();
+
+window.addEventListener("message", (e) => {
+  const m = e.data;
+  if (!m || typeof m !== "object" || m.v !== PANE_V) return;
+  if (m.kind === "rpc-result") { _rpcPending.get(m.id)?.resolve(m.result); _rpcPending.delete(m.id); }
+  else if (m.kind === "rpc-error") { _rpcPending.get(m.id)?.reject(new Error(m.error)); _rpcPending.delete(m.id); }
+});
+
+function callIde(method, ...args) {
+  const id = ++_rpcSeq;
+  return new Promise((resolve, reject) => {
+    if (window.parent === window) { reject(new Error("not a pane")); return; }
+    _rpcPending.set(id, { resolve, reject });
+    parent.postMessage({ v: PANE_V, kind: "rpc", id, target: "ide", method, args }, "*");
+  });
+}
+function callIdeTimeout(method, args, ms) {
+  return Promise.race([
+    callIde(method, ...args),
+    new Promise((_, rej) => setTimeout(() => rej(new Error("IDE RPC timed out")), ms)),
+  ]);
+}
+function applyTheme(dark) { document.documentElement.setAttribute("data-theme", dark ? "dark" : "light"); }
+
+// -------------------------------------------------------------------------
+// Persistence (best-effort; opaque-origin panes silently fall back).
+// -------------------------------------------------------------------------
+function loadCfg() {
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    if (raw) return { ...DEFAULTS, ...JSON.parse(raw) };
+  } catch (_) { /* opaque origin / disabled */ }
+  return { ...DEFAULTS };
+}
+function saveCfg() {
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(cfg)); }
+  catch (_) { /* opaque origin / disabled */ }
+}
+
+// -------------------------------------------------------------------------
+// DOM
+// -------------------------------------------------------------------------
+const $ = (id) => document.getElementById(id);
+const progEl = $("prog"), timeEl = $("time"), plabelEl = $("plabel");
+const dotsEl = $("dots"), countEl = $("count");
+const startBtn = $("start-btn"), resetBtn = $("reset-btn"), skipBtn = $("skip-btn");
+const settingsBtn = $("settings-btn"), settingsEl = $("settings");
+const tabButtons = [...document.querySelectorAll("#phase-tabs button")];
+
+const R = 110, C = 2 * Math.PI * R;
+progEl.style.strokeDasharray = C;
+
+// -------------------------------------------------------------------------
+// State
+// -------------------------------------------------------------------------
+let cfg = loadCfg();
+let phase = "work";
+let totalMs = cfg.work * 60000;
+let remainingMs = totalMs;
+let endTime = 0;
+let running = false;
+let ticker = null;
+let completedWork = 0;   // completed focus sessions in the current long-break cycle
+let totalCompleted = 0;  // lifetime (this session) focus sessions
+let audioCtx = null;
+
+// -------------------------------------------------------------------------
+// Rendering
+// -------------------------------------------------------------------------
+function phaseColor() { return getComputedStyle(document.documentElement).getPropertyValue(`--${phase}`).trim(); }
+
+function renderRing() {
+  const frac = totalMs ? remainingMs / totalMs : 0;
+  progEl.style.stroke = phaseColor();
+  progEl.style.strokeDashoffset = C * (1 - Math.max(0, Math.min(1, frac)));
+}
+function renderTime() {
+  const secs = Math.max(0, Math.ceil(remainingMs / 1000));
+  const mm = String(Math.floor(secs / 60)).padStart(2, "0");
+  const ss = String(secs % 60).padStart(2, "0");
+  timeEl.textContent = `${mm}:${ss}`;
+}
+function renderPhase() {
+  plabelEl.textContent = PHASES[phase].label;
+  tabButtons.forEach((b) => b.setAttribute("aria-selected", String(b.dataset.phase === phase)));
+  startBtn.classList.remove("work", "short", "long");
+  startBtn.classList.add(phase);
+}
+function renderDots() {
+  dotsEl.innerHTML = "";
+  for (let i = 0; i < cfg.interval; i++) {
+    const d = document.createElement("span");
+    d.className = "dot" + (i < completedWork ? " done" : "");
+    dotsEl.appendChild(d);
+  }
+  countEl.textContent = `${totalCompleted} focus session${totalCompleted === 1 ? "" : "s"} completed`;
+}
+function renderAll() { renderPhase(); renderTime(); renderRing(); renderDots(); startBtn.textContent = running ? "Pause" : "Start"; }
+
+// -------------------------------------------------------------------------
+// Chime (WebAudio; created lazily on first user gesture)
+// -------------------------------------------------------------------------
+function chime() {
+  if (!cfg.chime) return;
+  try {
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    const now = audioCtx.currentTime;
+    [880, 1320].forEach((freq, i) => {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.frequency.value = freq;
+      osc.type = "sine";
+      const t = now + i * 0.18;
+      gain.gain.setValueAtTime(0.0001, t);
+      gain.gain.exponentialRampToValueAtTime(0.25, t + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
+      osc.connect(gain).connect(audioCtx.destination);
+      osc.start(t); osc.stop(t + 0.18);
+    });
+  } catch (_) { /* audio unavailable */ }
+}
+
+// -------------------------------------------------------------------------
+// Timer control
+// -------------------------------------------------------------------------
+function setPhase(next, autostart) {
+  phase = next;
+  totalMs = cfg[phase] * 60000;
+  remainingMs = totalMs;
+  running = false;
+  clearInterval(ticker);
+  renderAll();
+  if (autostart) start();
+}
+
+function start() {
+  if (running) return;
+  if (remainingMs <= 0) remainingMs = totalMs;
+  endTime = Date.now() + remainingMs;
+  running = true;
+  startBtn.textContent = "Pause";
+  clearInterval(ticker);
+  ticker = setInterval(tick, 250);
+}
+function pause() {
+  if (!running) return;
+  remainingMs = Math.max(0, endTime - Date.now());
+  running = false;
+  startBtn.textContent = "Start";
+  clearInterval(ticker);
+}
+function reset() {
+  running = false;
+  clearInterval(ticker);
+  remainingMs = totalMs;
+  startBtn.textContent = "Start";
+  renderTime(); renderRing();
+}
+function tick() {
+  remainingMs = endTime - Date.now();
+  if (remainingMs <= 0) { remainingMs = 0; renderTime(); renderRing(); complete(); return; }
+  renderTime(); renderRing();
+}
+function nextPhase() {
+  if (phase === "work") return (completedWork % cfg.interval === 0) ? "long" : "short";
+  return "work";
+}
+function complete() {
+  clearInterval(ticker);
+  running = false;
+  chime();
+  if (phase === "work") { completedWork++; totalCompleted++; }
+  const next = nextPhase();
+  if (next === "work" && phase === "long") completedWork = 0; // new cycle after the long break
+  renderDots();
+  setPhase(next, cfg.autoStart);
+}
+function skip() {
+  clearInterval(ticker);
+  running = false;
+  // Skipping a focus session does not count it as completed.
+  if (phase !== "work") {
+    // leaving a break → start a fresh cycle if it was the long break
+    if (phase === "long") completedWork = 0;
+    setPhase("work", false);
+  } else {
+    const next = (completedWork % cfg.interval === 0 && completedWork > 0) ? "long" : "short";
+    setPhase(next, false);
+  }
+}
+
+// -------------------------------------------------------------------------
+// Wiring
+// -------------------------------------------------------------------------
+startBtn.addEventListener("click", () => (running ? pause() : start()));
+resetBtn.addEventListener("click", reset);
+skipBtn.addEventListener("click", skip);
+tabButtons.forEach((b) => b.addEventListener("click", () => setPhase(b.dataset.phase, false)));
+settingsBtn.addEventListener("click", () => { settingsEl.hidden = !settingsEl.hidden; });
+
+// Settings inputs
+const cfgInputs = {
+  work: $("cfg-work"), short: $("cfg-short"), long: $("cfg-long"),
+  interval: $("cfg-interval"), autoStart: $("cfg-auto"), chime: $("cfg-chime"),
+};
+function syncCfgInputs() {
+  cfgInputs.work.value = cfg.work; cfgInputs.short.value = cfg.short;
+  cfgInputs.long.value = cfg.long; cfgInputs.interval.value = cfg.interval;
+  cfgInputs.autoStart.checked = cfg.autoStart; cfgInputs.chime.checked = cfg.chime;
+}
+function clampInt(v, lo, hi, dflt) { const n = parseInt(v, 10); return isNaN(n) ? dflt : Math.min(hi, Math.max(lo, n)); }
+["work", "short", "long"].forEach((k) => cfgInputs[k].addEventListener("change", () => {
+  cfg[k] = clampInt(cfgInputs[k].value, 1, 120, DEFAULTS[k]);
+  cfgInputs[k].value = cfg[k];
+  saveCfg();
+  if (!running && phase === k) { totalMs = cfg[k] * 60000; remainingMs = totalMs; renderTime(); renderRing(); }
+}));
+cfgInputs.interval.addEventListener("change", () => {
+  cfg.interval = clampInt(cfgInputs.interval.value, 1, 12, DEFAULTS.interval);
+  cfgInputs.interval.value = cfg.interval;
+  if (completedWork > cfg.interval) completedWork = 0;
+  saveCfg(); renderDots();
+});
+cfgInputs.autoStart.addEventListener("change", () => { cfg.autoStart = cfgInputs.autoStart.checked; saveCfg(); });
+cfgInputs.chime.addEventListener("change", () => { cfg.chime = cfgInputs.chime.checked; saveCfg(); });
+
+async function boot() {
+  syncCfgInputs();
+  setPhase("work", false);
+  if (window.parent !== window) {
+    try { parent.postMessage({ v: PANE_V, type: "ready" }, "*"); } catch (_) {}
+    try {
+      const ctx = await callIdeTimeout("getContext", [], 1500);
+      if (ctx?.theme) applyTheme(!!ctx.theme.dark);
+    } catch (_) { /* non-Makerchip host */ }
+  } else {
+    applyTheme(window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
+  }
+  renderAll();
+}
+
+boot();
+</script>
+</body>
+</html>
