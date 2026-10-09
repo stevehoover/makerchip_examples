@@ -61,8 +61,6 @@
 
       \viz_js
          init() {
-            let figure = new fabric.Group([], {originX: "left", originY: "top",
-                                               selectable: false, evented: false})
             this._pdfReady = false
             const OFFX = 8, OFFY = 22
 
@@ -86,29 +84,29 @@
                      selectable: false, evented: false})
             this._status = status
 
-            this.global.pdf.buildFigure(
-               fabric,
+            let figure = this.global.pdf.extractToFabric(
+               this,
                "https://cim.mcgill.ca/~langer/273/18-cache1.pdf",
-               {page: 3,
-                select: {mode: "region", rect: [110, 238, 500, 535], space: "device"},
-                clip: true,
-                text: "labels",
-                left: OFFX, top: OFFY, into: figure}
-            ).then(({fig}) => {
-               // Anchor each overlay onto the extracted figure (figure-space coords).
-               let at = (obj, fx, fy) => { let p = fig(fx, fy); obj.set({left: p.x, top: p.y}) }
-               at(C.vaTag,  48, 47);  at(C.vaIdx, 112, 47);  at(C.vaOff, 171, 47)
-               at(C.pid,   358, 39)
-               at(C.ppn,   176, 88);  at(C.eTag, 229, 88);  at(C.eVal, 293, 88); at(C.ePid, 315, 88)
-               at(C.pa,    236, 52)
-               at(C.badge, 300, 250)
-               this._pdfReady = true
-               this.getCanvas().requestRenderAll()
-            }).catch((e) => {
-               status.set({text: "PDF load error: " +
-                           (e && e.message ? e.message : String(e)), fill: "#c62828"})
-               this.getCanvas().requestRenderAll()
-            })
+               {extract: {page: 3,
+                          select: {mode: "region", rect: [110, 238, 500, 535], space: "device"},
+                          clip: true,
+                          text: "labels"},
+                build:   {left: OFFX, top: OFFY,
+                          onReady: ({fig}) => {
+                             // Anchor each overlay onto the extracted figure (figure-space coords).
+                             let at = (obj, fx, fy) => { let p = fig(fx, fy); obj.set({left: p.x, top: p.y}) }
+                             at(C.vaTag,  48, 47);  at(C.vaIdx, 112, 47);  at(C.vaOff, 171, 47)
+                             at(C.pid,   358, 39)
+                             at(C.ppn,   176, 88);  at(C.eTag, 229, 88);  at(C.eVal, 293, 88); at(C.ePid, 315, 88)
+                             at(C.pa,    236, 52)
+                             at(C.badge, 300, 250)
+                             this._pdfReady = true
+                          },
+                          onError: (e) => {
+                             status.set({text: "PDF load error: " +
+                                         (e && e.message ? e.message : String(e)), fill: "#c62828"})
+                          }}}
+            )
             return {figure, status, vaTag: C.vaTag, vaIdx: C.vaIdx, vaOff: C.vaOff,
                     pid: C.pid, ppn: C.ppn, eTag: C.eTag, eVal: C.eVal, ePid: C.ePid,
                     pa: C.pa, badge: C.badge}

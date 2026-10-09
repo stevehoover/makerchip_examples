@@ -39,11 +39,6 @@
          })
 
          // Empty group that the async extraction will fill with the figure.
-         let figure = new fabric.Group([], {
-               originX: "left", originY: "top",
-               selectable: false, evented: false
-         })
-         widgets.figure = figure
 
          // Placeholder shown until the PDF has been fetched + extracted.
          widgets.loading = new fabric.Text("extracting figure from PDF...", {
@@ -56,42 +51,46 @@
          this._offY = OFFY
          this._pdfReady = false
 
-         // NOTE: SandHost's CSP connect-src currently allows only 'self',
-         // cdn.jsdelivr.net and raw.githubusercontent.com. The canonical PDF is
-         // at https://cs2461-2020.github.io/lectures/logic2.pdf; we fetch the
-         // identical file via its CSP-allowed raw.githubusercontent.com mirror.
-         this.global.pdf.buildFigure(
-            fabric,
-            {url: "https://raw.githubusercontent.com/cs2461-2020/cs2461-2020.github.io/master/lectures/logic2.pdf"},
-            {page: 12, clip: true,
-             select: {mode: "region", rect: [200, 520, 380, 605], space: "device"},
-             left: OFFX, top: OFFY, into: figure}
-         ).then(({fig}) => {
-
-            // Overlay anchors in figure coordinates, placed directly on the
-            // extracted wires. fig() shifts by the content origin so box coords
-            // line up with where the figure actually renders. Coords taken from
-            // the figure's line primitives:
-            //   A input   y=48.8  (x 24-41)      B input   y=71.3  (x 24-41)
-            //   x select  x=48.4  (y 26-41)      MUX->AND  y=60.3  (x 57-111)
-            //   AND lower input (C) y=72.5       F out     y=66.5
-            this._pos = {
-               x:   fig(48.4, 30),     // select wire, above the MUX
-               a:   fig(32,   48.8),   // top MUX input (A)
-               b:   fig(32,   71.3),   // bottom MUX input (B)
-               mux: fig(83.6, 60.3),   // MUX output, midway to the AND
-               c:   fig(116.5, 72.5),  // AND lower input (C)
-               f:   fig(152.5, 66.5)   // AND output (F)
-            }
-
-            widgets.loading.set({visible: false})
-            this._pdfReady = true
-            this.getCanvas().requestRenderAll()
-         }).catch((e) => {
-            console.error("PDF figure extraction failed:", e)
-            widgets.loading.set({text: "PDF extraction failed (see console)", fill: "#c00"})
-            this.getCanvas().requestRenderAll()
-         })
+         // Referenced by URL and parsed in the browser at runtime -- this file keeps
+         // no copy of the figure (see the Live Doc copyright model).
+         //
+         // Any CORS-enabled HTTPS origin works: the sandbox CSP is
+         // `connect-src 'self' https: blob:`, so the only hard requirement is that the
+         // server send Access-Control-Allow-Origin.
+         //
+         // `file://` can never work: browsers block local-file loads from an https
+         // document beneath CSP, so no CSP change enables it. To drive Live Doc from a
+         // local or licensed PDF, open it as a PDF view instead of fetching a URL.
+         widgets.figure = this.global.pdf.extractToFabric(
+            this,
+            {url: "https://cs2461-2020.github.io/lectures/logic2.pdf"},
+            {extract: {page: 12, clip: true,
+                       select: {mode: "region", rect: [200, 520, 380, 605], space: "device"}},
+             build:   {left: OFFX, top: OFFY,
+                       onReady: ({fig}) => {
+                          // Overlay anchors in figure coordinates, placed directly on the
+                          // extracted wires. fig() shifts by the content origin so box coords
+                          // line up with where the figure actually renders. Coords taken from
+                          // the figure's line primitives:
+                          //   A input   y=48.8  (x 24-41)      B input   y=71.3  (x 24-41)
+                          //   x select  x=48.4  (y 26-41)      MUX->AND  y=60.3  (x 57-111)
+                          //   AND lower input (C) y=72.5       F out     y=66.5
+                          this._pos = {
+                             x:   fig(48.4, 30),     // select wire, above the MUX
+                             a:   fig(32,   48.8),   // top MUX input (A)
+                             b:   fig(32,   71.3),   // bottom MUX input (B)
+                             mux: fig(83.6, 60.3),   // MUX output, midway to the AND
+                             c:   fig(116.5, 72.5),  // AND lower input (C)
+                             f:   fig(152.5, 66.5)   // AND output (F)
+                          }
+                          widgets.loading.set({visible: false})
+                          this._pdfReady = true
+                       },
+                       onError: (e) => {
+                          console.error("PDF figure extraction failed:", e)
+                          widgets.loading.set({text: "PDF extraction failed (see console)", fill: "#c00"})
+                       }}}
+         )
 
          return widgets
       },

@@ -42,12 +42,6 @@
                left: 4, top: 2, fontSize: 7, fontFamily: "Roboto", fill: "#555"
          })
 
-         let figure = new fabric.Group([], {
-               originX: "left", originY: "top",
-               selectable: false, evented: false
-         })
-         widgets.figure = figure
-
          widgets.loading = new fabric.Text("extracting figure from PDF...", {
                left: 20, top: 55, fontSize: 9, fontFamily: "Roboto", fill: "#999"
          })
@@ -67,31 +61,31 @@
          // ext.labels indices (page 11, clip [188,593,397,681]):
          //   0:"not allow S=0..."  5:"WE"  6:"D"  7:"Q"  10:"S"  11:"Q no longer follows"
          //   1:"1"(s_bar)  2:"1"(q_bar out)  3:"0"(Q)  4:"1"(q_bar fb)  8:"0"(r_bar)  9:"0"(D)
-         this.global.pdf.buildFigure(
-            fabric,
+         widgets.figure = this.global.pdf.extractToFabric(
+            this,
             {url: "https://cs2461-2020.github.io/lectures/latches.pdf"},
-            {page: 11, clip: true,
-             select: {mode: "region", rect: [188, 593, 397, 681], space: "device"},
-             labels: {din: 9, r_bar: 8, s_bar: 1, q_bar_fb: 4, q_bar: 2, qlat: 3},
-             left: OFFX, top: OFFY, into: figure}
-         ).then(({fig, elements}) => {
-            this._el = elements   // {din, r_bar, s_bar, q_bar_fb, q_bar, qlat} → fabric.Text refs
+            {extract: {page: 11, clip: true,
+                       select: {mode: "region", rect: [188, 593, 397, 681], space: "device"}},
+             build: {labels: {din: 9, r_bar: 8, s_bar: 1, q_bar_fb: 4, q_bar: 2, qlat: 3},
+                     left: OFFX, top: OFFY,
+                     onReady: ({fig, elements}) => {
+                        this._el = elements   // {din, r_bar, s_bar, q_bar_fb, q_bar, qlat}
 
-            // WE wire has no value label in the PDF; ring widget is positioned here.
-            const we = fig(43, 12)
-            widgets.weRing.set({left: we.x, top: we.y})
-            widgets.weRing.visible = true
-            this._weRing = widgets.weRing
-            this._statusLabel = widgets.status
+                        // WE wire has no value label in the PDF; ring widget is positioned here.
+                        const we = fig(43, 12)
+                        widgets.weRing.set({left: we.x, top: we.y})
+                        widgets.weRing.visible = true
+                        this._weRing = widgets.weRing
+                        this._statusLabel = widgets.status
 
-            widgets.loading.set({visible: false})
-            this._pdfReady = true
-            this.getCanvas().requestRenderAll()
-         }).catch((e) => {
-            console.error("PDF figure extraction failed:", e)
-            widgets.loading.set({text: "PDF extraction failed (see console)", fill: "#c00"})
-            this.getCanvas().requestRenderAll()
-         })
+                        widgets.loading.set({visible: false})
+                        this._pdfReady = true
+                     },
+                     onError: (e) => {
+                        console.error("PDF figure extraction failed:", e)
+                        widgets.loading.set({text: "PDF extraction failed (see console)", fill: "#c00"})
+                     }}}
+         )
 
          return widgets
       },

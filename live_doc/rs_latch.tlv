@@ -43,11 +43,6 @@
                left: 4, top: 2, fontSize: 7, fontFamily: "Roboto", fill: "#555"
          })
 
-         let figure = new fabric.Group([], {
-               originX: "left", originY: "top",
-               selectable: false, evented: false
-         })
-         widgets.figure = figure
 
          widgets.loading = new fabric.Text("extracting figure from PDF...", {
                left: 10, top: 55, fontSize: 9, fontFamily: "Roboto", fill: "#999"
@@ -63,25 +58,24 @@
          // ext.labels indices (page 9, clip [242,456,350,540]):
          //   0:"-"  1:"Coupled NANDs (R"  2:"S"  3:"R"  4:"Q"  9:"~Q"
          //   5:"1"(~Q wire)  6:"0"(S wire)  7:"0"(R wire)  8:"1"(Q wire)
-         this.global.pdf.buildFigure(
-            fabric,
+         widgets.figure = this.global.pdf.extractToFabric(
+            this,
             {url: "https://raw.githubusercontent.com/cs2461-2020/cs2461-2020.github.io/master/lectures/latches.pdf"},
-            {page: 9, clip: true,
-             select: {mode: "region", rect: [242, 456, 350, 540], space: "device"},
-             labels: {s: 6, r: 7, q: 8, qb: 5},
-             left: OFFX, top: OFFY, into: figure}
-         ).then(({elements}) => {
-            this._el = elements   // {s, r, q, qb} → fabric.Text refs inside the group
-            this._statusLabel = widgets.status
-
-            widgets.loading.set({visible: false})
-            this._pdfReady = true
-            this.getCanvas().requestRenderAll()
-         }).catch((e) => {
-            console.error("PDF figure extraction failed:", e)
-            widgets.loading.set({text: "PDF extraction failed (see console)", fill: "#c00"})
-            this.getCanvas().requestRenderAll()
-         })
+            {extract: {page: 9, clip: true,
+                       select: {mode: "region", rect: [242, 456, 350, 540], space: "device"}},
+             build:   {labels: {s: 6, r: 7, q: 8, qb: 5},
+                       left: OFFX, top: OFFY,
+                       onReady: ({elements}) => {
+                          this._el = elements   // {s, r, q, qb} → fabric.Text refs in the group
+                          this._statusLabel = widgets.status
+                          widgets.loading.set({visible: false})
+                          this._pdfReady = true
+                       },
+                       onError: (e) => {
+                          console.error("PDF figure extraction failed:", e)
+                          widgets.loading.set({text: "PDF extraction failed (see console)", fill: "#c00"})
+                       }}}
+         )
 
          return widgets
       },
