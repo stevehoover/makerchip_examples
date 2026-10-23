@@ -38,13 +38,6 @@
                left: 4, top: 2, fontSize: 7, fontFamily: "Roboto", fill: "#555"
          })
 
-         // Empty group that the async extraction will fill with the figure.
-
-         // Placeholder shown until the PDF has been fetched + extracted.
-         widgets.loading = new fabric.Text("extracting figure from PDF...", {
-               left: 20, top: 60, fontSize: 9, fontFamily: "Roboto", fill: "#999"
-         })
-
          // Where the extracted figure's top-left sits in box coordinates.
          const OFFX = 12, OFFY = 30
          this._offX = OFFX
@@ -65,12 +58,12 @@
             this,
             {url: "https://cs2461-2020.github.io/lectures/logic2.pdf"},
             {extract: {page: 12, clip: true,
-                       select: {mode: "region", rect: [200, 520, 380, 605], space: "device"}},
-             build:   {left: OFFX, top: OFFY,
+                       select: {mode: "region", rect: [200, 520, 380, 605]}},
+             build:   {
                        onReady: ({fig}) => {
                           // Overlay anchors in figure coordinates, placed directly on the
-                          // extracted wires. fig() shifts by the content origin so box coords
-                          // line up with where the figure actually renders. Coords taken from
+                          // extracted wires. fig() maps them through the figure group's
+                          // placement into box coords. Coords taken from
                           // the figure's line primitives:
                           //   A input   y=48.8  (x 24-41)      B input   y=71.3  (x 24-41)
                           //   x select  x=48.4  (y 26-41)      MUX->AND  y=60.3  (x 57-111)
@@ -83,14 +76,10 @@
                              c:   fig(116.5, 72.5),  // AND lower input (C)
                              f:   fig(152.5, 66.5)   // AND output (F)
                           }
-                          widgets.loading.set({visible: false})
                           this._pdfReady = true
-                       },
-                       onError: (e) => {
-                          console.error("PDF figure extraction failed:", e)
-                          widgets.loading.set({text: "PDF extraction failed (see console)", fill: "#c00"})
                        }}}
          )
+         widgets.figure.set({left: OFFX, top: OFFY})   // where figure (0, 0) lands in the box
 
          return widgets
       },

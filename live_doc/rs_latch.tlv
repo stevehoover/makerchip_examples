@@ -43,17 +43,12 @@
                left: 4, top: 2, fontSize: 7, fontFamily: "Roboto", fill: "#555"
          })
 
-
-         widgets.loading = new fabric.Text("extracting figure from PDF...", {
-               left: 10, top: 55, fontSize: 9, fontFamily: "Roboto", fill: "#999"
-         })
          widgets.status = new fabric.Text("", {
                left: 4, top: 101, fontSize: 8, fontFamily: "Roboto",
                fill: "#1565c0", selectable: false, evented: false
          })
 
          const OFFX = 10, OFFY = 22
-         this._pdfReady = false
 
          // ext.labels indices (page 9, clip [242,456,350,540]):
          //   0:"-"  1:"Coupled NANDs (R"  2:"S"  3:"R"  4:"Q"  9:"~Q"
@@ -62,35 +57,25 @@
             this,
             {url: "https://raw.githubusercontent.com/cs2461-2020/cs2461-2020.github.io/master/lectures/latches.pdf"},
             {extract: {page: 9, clip: true,
-                       select: {mode: "region", rect: [242, 456, 350, 540], space: "device"}},
-             build:   {labels: {s: 6, r: 7, q: 8, qb: 5},
-                       left: OFFX, top: OFFY,
-                       onReady: ({elements}) => {
-                          this._el = elements   // {s, r, q, qb} → fabric.Text refs in the group
-                          this._statusLabel = widgets.status
-                          widgets.loading.set({visible: false})
-                          this._pdfReady = true
-                       },
-                       onError: (e) => {
-                          console.error("PDF figure extraction failed:", e)
-                          widgets.loading.set({text: "PDF extraction failed (see console)", fill: "#c00"})
-                       }}}
+                       select: {mode: "region", rect: [242, 456, 350, 540]}},
+             build:   {labels: {s: 6, r: 7, q: 8, qb: 5}}}   // -> this.liveDocElements
          )
+         widgets.figure.set({left: OFFX, top: OFFY})   // where figure (0, 0) lands in the box
 
          return widgets
       },
 
       render() {
-         if (!this._pdfReady) return []
+         const E = this.liveDocElements   // {s, r, q, qb}: fabric.Text refs in the figure
+         if (!E) return []                 // the PDF has not arrived
          const sVal = '$set_n'.asInt(), rVal = '$rst_n'.asInt()
          const qVal = '$qlat'.asInt(), qbVal = '$qbar'.asInt()
-         const E = this._el
          E.s.set({text: String(sVal), fill: sVal ? "#2e7d32" : "#e65100"})
          E.r.set({text: String(rVal), fill: rVal ? "#2e7d32" : "#e65100"})
          E.q.set({text: String(qVal), fill: qVal ? "#2e7d32" : "#c00"})
          E.qb.set({text: String(qbVal), fill: qbVal ? "#2e7d32" : "#c00"})
          const op = !sVal && rVal ? "SET" : sVal && !rVal ? "RESET" : sVal && rVal ? "HOLD" : "ILLEGAL"
-         this._statusLabel.set({text: op + "  (S=" + sVal + ", R=" + rVal + ")"})
+         this.obj.status.set({text: op + "  (S=" + sVal + ", R=" + rVal + ")"})
          return []
       }
 \SV

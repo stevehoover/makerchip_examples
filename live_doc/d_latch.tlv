@@ -42,21 +42,12 @@
                left: 4, top: 2, fontSize: 7, fontFamily: "Roboto", fill: "#555"
          })
 
-         widgets.loading = new fabric.Text("extracting figure from PDF...", {
-               left: 20, top: 55, fontSize: 9, fontFamily: "Roboto", fill: "#999"
-         })
-         widgets.weRing = new fabric.Circle({
-               left: 0, top: 0, radius: 8, originX: "center", originY: "center",
-               fill: "", stroke: "#90a4ae", strokeWidth: 1.5,
-               visible: false, selectable: false, evented: false
-         })
          widgets.status = new fabric.Text("", {
                left: 4, top: 107, fontSize: 8, fontFamily: "Roboto",
                fill: "#546e7a", selectable: false, evented: false
          })
 
          const OFFX = 8, OFFY = 22
-         this._pdfReady = false
 
          // ext.labels indices (page 11, clip [188,593,397,681]):
          //   0:"not allow S=0..."  5:"WE"  6:"D"  7:"Q"  10:"S"  11:"Q no longer follows"
@@ -65,36 +56,26 @@
             this,
             {url: "https://cs2461-2020.github.io/lectures/latches.pdf"},
             {extract: {page: 11, clip: true,
-                       select: {mode: "region", rect: [188, 593, 397, 681], space: "device"}},
-             build: {labels: {din: 9, r_bar: 8, s_bar: 1, q_bar_fb: 4, q_bar: 2, qlat: 3},
-                     left: OFFX, top: OFFY,
-                     onReady: ({fig, elements}) => {
-                        this._el = elements   // {din, r_bar, s_bar, q_bar_fb, q_bar, qlat}
-
-                        // WE wire has no value label in the PDF; ring widget is positioned here.
-                        const we = fig(43, 12)
-                        widgets.weRing.set({left: we.x, top: we.y})
-                        widgets.weRing.visible = true
-                        this._weRing = widgets.weRing
-                        this._statusLabel = widgets.status
-
-                        widgets.loading.set({visible: false})
-                        this._pdfReady = true
-                     },
-                     onError: (e) => {
-                        console.error("PDF figure extraction failed:", e)
-                        widgets.loading.set({text: "PDF extraction failed (see console)", fill: "#c00"})
-                     }}}
+                       select: {mode: "region", rect: [188, 593, 397, 681]}},
+             build: {labels: {din: 9, r_bar: 8, s_bar: 1, q_bar_fb: 4, q_bar: 2, qlat: 3}}}
          )
+         widgets.figure.set({left: OFFX, top: OFFY})   // where figure (0, 0) lands in the box
+
+         // The WE wire has no value label in the PDF; a ring on it, in figure coordinates.
+         this._weRing = new fabric.Circle({
+               left: 43, top: 12, radius: 8, originX: "center", originY: "center",
+               fill: "", stroke: "#90a4ae", strokeWidth: 1.5, selectable: false, evented: false
+         })
+         widgets.figure.add(this._weRing)
 
          return widgets
       },
 
       render() {
-         if (!this._pdfReady) return []
+         const E = this.liveDocElements   // {din, r_bar, s_bar, q_bar_fb, q_bar, qlat}
+         if (!E) return []                 // the PDF has not arrived
          const dinVal = '$din'.asInt(), wenVal = '$wen'.asInt(), qVal = '$qlat'.asInt()
          const qbarVal = '$q_bar'.asInt(), sbarVal = '$s_bar'.asInt(), rbarVal = '$r_bar'.asInt()
-         const E = this._el
          E.din.set({text: String(dinVal), fill: dinVal ? "#2e7d32" : "#777"})
          E.r_bar.set({text: String(rbarVal), fill: rbarVal ? "#2e7d32" : "#c00"})
          E.s_bar.set({text: String(sbarVal), fill: sbarVal ? "#2e7d32" : "#c00"})
@@ -103,7 +84,7 @@
          E.qlat.set({text: String(qVal), fill: qVal ? "#2e7d32" : "#777"})
          this._weRing.set({stroke: wenVal ? "#e65100" : "#90a4ae"})
          const mode = wenVal ? "TRANSPARENT  (Q follows D)" : "HOLD  (Q locked)"
-         this._statusLabel.set({text: mode, fill: wenVal ? "#e65100" : "#546e7a"})
+         this.obj.status.set({text: mode, fill: wenVal ? "#e65100" : "#546e7a"})
          return []
       }
 \SV

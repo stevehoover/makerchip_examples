@@ -88,10 +88,10 @@
                this,
                "https://cim.mcgill.ca/~langer/273/18-cache1.pdf",
                {extract: {page: 3,
-                          select: {mode: "region", rect: [110, 238, 500, 535], space: "device"},
+                          select: {mode: "region", rect: [110, 238, 500, 535]},
                           clip: true,
                           text: "labels"},
-                build:   {left: OFFX, top: OFFY,
+                build:   {
                           onReady: ({fig}) => {
                              // Anchor each overlay onto the extracted figure (figure-space coords).
                              let at = (obj, fx, fy) => { let p = fig(fx, fy); obj.set({left: p.x, top: p.y}) }
@@ -107,6 +107,7 @@
                                          (e && e.message ? e.message : String(e)), fill: "#c62828"})
                           }}}
             )
+            figure.set({left: OFFX, top: OFFY})   // where figure (0, 0) lands in the box
             return {figure, status, vaTag: C.vaTag, vaIdx: C.vaIdx, vaOff: C.vaOff,
                     pid: C.pid, ppn: C.ppn, eTag: C.eTag, eVal: C.eVal, ePid: C.ePid,
                     pa: C.pa, badge: C.badge}
