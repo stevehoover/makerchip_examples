@@ -2,7 +2,7 @@
 \m5
    use(m5-1.0)
 \SV
-   m5_makerchip_module   // (Expanded in Nav-TLV pane.)
+   m5_makerchip_module   // (Expanded in Nav-TLV view.)
 
    // Board dimensions (rows top-to-bottom 0..20, cols left-to-right 0..9).
    m5_define_hier(ROW, 21, 0)

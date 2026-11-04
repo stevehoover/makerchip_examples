@@ -85,7 +85,7 @@
    endmodule
 
 
-   m4_makerchip_module   // (Expanded in Nav-TLV pane.)
+   m4_makerchip_module   // (Expanded in Nav-TLV view.)
 
    logic finished;
    servant_sim servant_sim(.wb_clk(clk), .wb_rst(reset), .q(finished));

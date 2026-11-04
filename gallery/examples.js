@@ -1,6 +1,6 @@
-// The Makerchip Third-Party View client (the pane<->IDE postMessage wire protocol). Imported as an
+// The Makerchip Third-Party View client (the view<->IDE postMessage wire protocol). Imported as an
 // ES module from the jsDelivr CDN, so the gallery needs no build step and no vendored bundle; see the
-// "Makerchip pane integration" section below for how it's used.
+// "Makerchip view integration" section below for how it's used.
 import { connect } from "https://cdn.jsdelivr.net/npm/@rweda/makerchip-view-client@0.2.0/+esm";
 
 // Per-example VIZ thumbnail capture settings (recording metadata; NOT used by the gallery at
@@ -523,19 +523,19 @@ for (const ex of examples) {
 }
 
 // ---------------------------------------------------------------------------
-// Makerchip pane integration
+// Makerchip view integration
 //
-// When this page is loaded as a *connected* third-party iframe pane inside the
+// When this page is loaded as a *connected* third-party iframe view inside the
 // Makerchip IDE (opened with a channel contract that has `rpc: true`), each card
 // shows a single "Open" button (beside the card title) that loads the example
 // into the IDE via `setCode`: into the Editor and compiles it, or — when the IDE
-// has no Editor pane (hasEditor: false) — headlessly compiles it. When loaded as
+// has no Editor view (hasEditor: false) — headlessly compiles it. When loaded as
 // a normal standalone web page, that button is hidden and the usual web links
 // (Open Below / Open in Makerchip) are used instead.
 //
-// The pane<->IDE postMessage wire protocol is implemented by the
+// The view<->IDE postMessage wire protocol is implemented by the
 // @rweda/makerchip-view-client library, imported as an ES module from the jsDelivr
-// CDN (see the import at the top of this file; and doc-src/plugin/Third_Party_Pane_API.md
+// CDN (see the import at the top of this file; and doc-src/plugin/Third_Party_View_API.md
 // in the mono repo). This page has no build step, so it consumes the published npm
 // package straight from the CDN rather than a vendored bundle.
 // ---------------------------------------------------------------------------
@@ -551,19 +551,21 @@ function callIdeWithTimeout(method, args, ms) {
   ]);
 }
 
-async function initPaneMode() {
-  // A standalone, top-level page is never a pane.
+async function initViewMode() {
+  // A standalone, top-level page is never a view.
   if (!view.embedded) return;
 
-  // Probe the IDE: if it answers, we're a connected Makerchip pane.
+  // Probe the IDE: if it answers, we're a connected Makerchip view.
   try {
-    await callIdeWithTimeout("getAvailablePanes", [], 1500);
+    // Makerchip servers that predate "views" only know getAvailablePanes.
+    await callIdeWithTimeout("getAvailableViews", [], 1500)
+      .catch(() => callIdeWithTimeout("getAvailablePanes", [], 1500));
   } catch (_) {
     return; // No Makerchip IDE (plain iframe / other embed) -> stay in web mode.
   }
 
-  document.body.classList.add("pane-mode");
-  // Reword the intro: in a pane there are no "open in this page / new tab"
+  document.body.classList.add("view-mode");
+  // Reword the intro: in a view there are no "open in this page / new tab"
   // choices -- clicking Open loads the example into the current session.
   const intro = document.querySelector(".intro");
   if (intro) {
@@ -572,7 +574,7 @@ async function initPaneMode() {
       "Click Open to load an example into this Makerchip session and compile it.";
   }
   // Move the single "Open" button up beside the card title (to its right,
-  // wrapping below when the title is too long -- see styles.css pane-mode rules).
+  // wrapping below when the title is too long -- see styles.css view-mode rules).
   for (const card of document.querySelectorAll(".card")) {
     const btn = card.querySelector(".ide-btn");
     const metaTop = card.querySelector(".meta-top");
@@ -606,4 +608,4 @@ async function openInIde(ex, btn) {
   btn.disabled = false;
 }
 
-initPaneMode();
+initViewMode();

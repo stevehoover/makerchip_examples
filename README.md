@@ -25,10 +25,10 @@ Here are some quick-links:
 
 ## Views
 
-HTML pages in [`views/`](views/) are standalone and can be loaded into a Makerchip View pane by URL:
+HTML pages in [`views/`](views/) are standalone and can be loaded into a Makerchip view by URL:
 
   - [`logic_hex_puzzle.html`](https://stevehoover.github.io/makerchip_examples/views/logic_hex_puzzle.html): **Logic Hex**, a puzzle game for learning logic gates. Fit hexagonal gate tiles together so that fixed inputs driven in from the left produce the expected outputs on the right. Wires color themselves as they are driven, and all of the tile geometry is adjustable from the gear panel.
-  - [`news_feed.html`](views/news_feed.html) and [`weather.html`](views/weather.html): News feed and weather panes.
+  - [`news_feed.html`](views/news_feed.html) and [`weather.html`](views/weather.html): News feed and weather views.
 
 From other repos:
 

@@ -282,7 +282,7 @@ m4+definitions(['
    m4_popdef(['m4_out_stage'])
    
 \SV
-   m4_makerchip_module   // (Expanded in Nav-TLV pane.)
+   m4_makerchip_module   // (Expanded in Nav-TLV view.)
 \TLV
    \viz_js
       box: {strokeWidth: 0, left: -100, top: -75, width: 550, height: 1400, fill: "#BBBBBB"},

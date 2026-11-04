@@ -20,7 +20,7 @@
 
    // Macro providing required top-level module definition, random stimulus
    // support, and Verilator config.
-   m4_makerchip_module   // (Expanded in Nav-TLV pane.)
+   m4_makerchip_module   // (Expanded in Nav-TLV view.)
 
 // LFM chirp matched-filter instrument (full instrument: drives $out_a and $out_b).
 //   16-tap FIR whose coefficients are the time-reversed chirp replica.

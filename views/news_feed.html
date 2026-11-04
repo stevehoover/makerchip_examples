@@ -74,7 +74,7 @@
   }
   .card .actions { display: flex; gap: 6px; }
 
-  /* Reader (in-pane) */
+  /* Reader (within the view) */
   #reader { padding: 0; }
   .reader-bar {
     position: sticky; top: 0; z-index: 2; display: flex; align-items: center; gap: 8px;
@@ -108,16 +108,16 @@
 "use strict";
 
 /* =========================================================================
- * News Feed pane for Makerchip.
+ * News Feed view for Makerchip.
  *
  * Feeds are RSS/Atom URLs converted to JSON via a CORS-friendly proxy. Add
  * more sources by extending FEEDS below.
  *
- * "Open" currently shows the article *in this pane* (a reader view with a
+ * "Open" currently shows the article *in this view* (a reader view with a
  * Back button). The article is first normalized by toArticle(); showArticle()
- * renders it. To later open each item in its own Makerchip pane, replace the
+ * renders it. To later open each item in its own Makerchip view, replace the
  * body of openArticle() to deliver the toArticle() record to a companion
- * reader pane (e.g. over the pane bus) instead of calling showArticle().
+ * reader view (e.g. over the view bus) instead of calling showArticle().
  * ========================================================================= */
 
 const FEEDS = [
@@ -132,16 +132,16 @@ const FEEDS = [
 const PROXY = "https://api.rss2json.com/v1/api.json?rss_url=";
 
 // -------------------------------------------------------------------------
-// Makerchip pane channel (postMessage v1): used only to match the IDE theme
+// Makerchip view channel (postMessage v1): used only to match the IDE theme
 // via getContext. Inert when loaded as a normal web page.
 // -------------------------------------------------------------------------
-const PANE_V = 1;
+const VIEW_V = 1;
 let _rpcSeq = 0;
 const _rpcPending = new Map();
 
 window.addEventListener("message", (e) => {
   const m = e.data;
-  if (!m || typeof m !== "object" || m.v !== PANE_V) return;
+  if (!m || typeof m !== "object" || m.v !== VIEW_V) return;
   if (m.kind === "rpc-result") { _rpcPending.get(m.id)?.resolve(m.result); _rpcPending.delete(m.id); }
   else if (m.kind === "rpc-error") { _rpcPending.get(m.id)?.reject(new Error(m.error)); _rpcPending.delete(m.id); }
 });
@@ -149,9 +149,9 @@ window.addEventListener("message", (e) => {
 function callIde(method, ...args) {
   const id = ++_rpcSeq;
   return new Promise((resolve, reject) => {
-    if (window.parent === window) { reject(new Error("not a pane")); return; }
+    if (window.parent === window) { reject(new Error("not a view")); return; }
     _rpcPending.set(id, { resolve, reject });
-    parent.postMessage({ v: PANE_V, kind: "rpc", id, target: "ide", method, args }, "*");
+    parent.postMessage({ v: VIEW_V, kind: "rpc", id, target: "ide", method, args }, "*");
   });
 }
 function callIdeTimeout(method, args, ms) {
@@ -198,7 +198,7 @@ function firstImageFromHtml(html) {
 }
 
 // Normalize a feed item into a compact, self-contained article record. This is
-// the hand-off shape a future separate reader pane would consume.
+// the hand-off shape a future separate reader view would consume.
 function toArticle(item, feedData) {
   const body = item.content || item.description || "";
   return {
@@ -310,11 +310,11 @@ async function loadFeed() {
 }
 
 // -------------------------------------------------------------------------
-// View switching + in-pane reader
+// View switching + reader within the view
 //
-// EXTENSION POINT: to open items in their own Makerchip pane instead, change
-// openArticle() to hand `article` to a companion reader pane (e.g. via the
-// pane bus) rather than calling showArticle().
+// EXTENSION POINT: to open items in their own Makerchip view instead, change
+// openArticle() to hand `article` to a companion reader view (e.g. via the
+// view bus) rather than calling showArticle().
 // -------------------------------------------------------------------------
 function showList() {
   readerEl.classList.add("hidden");
@@ -384,7 +384,7 @@ for (const f of FEEDS) {
 
 async function boot() {
   if (window.parent !== window) {
-    try { parent.postMessage({ v: PANE_V, type: "ready" }, "*"); } catch (_) {}
+    try { parent.postMessage({ v: VIEW_V, type: "ready" }, "*"); } catch (_) {}
     try {
       const ctx = await callIdeTimeout("getContext", [], 1500);
       if (ctx?.theme) applyTheme(!!ctx.theme.dark);

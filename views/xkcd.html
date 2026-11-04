@@ -79,7 +79,7 @@
 "use strict";
 
 /* =========================================================================
- * xkcd daily-comic pane for Makerchip.
+ * xkcd daily-comic view for Makerchip.
  *
  * xkcd.com has no CORS, so we read its RSS feed through the rss2json proxy
  * (a known-good webview host). Each RSS item embeds the comic as
@@ -91,15 +91,15 @@ const FEED_URL = "https://xkcd.com/rss.xml";
 const PROXY = "https://api.rss2json.com/v1/api.json?rss_url=";
 
 // -------------------------------------------------------------------------
-// Makerchip pane channel (postMessage v1): only used to match the IDE theme.
+// Makerchip view channel (postMessage v1): only used to match the IDE theme.
 // -------------------------------------------------------------------------
-const PANE_V = 1;
+const VIEW_V = 1;
 let _rpcSeq = 0;
 const _rpcPending = new Map();
 
 window.addEventListener("message", (e) => {
   const m = e.data;
-  if (!m || typeof m !== "object" || m.v !== PANE_V) return;
+  if (!m || typeof m !== "object" || m.v !== VIEW_V) return;
   if (m.kind === "rpc-result") { _rpcPending.get(m.id)?.resolve(m.result); _rpcPending.delete(m.id); }
   else if (m.kind === "rpc-error") { _rpcPending.get(m.id)?.reject(new Error(m.error)); _rpcPending.delete(m.id); }
 });
@@ -107,9 +107,9 @@ window.addEventListener("message", (e) => {
 function callIde(method, ...args) {
   const id = ++_rpcSeq;
   return new Promise((resolve, reject) => {
-    if (window.parent === window) { reject(new Error("not a pane")); return; }
+    if (window.parent === window) { reject(new Error("not a view")); return; }
     _rpcPending.set(id, { resolve, reject });
-    parent.postMessage({ v: PANE_V, kind: "rpc", id, target: "ide", method, args }, "*");
+    parent.postMessage({ v: VIEW_V, kind: "rpc", id, target: "ide", method, args }, "*");
   });
 }
 function callIdeTimeout(method, args, ms) {
@@ -228,7 +228,7 @@ refreshBtn.addEventListener("click", load);
 
 async function boot() {
   if (window.parent !== window) {
-    try { parent.postMessage({ v: PANE_V, type: "ready" }, "*"); } catch (_) {}
+    try { parent.postMessage({ v: VIEW_V, type: "ready" }, "*"); } catch (_) {}
     try {
       const ctx = await callIdeTimeout("getContext", [], 1500);
       if (ctx?.theme) applyTheme(!!ctx.theme.dark);

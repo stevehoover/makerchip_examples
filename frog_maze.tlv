@@ -3,7 +3,7 @@
    use(m5-1.0)
 \SV
    m4_include_lib(['https://raw.githubusercontent.com/TL-X-org/tlv_lib/3543cfd9d7ef9ae3b1e5750614583959a672084d/fundamentals_lib.tlv'])
-   m5_makerchip_module   // (Expanded in Nav-TLV pane.)
+   m5_makerchip_module   // (Expanded in Nav-TLV view.)
    /* verilator lint_on WIDTH */
 \TLV frog_maze(/_top, _where)
    /_top

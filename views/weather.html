@@ -109,7 +109,7 @@
 "use strict";
 
 /* =========================================================================
- * Weather pane for Makerchip.
+ * Weather view for Makerchip.
  *
  * All data services are keyless and CORS-enabled:
  *   - ipwho.is / geojs.io -> approximate location from IP (auto "local" weather)
@@ -137,16 +137,16 @@ const WMO = {
 function wmo(code) { return WMO[code] || ["Unknown", "\u2753"]; }
 
 // -------------------------------------------------------------------------
-// Makerchip pane channel (postMessage v1): used only to match the IDE theme
+// Makerchip view channel (postMessage v1): used only to match the IDE theme
 // via getContext. Inert when loaded as a normal web page.
 // -------------------------------------------------------------------------
-const PANE_V = 1;
+const VIEW_V = 1;
 let _rpcSeq = 0;
 const _rpcPending = new Map();
 
 window.addEventListener("message", (e) => {
   const m = e.data;
-  if (!m || typeof m !== "object" || m.v !== PANE_V) return;
+  if (!m || typeof m !== "object" || m.v !== VIEW_V) return;
   if (m.kind === "rpc-result") { _rpcPending.get(m.id)?.resolve(m.result); _rpcPending.delete(m.id); }
   else if (m.kind === "rpc-error") { _rpcPending.get(m.id)?.reject(new Error(m.error)); _rpcPending.delete(m.id); }
 });
@@ -154,9 +154,9 @@ window.addEventListener("message", (e) => {
 function callIde(method, ...args) {
   const id = ++_rpcSeq;
   return new Promise((resolve, reject) => {
-    if (window.parent === window) { reject(new Error("not a pane")); return; }
+    if (window.parent === window) { reject(new Error("not a view")); return; }
     _rpcPending.set(id, { resolve, reject });
-    parent.postMessage({ v: PANE_V, kind: "rpc", id, target: "ide", method, args }, "*");
+    parent.postMessage({ v: VIEW_V, kind: "rpc", id, target: "ide", method, args }, "*");
   });
 }
 function callIdeTimeout(method, args, ms) {
@@ -348,7 +348,7 @@ unitToggle.addEventListener("click", (e) => {
 
 async function boot() {
   if (window.parent !== window) {
-    try { parent.postMessage({ v: PANE_V, type: "ready" }, "*"); } catch (_) {}
+    try { parent.postMessage({ v: VIEW_V, type: "ready" }, "*"); } catch (_) {}
     try {
       const ctx = await callIdeTimeout("getContext", [], 1500);
       if (ctx?.theme) applyTheme(!!ctx.theme.dark);

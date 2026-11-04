@@ -204,9 +204,9 @@
 "use strict";
 
 /* =========================================================================
- * Games pane for Makerchip — a small self-contained arcade for the wait
+ * Games view for Makerchip — a small self-contained arcade for the wait
  * between compiles. No network, no external embeds: every game is drawn
- * from this file, so it works on the pane's opaque (data: URI) origin.
+ * from this file, so it works on the view's opaque (data: URI) origin.
  *
  * Add a game by pushing a descriptor to GAMES with:
  *   { id, name, ico, desc, mount(root, api), unmount() }
@@ -215,22 +215,22 @@
  * the origin allows it (degrades silently otherwise).
  * ========================================================================= */
 
-// ---- Makerchip pane channel (theme only) --------------------------------
-const PANE_V = 1;
+// ---- Makerchip view channel (theme only) --------------------------------
+const VIEW_V = 1;
 let _rpcSeq = 0;
 const _rpcPending = new Map();
 window.addEventListener("message", (e) => {
   const m = e.data;
-  if (!m || typeof m !== "object" || m.v !== PANE_V) return;
+  if (!m || typeof m !== "object" || m.v !== VIEW_V) return;
   if (m.kind === "rpc-result") { _rpcPending.get(m.id)?.resolve(m.result); _rpcPending.delete(m.id); }
   else if (m.kind === "rpc-error") { _rpcPending.get(m.id)?.reject(new Error(m.error)); _rpcPending.delete(m.id); }
 });
 function callIde(method, ...args) {
   const id = ++_rpcSeq;
   return new Promise((resolve, reject) => {
-    if (window.parent === window) { reject(new Error("not a pane")); return; }
+    if (window.parent === window) { reject(new Error("not a view")); return; }
     _rpcPending.set(id, { resolve, reject });
-    parent.postMessage({ v: PANE_V, kind: "rpc", id, target: "ide", method, args }, "*");
+    parent.postMessage({ v: VIEW_V, kind: "rpc", id, target: "ide", method, args }, "*");
   });
 }
 function callIdeTimeout(method, args, ms) {
@@ -651,7 +651,7 @@ const GameFlood = {
     const controlsRow = makeControls(root, [{ label: "New game", primary: true, onClick: reset }]);
     const hintEl = makeHint(root, `Recolor the top-left region \u00b7 fill the board in \u2264 ${LIMIT} moves`);
 
-    // Size the board to the largest square that fits the pane. Measure from
+    // Size the board to the largest square that fits the view. Measure from
     // <main> (which flexes to fill the area under the header); playEl itself
     // only grows to its content, so it can't tell us the available space.
     const mainEl = document.querySelector("main");
@@ -1179,7 +1179,7 @@ function renderMenuBest() {
 async function boot() {
   renderMenu();
   if (window.parent !== window) {
-    try { parent.postMessage({ v: PANE_V, type: "ready" }, "*"); } catch (_) {}
+    try { parent.postMessage({ v: VIEW_V, type: "ready" }, "*"); } catch (_) {}
     try {
       const ctx = await callIdeTimeout("getContext", [], 1500);
       if (ctx?.theme) applyTheme(!!ctx.theme.dark);

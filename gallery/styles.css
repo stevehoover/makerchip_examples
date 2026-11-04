@@ -196,35 +196,35 @@ h2 {
   border-color: var(--accent-2);
 }
 
-/* Makerchip pane mode: this gallery is embedded as a connected third-party pane.
+/* Makerchip view mode: this gallery is embedded as a connected third-party view.
    Hide the web links and show the single "open in the IDE" button per card. */
 .ide-btn {
   display: none;
 }
 
-body.pane-mode .inline-btn,
-body.pane-mode .mc-link {
+body.view-mode .inline-btn,
+body.view-mode .mc-link {
   display: none;
 }
 
-/* The web links row is empty in pane mode (the button moves up beside the
+/* The web links row is empty in view mode (the button moves up beside the
    title), so collapse it. */
-body.pane-mode .links {
+body.view-mode .links {
   display: none;
 }
 
 /* The single "Open" button sits to the right of the card title, wrapping to
    its own (right-aligned) line when the title is too long to share the row. */
-body.pane-mode .meta-top {
+body.view-mode .meta-top {
   align-items: center;
   flex-wrap: wrap;
 }
 
-body.pane-mode .meta-top .ide-btn {
+body.view-mode .meta-top .ide-btn {
   margin-left: auto;
 }
 
-body.pane-mode .ide-btn {
+body.view-mode .ide-btn {
   display: inline-block;
   font: inherit;
   font-size: 0.86rem;
@@ -237,7 +237,7 @@ body.pane-mode .ide-btn {
   cursor: pointer;
 }
 
-body.pane-mode .ide-btn:hover {
+body.view-mode .ide-btn:hover {
   filter: brightness(1.08);
 }
 

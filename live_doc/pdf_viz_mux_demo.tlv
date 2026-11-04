@@ -9,7 +9,7 @@
    // vector geometry, from a referenced lecture PDF:
    //   https://cs2461-2020.github.io/lectures/logic2.pdf  (page 12,
    //   "Example: MUX in a circuit", F = xAC + x'BC).
-   // via  this.global.pdf.extractFigure(...)  (see viz-pane/PdfExtractor.js).
+   // via  this.global.pdf.extractFigure(...)  (see viz-view/PdfExtractor.js).
    //
    // The TL-Verilog below drives the same signals the figure names (A, B, C, x,
    // F) so the textbook diagram comes alive with simulation values.

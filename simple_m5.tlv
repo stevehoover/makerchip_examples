@@ -27,7 +27,7 @@
 \SV
    // Macro providing required top-level module definition, random
    // stimulus support, and Verilator config.
-   m5_makerchip_module   // (Expanded in Nav-TLV pane.)
+   m5_makerchip_module   // (Expanded in Nav-TLV view.)
 \TLV
    *passed = *cyc_cnt > 40;
 \SV
