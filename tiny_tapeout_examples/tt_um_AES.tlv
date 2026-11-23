@@ -14,7 +14,7 @@
    // Build Target Configuration
    //
    // To build within Makerchip for the FPGA or ASIC:
-   //   o Use first line of file: \m5_TLV_version 1d --inlineGen --noDirectiveComments --noline --clkAlways --bestsv --debugSigsYosys: tl-x.org
+   //   o Use first line of file: \m5_TLV_version 1d --inlineGen --noDirectiveComments --noline --clkAlways --bestsv: tl-x.org
    //   o set(MAKERCHIP, 0)  // (below)
    //   o For ASIC, set my_design (below) to match the configuration of your repositoy:
    //       - tt_um_fpga_hdl_demo for tt_fpga_hdl_demo repo
